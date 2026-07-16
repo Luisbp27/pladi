@@ -1,0 +1,695 @@
+id_infiltracion_epoca_material,cod_masa,epoca,material,infiltracion_lluvia_porcentaje,area_m2
+1,1801M1,Juràssic Inferior,Dolomies massives i bretxes,0.3,4150001
+2,1801M1,Juràssic mitjà,Margocalcàries,0,1565762
+3,1801M1,Oligocè,"Conglomerats, calcàries i argiles",0.05,687044
+4,1801M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,962067
+5,1801M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.1,769780
+6,1801M1,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.1,913415
+7,1801M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0,1392167
+8,1801M2,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,5024
+9,1801M2,Juràssic Inferior,Dolomies massives i bretxes,0.25,3258238
+10,1801M2,Juràssic mitjà,Margocalcàries,0,556970
+11,1801M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0,4706049
+12,1801M2,Oligocè,"Conglomerats, calcàries i argiles",0.05,569476
+13,1801M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,184756
+14,1801M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.1,5956715
+15,1801M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,1931872
+16,1801M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.1,2140769
+17,1801M2,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.1,73504
+18,1801M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0,2658641
+19,1801M3,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.1,406116
+20,1801M3,Juràssic Inferior,Dolomies massives i bretxes,0.3,2186528
+21,1801M3,Juràssic mitjà,Margocalcàries,0,477159
+22,1801M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0,1927788
+23,1801M3,Oligocè,"Conglomerats, calcàries i argiles",0.05,1741463
+24,1801M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,315927
+25,1801M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,1575380
+26,1801M3,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,266904
+27,1801M3,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.1,528171
+28,1801M4,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0,984029
+29,1801M4,Juràssic Inferior,Dolomies massives i bretxes,0,933584
+30,1801M4,Juràssic mitjà,Margocalcàries,0.15,577436
+31,1801M4,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,2791136
+32,1801M4,Oligocè,"Conglomerats, calcàries i argiles",0.3,8117942
+33,1801M4,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,4106
+34,1801M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,93305
+35,1801M4,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,146515
+36,1801M4,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,605153
+37,1802M1,Juràssic Inferior,Dolomies massives i bretxes,0,1288400
+38,1802M1,Juràssic mitjà,Margocalcàries,0,549430
+39,1802M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,2355592
+40,1802M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.3,7580508
+41,1802M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,197220
+42,1802M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,971931
+43,1802M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,18406
+44,1802M2,Juràssic Inferior,Dolomies massives i bretxes,0.15,1134555
+45,1802M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,5209241
+46,1802M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,4379423
+47,1802M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,2889165
+48,1802M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,5997583
+49,1802M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,986331
+50,1802M2,Triàsic inferior - mitjà (Buntsandstein),Gresos i lutites vermelles,0.1,5443916
+51,1802M2,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.3,13353426
+52,1802M3,Juràssic Inferior,Dolomies massives i bretxes,0.15,2395748
+53,1802M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,1252749
+54,1802M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,129231
+55,1802M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.1,6682145
+56,1802M3,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,2978670
+57,1802M3,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,2094157
+58,1802M3,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.3,19124986
+59,1803M3,Juràssic Inferior,Dolomies massives i bretxes,0,305669
+60,1803M3,Juràssic mitjà,Margocalcàries,0.15,2495822
+61,1803M3,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,4568782
+62,1803M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,9883640
+63,1803M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.3,61277210
+64,1803M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,3182416
+65,1803M3,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,2306228
+66,1803M3,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,144538
+67,1804M1,Juràssic Inferior,Dolomies massives i bretxes,0,598882
+68,1804M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,5736851
+69,1804M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.3,20106289
+70,1804M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,2713073
+71,1804M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,4930662
+72,1804M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.15,846626
+73,1804M2,Juràssic Inferior,Dolomies massives i bretxes,0.3,21030204
+74,1804M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,5489241
+75,1804M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,12888668
+76,1804M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,861969
+77,1804M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,2638803
+78,1804M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,212984
+79,1804M3,Juràssic Inferior,Dolomies massives i bretxes,0.15,22798245
+80,1804M3,Juràssic mitjà,Margocalcàries,0,749215
+81,1804M3,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,6247802
+82,1804M3,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0,3672505
+83,1804M3,Juràssic superior,Margues,0,4638869
+84,1804M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,1218211
+85,1804M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,624737
+86,1804M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,3338357
+87,1804M3,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.3,3400575
+88,1805M1,Juràssic Inferior,Dolomies massives i bretxes,0,11890
+89,1805M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.15,591104
+90,1805M1,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0,695984
+91,1805M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,5232657
+92,1805M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.3,24619921
+93,1805M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,4862653
+94,1805M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,7158464
+95,1805M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,184571
+96,1805M2,Juràssic Inferior,Dolomies massives i bretxes,0,30196
+97,1805M2,Juràssic mitjà,Margocalcàries,0.15,91470
+98,1805M2,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0,48408
+99,1805M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,1616591
+100,1805M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.3,7036752
+101,1805M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,627848
+102,1805M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,4638217
+103,1805M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,8188856
+104,1805M3,Juràssic Inferior,Dolomies massives i bretxes,0.3,2501931
+105,1805M3,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0.15,303589
+106,1805M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,4116177
+107,1805M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,276336
+108,1805M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,915008
+109,1805M3,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,9239
+110,1806M1,Juràssic Inferior,Dolomies massives i bretxes,0,3166094
+111,1806M1,Juràssic mitjà,Margocalcàries,0.05,405940
+112,1806M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,585671
+113,1806M1,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0.1,5996668
+114,1806M1,Juràssic superior,Margues,0.15,487596
+115,1806M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,814067
+116,1806M1,Oligocè,"Conglomerats, calcàries i argiles",0,868
+117,1806M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,1478147
+118,1806M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,131289
+119,1806M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,1735449
+120,1806M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,1419270
+121,1806M1,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.3,32219372
+122,1806M2,Juràssic Inferior,Dolomies massives i bretxes,0,205568
+123,1806M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,4992319
+124,1806M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.35,17407163
+125,1806M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,3225551
+126,1806M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,1206147
+127,1806M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.15,1089393
+128,1806M3,Juràssic Inferior,Dolomies massives i bretxes,0,2580172
+129,1806M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,274256
+130,1806M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.1,84567
+131,1806M3,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,1306286
+132,1806M3,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.1,1407248
+133,1806M3,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.3,11031395
+134,1806M4,Juràssic Inferior,Dolomies massives i bretxes,0,944695
+135,1806M4,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,3274
+136,1806M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.1,318563
+137,1806M4,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,11913968
+138,1806M4,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.1,15207
+139,1806M4,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.3,9503
+140,1807M1,Juràssic Inferior,Dolomies massives i bretxes,0,506116
+141,1807M1,Juràssic mitjà,Margocalcàries,0,879698
+142,1807M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.1,15152987
+143,1807M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,6956344
+144,1807M1,Oligocè,"Conglomerats, calcàries i argiles",0,3923140
+145,1807M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,150181
+146,1807M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,459276
+147,1807M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,13505941
+148,1807M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.05,2003634
+149,1807M1,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.3,27750506
+150,1807M2,Juràssic Inferior,Dolomies massives i bretxes,0.05,2103
+151,1807M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.1,7605606
+152,1807M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,2706863
+153,1807M2,Oligocè,"Conglomerats, calcàries i argiles",0,9565881
+154,1807M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,230986
+155,1807M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,1059131
+156,1807M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,2514276
+157,1807M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.15,1908063
+158,1807M2,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.3,10994046
+159,1808M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,1601871
+160,1808M1,Juràssic Inferior,Dolomies massives i bretxes,0,12470
+161,1808M1,Juràssic mitjà,Margocalcàries,0.05,29471
+162,1808M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,1162669
+163,1808M1,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0.1,5276484
+164,1808M1,Oligocè,"Conglomerats, calcàries i argiles",0.3,26866819
+165,1808M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,2328053
+166,1808M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,389
+167,1808M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,55479
+168,1808M1,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.15,10446111
+169,1808M2,Juràssic Inferior,Dolomies massives i bretxes,0,31636
+170,1808M2,Juràssic mitjà,Margocalcàries,0.05,904971
+171,1808M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,369549
+172,1808M2,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0.1,4463524
+173,1808M2,Oligocè,"Conglomerats, calcàries i argiles",0.3,16579320
+174,1808M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,2584201
+175,1808M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,534191
+176,1808M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,4238457
+177,1809M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,602705
+178,1809M1,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,2971201
+179,1809M1,Juràssic Inferior,Dolomies massives i bretxes,0.1,1855669
+180,1809M1,Juràssic mitjà,Margocalcàries,0,2879740
+181,1809M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.05,7932227
+182,1809M1,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0.1,296731
+183,1809M1,Juràssic superior,Margues,0,66174
+184,1809M1,Oligocè,"Conglomerats, calcàries i argiles",0.15,8622926
+185,1809M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,4010456
+186,1809M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.2,5407760
+187,1809M1,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,170668
+188,1809M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,15510
+189,1809M2,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,602846
+190,1809M2,Juràssic Inferior,Dolomies massives i bretxes,0.15,2562970
+191,1809M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.05,9803983
+192,1809M2,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0.1,4683443
+193,1809M2,Oligocè,"Conglomerats, calcàries i argiles",0.15,14793641
+194,1809M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,1935560
+195,1809M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.3,5795539
+196,1809M2,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,4626670
+197,1810M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,11130875
+198,1810M1,Juràssic Inferior,Dolomies massives i bretxes,0.4,27610195
+199,1810M1,Juràssic mitjà,Margocalcàries,0,932955
+200,1810M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.05,1500529
+201,1810M1,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0,260819
+202,1810M1,Oligocè,"Conglomerats, calcàries i argiles",0.18,3911831
+203,1810M1,Pliocè inferior,Margues grises amb Ammussium,0,24640
+204,1810M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,4927212
+205,1810M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,1132278
+206,1810M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,499608
+207,1811M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0,2633703
+208,1811M1,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,30845
+209,1811M1,Juràssic Inferior,Dolomies massives i bretxes,0,215856
+210,1811M1,Juràssic mitjà,Margocalcàries,0.3,408249
+211,1811M1,Juràssic superior,Margues,0.05,87281
+212,1811M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,912905
+213,1811M1,Miocè superior,Conglomerats i llims vermells amb graves,0.35,5405423
+214,1811M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.18,111110879
+215,1811M1,Oligocè,"Conglomerats, calcàries i argiles",0,2687912
+216,1811M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,111273
+217,1811M1,Pliocè inferior,Margues grises amb Ammussium,0.15,14042
+218,1811M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,6425498
+219,1811M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,378505
+220,1811M2,Juràssic Inferior,Dolomies massives i bretxes,0,509996
+221,1811M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,4673
+222,1811M2,Miocè mitjà (Serravalià),Llims i margues grises,0,2487
+223,1811M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.3,51
+224,1811M2,Oligocè,"Conglomerats, calcàries i argiles",0,26596
+225,1811M2,Pliocè superior,Calcarenites biclàstiques groguenques,0.15,5550846
+226,1811M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.25,10416827
+227,1811M2,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.3,77723271
+228,1811M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,816017
+229,1811M3,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.18,87036012
+230,1811M3,Juràssic Inferior,Dolomies massives i bretxes,0.22,1784685
+231,1811M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,62372
+232,1811M3,Oligocè,"Conglomerats, calcàries i argiles",0.3,1236929
+233,1811M3,Pliocè superior,Calcarenites biclàstiques groguenques,0,6270
+234,1811M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.3,1896748
+235,1811M3,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.05,4885798
+236,1811M4,Juràssic Inferior,Dolomies massives i bretxes,0.15,712997
+237,1811M4,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,145536
+238,1811M4,Juràssic mitjà-superior - Cretaci,Margues i margocalcàries,0.1,2948183
+239,1811M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,27319
+240,1811M4,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.3,5277979
+241,1811M5,Juràssic Inferior,Dolomies massives i bretxes,0,322187
+242,1811M5,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,71315
+243,1811M5,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,2515030
+244,1811M5,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.3,4843615
+245,1811M5,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,84522
+246,1811M5,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0.15,1122120
+247,1811M5,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,169563
+248,1812M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,2916411
+249,1812M1,Juràssic Inferior,Dolomies massives i bretxes,0,1950495
+250,1812M1,Juràssic mitjà,Margocalcàries,0.15,343710
+251,1812M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,198668
+252,1812M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.05,7085274
+253,1812M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.2,16428268
+254,1812M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,475877
+255,1812M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,102930
+256,1812M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,1382458
+257,1812M1,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.15,917799
+258,1812M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.05,2628012
+259,1812M2,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.1,3550468
+260,1812M2,Juràssic Inferior,Dolomies massives i bretxes,0,7158919
+261,1812M2,Juràssic mitjà,Margocalcàries,0.15,13961
+262,1812M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,3850
+263,1812M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,3262
+264,1812M2,Oligocè,"Conglomerats, calcàries i argiles",0,7162395
+265,1812M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.25,24392312
+266,1812M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,6236174
+267,1812M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,4962005
+268,1812M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,29579
+269,1812M2,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.15,22360
+270,1812M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.22,3135625
+271,1812M3,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,19916
+272,1812M3,Juràssic Inferior,Dolomies massives i bretxes,0.3,706285
+273,1812M3,Juràssic mitjà,Margocalcàries,0,2388453
+274,1812M3,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,781437
+275,1812M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.05,15843788
+276,1812M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,23924393
+277,1812M3,Oligocè,"Conglomerats, calcàries i argiles",0.15,307754
+278,1812M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,1333210
+279,1813M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,1597740
+280,1813M1,Juràssic Inferior,Dolomies massives i bretxes,0.15,3850866
+281,1813M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.1,1368979
+282,1813M1,Oligocè,"Conglomerats, calcàries i argiles",0,260516
+283,1813M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,2898254
+284,1813M1,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.35,8923632
+285,1813M2,Juràssic Inferior,Dolomies massives i bretxes,0,7308244
+286,1813M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.1,3943807
+287,1813M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,7908659
+288,1813M2,Oligocè,"Conglomerats, calcàries i argiles",0.3,23105680
+289,1813M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,93288
+290,1813M2,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0.22,746202
+291,1814M1,Miocè mitjà (Serravalià),Llims i margues grises,0.05,12207
+292,1814M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0,3687804
+293,1814M1,Oligocè,"Conglomerats, calcàries i argiles",0.18,52578180
+294,1814M1,Pliocè superior,Calcarenites biclàstiques groguenques,0.15,43784170
+295,1814M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.18,21783592
+296,1814M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.22,30692
+297,1814M2,Pliocè superior,Calcarenites biclàstiques groguenques,0.15,66271084
+298,1814M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.3,2274369
+299,1814M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0,629118
+300,1814M3,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,60754814
+301,1814M3,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.22,10770411
+302,1814M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.3,33187129
+303,1814M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,49971
+304,1814M3,Oligocè,"Conglomerats, calcàries i argiles",0,378814
+305,1814M3,Pliocè inferior,Margues grises amb Ammussium,0.05,15144
+306,1814M3,Pliocè superior,Calcarenites biclàstiques groguenques,0,10844
+307,1814M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,2069
+308,1814M4,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.2,2180801
+309,1814M4,Juràssic Inferior,Dolomies massives i bretxes,0,525033
+310,1814M4,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.15,583656
+311,1814M4,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.1,23207
+312,1814M4,Miocè mitjà (Serravalià),Llims i margues grises,0,86414
+313,1814M4,Oligocè,"Conglomerats, calcàries i argiles",0.3,160126
+314,1814M4,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,53037756
+315,1814M4,Pliocè superior,Calcarenites biclàstiques groguenques,0,1111540
+316,1814M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,6027693
+317,1814M4,Triàsic (Retià),"Dolomies taulejades, margues i carnioles",0,3201707
+318,1815M1,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,17178875
+319,1815M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.15,1089729
+320,1815M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,4507829
+321,1815M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,1496534
+322,1815M1,Oligocè,"Conglomerats, calcàries i argiles",0,6410685
+323,1815M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,8680682
+324,1815M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,8996683
+325,1815M1,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.22,2284600
+326,1815M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,3178196
+327,1815M2,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,13495033
+328,1815M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.05,4443
+329,1815M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,1788698
+330,1815M2,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0,5304842
+331,1815M2,Miocè mitjà (Serravalià),Llims i margues grises,0,16879798
+332,1815M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,6068639
+333,1815M2,Oligocè,"Conglomerats, calcàries i argiles",0,27790363
+334,1815M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,4597022
+335,1815M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.22,198980
+336,1815M2,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.2,3773537
+337,1815M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,1359206
+338,1815M3,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,5656564
+339,1815M3,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.05,19245168
+340,1815M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,2092574
+341,1815M3,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0,373522
+342,1815M3,Miocè mitjà (Serravalià),Llims i margues grises,0,1029242
+343,1815M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,2884335
+344,1815M3,Oligocè,"Conglomerats, calcàries i argiles",0,5563105
+345,1815M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,1955288
+346,1815M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.22,2666881
+347,1815M3,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.2,3059695
+348,1815M4,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,3454273
+349,1815M4,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,1778458
+350,1815M4,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.05,12909056
+351,1815M4,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,1905227
+352,1815M4,Miocè mitjà (Serravalià),Llims i margues grises,0,28960541
+353,1815M4,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.18,21446605
+354,1815M4,Oligocè,"Conglomerats, calcàries i argiles",0,19991589
+355,1815M4,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,110647
+356,1815M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.3,4008138
+357,1815M4,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.01,60327032
+358,1816M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.05,6435990
+359,1816M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,1670116
+360,1816M1,Miocè mitjà (Serravalià),Llims i margues grises,0,3132225
+361,1816M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,6032900
+362,1816M1,Oligocè,"Conglomerats, calcàries i argiles",0,2730107
+363,1816M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.2,17824996
+364,1816M1,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,17725
+365,1816M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.18,41395595
+366,1816M2,Miocè mitjà (Serravalià),Llims i margues grises,0,3069827
+367,1816M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0,1705305
+368,1816M2,Pliocè superior,Calcarenites biclàstiques groguenques,0.15,52174496
+369,1816M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.18,35462476
+370,1817M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.27,27022395
+371,1817M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,1173059
+372,1817M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,13659590
+373,1817M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,7764493
+374,1817M1,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.15,9654412
+375,1817M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0,124856
+376,1817M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.25,406697
+377,1817M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.35,8453397
+378,1817M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0,8230981
+379,1817M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,4679158
+380,1817M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,2206175
+381,1817M2,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.3,1635604
+382,1817M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.3,1283988
+383,1817M3,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.15,3960449
+384,1817M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,15919483
+385,1817M3,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0.15,4612583
+386,1817M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0,33247584
+387,1817M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,2637667
+388,1817M3,Pliocè superior,Calcarenites biclàstiques groguenques,0,20506413
+389,1817M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.3,1287977
+390,1817M3,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.2,279686
+391,1817M4,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,17338545
+392,1817M4,Eoceno (Priaboniense),Margues a la base i calcàries a sostre,0,12839164
+393,1817M4,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,2910012
+394,1817M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,1346780
+395,1817M4,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,10120923
+396,1817M4,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.15,4745577
+397,1817M5,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,19189347
+398,1817M5,Eoceno (Priaboniense),Margues a la base i calcàries a sostre,0.05,1413509
+399,1817M5,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,6985539
+400,1817M5,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,4611917
+401,1817M5,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,3963562
+402,1817M6,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,21092956
+403,1817M6,Eoceno (Priaboniense),Margues a la base i calcàries a sostre,0,8635581
+404,1817M6,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,7359
+405,1817M6,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,115063
+406,1817M6,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,13405706
+407,1817M6,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.15,733
+408,1818M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.3,1538130
+409,1818M1,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,7223
+410,1818M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.2,1736127
+411,1818M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,229988
+412,1818M1,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0.15,8107988
+413,1818M1,Miocè mitjà (Serravalià),Llims i margues grises,0.02,30153205
+414,1818M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0,13922
+415,1818M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.02,1039587
+416,1818M1,Pliocè superior,Calcarenites biclàstiques groguenques,0.02,2951008
+417,1818M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.3,1155629
+418,1818M1,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.2,8825621
+419,1818M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.2,5746854
+420,1818M2,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,254337
+421,1818M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.3,1445471
+422,1818M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.2,4980292
+423,1818M2,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0.02,3349776
+424,1818M2,Miocè mitjà (Serravalià),Llims i margues grises,0.2,352269
+425,1818M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,99974
+426,1818M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,8186414
+427,1818M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.02,11813090
+428,1818M2,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0.02,1919636
+429,1818M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,11659032
+430,1818M3,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,6734583
+431,1818M3,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.15,955965
+432,1818M3,Miocè mitjà (Serravalià),Llims i margues grises,0,881010
+433,1818M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,2286
+434,1818M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,299971
+435,1818M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.22,2694165
+436,1818M3,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,8883589
+437,1818M4,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.02,867786
+438,1818M4,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.16,19413737
+439,1818M4,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.06,12969015
+440,1818M4,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0.2,16920
+441,1818M4,Miocè mitjà (Serravalià),Llims i margues grises,0.05,6896513
+442,1818M4,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.35,716601
+443,1818M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,4581
+444,1818M5,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.12,8021565
+445,1818M5,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.22,2065
+446,1818M5,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,1410
+447,1818M5,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0,1120738
+448,1818M5,Miocè mitjà (Serravalià),Llims i margues grises,0.2,427884
+449,1818M5,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,733414
+450,1818M5,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,206412
+451,1818M5,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,3414384
+452,1818M5,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,8005427
+453,1819M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,2129535
+454,1819M1,Eoceno (Priaboniense),Margues a la base i calcàries a sostre,0,198564
+455,1819M1,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.15,5076971
+456,1819M1,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.22,15333107
+457,1819M1,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.14,38648872
+458,1819M1,Miocè mitjà (Langhiense),Calcarenites bioclàstiques,0,9911113
+459,1819M1,Miocè mitjà (Serravalià),Llims i margues grises,0,5697252
+460,1819M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,1679580
+461,1819M1,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.05,3335631
+462,1819M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.15,3328915
+463,1819M1,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,13983586
+464,1819M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,968518
+465,1819M2,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,4154632
+466,1819M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.3,2140439
+467,1819M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.2,6942726
+468,1819M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,671648
+469,1819M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,2065853
+470,1819M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0,871920
+471,1819M2,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,7090689
+472,1820M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.3,49038463
+473,1820M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.35,40569006
+474,1820M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0,13241
+475,1820M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0,40178
+476,1820M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.28,48624413
+477,1821M1,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0.1,71399664
+478,1821M1,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.15,32722
+479,1821M1,Oligocè,"Conglomerats, calcàries i argiles",0.2,223732695
+480,1821M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.05,7089
+481,1821M2,Juràssic mitjà-superior (Dogger-Malm),Margues amb intercalacions de calcàries detrítiques i oolítiques,0.15,3231
+482,1821M2,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,101
+483,1821M2,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.1,91394172
+484,1821M2,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0,911
+485,1821M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.2,162001985
+486,1821M2,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,22400
+487,1821M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.15,364
+488,1821M3,Eocè (Bartonià),"Calcàries bioclàstiques, margues i calcàries",0,23655
+489,1821M3,Miocè inferior (Burdigalià),"Margues, gresos i conglomerats",0.15,313815
+490,1821M3,Miocè superior (Tortonià-Messinià),"Calcàries oolítiques, estromatolítiques i arrecifals, i calcarenites",0.1,5444675
+491,1821M3,Oligocè - Miocè inferior,Conglomerats i bretxes amb matriu carbonatada,0.15,10860
+492,1821M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa",0.18,55935573
+493,1821M3,Triàsic superior - Juràssic inferior,Dolomies triturades amb calcàries a sostre,0,241244
+1,2001M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,4301263
+2,2001M1,Cretaci mitjà,Dolomies,0.15,497091
+3,2001M1,Cretaci mitjà,Margues i margocalcàries,0.1,1922424
+4,2001M1,Juràssic inferior,Dolomies massives i bretxes,0.2,11151055
+5,2001M1,Juràssic superior,Margues,0,6802711
+6,2001M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,1122100
+7,2001M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,7605435
+8,2001M1,Miocè superior (Tortonià),Calcàries arrecifals i calcarenites,0.3,816274
+9,2001M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,10232213
+10,2001M1,Quaternari,Argiles de descalcificació (karst),0,404449
+11,2001M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,345662
+12,2001M1,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,837
+13,2001M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,3014491
+14,2001M2,Cretaci mitjà,Margues i margocalcàries,0.1,3399180
+15,2001M2,Cretaci mitjà,Dolomies,0.15,7566234
+16,2001M2,Juràssic inferior,Dolomies massives i bretxes,0.2,1606201
+17,2001M2,Juràssic superior,Margues,0,3013924
+18,2001M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,5075204
+19,2001M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,4646362
+20,2001M2,Miocè mitjà (Serravalià),Llims i margues grises,0,70693
+21,2001M2,Miocè superior (Tortonià),Calcàries arrecifals i calcarenites,0.05,20301
+22,2001M2,Quaternari,Argiles de descalcificació (karst),0,2044502
+23,2001M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,7462758
+24,2001M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,1191731
+25,2002M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,4811747
+26,2002M1,Cretaci mitjà,Dolomies,0.15,1337033
+27,2002M1,Cretaci mitjà,Margues i margocalcàries,0.1,309138
+28,2002M1,Juràssic inferior,Dolomies massives i bretxes,0.2,5402071
+29,2002M1,Juràssic superior,Margues,0,7034144
+30,2002M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,1951348
+31,2002M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,3116409
+32,2002M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,9318570
+33,2002M1,Quaternari,Argiles de descalcificació (karst),0,1367903
+34,2002M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,387034
+35,2002M1,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,2023443
+36,2002M2,Juràssic inferior,Dolomies massives i bretxes,0.2,4758
+37,2002M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,83
+38,2002M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,62176
+39,2002M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,15083401
+40,2002M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,265320
+41,2002M3,Cretaci mitjà,Margues i margocalcàries,0.1,1131939
+42,2002M3,Cretaci mitjà,Dolomies,0.15,128702
+43,2002M3,Cretaci superior,Calcàries amb globotruncanes,0.15,56234
+44,2002M3,Juràssic inferior,Dolomies massives i bretxes,0.2,196539
+45,2002M3,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,10398860
+46,2002M3,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,3761156
+47,2002M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,27553513
+48,2002M3,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,139123
+49,2002M3,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,470107
+50,2003M1,Cretaci mitjà,Margues i margocalcàries,0.1,1607402
+51,2003M1,Juràssic inferior,Dolomies massives i bretxes,0.2,1926791
+52,2003M1,Juràssic superior,Margues,0,4745655
+53,2003M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,52652
+54,2003M1,Miocè mitjà (Serravalià),Llims i margues grises,0,423608
+55,2003M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.15,9239294
+56,2003M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,123261
+57,2003M1,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,58225
+58,2003M2,Cretaci mitjà,Margues i margocalcàries,0.1,2042148
+59,2003M2,Juràssic inferior,Dolomies massives i bretxes,0.25,2982880
+60,2003M2,Juràssic superior,Margues,0,5113218
+61,2003M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,247754
+62,2003M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.18,4940276
+63,2003M2,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,119826
+64,2003M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,2890
+65,2003M3,Cretaci mitjà,Margues i margocalcàries,0.1,2168227
+66,2003M3,Juràssic inferior,Dolomies massives i bretxes,0.2,416269
+67,2003M3,Juràssic superior,Margues,0,287391
+68,2003M3,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,2882558
+69,2003M3,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,18928443
+70,2003M3,Miocè mitjà (Serravalià),Llims i margues grises,0,2298096
+71,2003M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.15,33393168
+72,2003M3,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,178445
+73,2003M3,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,1394822
+74,2003M4,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,1136569
+75,2003M4,Juràssic inferior,Dolomies massives i bretxes,0.15,7310909
+76,2003M4,Juràssic superior,Margues,0,5434564
+77,2003M4,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,2029979
+78,2003M4,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,453063
+79,2003M4,Miocè mitjà (Serravalià),Llims i margues grises,0,374605
+80,2003M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,21122157
+81,2003M4,Quaternari,Argiles de descalcificació (karst),0,98273
+82,2003M4,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,2141887
+83,2003M4,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,629439
+84,2004M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,2320
+85,2004M1,Cretaci mitjà,Margues i margocalcàries,0.1,4709436
+86,2004M1,Juràssic inferior,Dolomies massives i bretxes,0.2,2365402
+87,2004M1,Juràssic superior,Margues,0,7326755
+88,2004M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,3465
+89,2004M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,69190
+90,2004M1,Miocè mitjà (Serravalià),Llims i margues grises,0,251172
+91,2004M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,6167582
+92,2004M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,90330
+93,2004M1,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,108354
+94,2004M2,Cretaci mitjà,Margues i margocalcàries,0.1,262993
+95,2004M2,Juràssic inferior,Dolomies massives i bretxes,0.2,8547793
+96,2004M2,Juràssic superior,Margues,0,366533
+97,2004M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,115310
+98,2004M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,813294
+99,2004M2,Miocè mitjà (Serravalià),Llims i margues grises,0,2447634
+100,2004M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,24911886
+101,2004M2,Quaternari,Argiles de descalcificació (karst),0,137989
+102,2004M2,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,1023282
+103,2005M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,1923695
+104,2005M1,Cretaci mitjà,Margues i margocalcàries,0.1,1898893
+105,2005M1,Cretaci mitjà,Dolomies,0.15,5991076
+106,2005M1,Cretaci superior,Calcàries amb globotruncanes,0.15,58849
+107,2005M1,Juràssic inferior,Dolomies massives i bretxes,0.2,520563
+108,2005M1,Juràssic superior,Margues,0,195328
+109,2005M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,4116971
+110,2005M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,2591203
+111,2005M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,23872060
+112,2005M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,263799
+113,2005M1,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,471540
+114,2005M2,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.05,1258877
+115,2005M2,Cretaci mitjà,Margues i margocalcàries,0.05,4708866
+116,2005M2,Cretaci superior,Calcàries amb globotruncanes,0.1,5221192
+117,2005M2,Juràssic inferior,Dolomies massives i bretxes,0.2,117519
+118,2005M2,Juràssic superior,Margues,0,2089586
+119,2005M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,484032
+120,2005M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,733895
+121,2005M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,7788458
+122,2005M2,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,137481
+123,2005M2,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,3907
+124,2006M1,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,34354
+125,2006M1,Cretaci mitjà,Margues i margocalcàries,0.1,6603
+126,2006M1,Juràssic inferior,Dolomies massives i bretxes,0.2,285082
+127,2006M1,Juràssic superior,Margues,0,624
+128,2006M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0.05,9606027
+129,2006M1,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.1,535
+130,2006M1,Miocè mitjà (Serravalià),Llims i margues grises,0,443
+131,2006M1,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.11,11516278
+132,2006M1,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,98695
+133,2006M1,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.1,29696
+134,2006M2,Cretaci mitjà,Margues i margocalcàries,0.1,873466
+135,2006M2,Juràssic inferior,Dolomies massives i bretxes,0.2,836347
+136,2006M2,Juràssic superior,Margues,0,4806206
+137,2006M2,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,9025
+138,2006M2,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.1,38326157
+139,2006M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0.1,1156332
+140,2006M3,Cretaci mitjà,Margues i margocalcàries,0.1,5699950
+141,2006M3,Juràssic inferior,Dolomies massives i bretxes,0.25,4327790
+142,2006M3,Juràssic superior,Margues,0,15628747
+143,2006M3,Miocè inferior-mitjà (Aquitan.-Burdigal.),Calcisilites grises,0,3870255
+144,2006M3,Miocè inferior-mitjà (Aquitan.-Burdigal.),Conglomerats i gresos,0.05,1543084
+145,2006M3,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.15,25977126
+146,2006M3,Triàsic (Keuper),"Argiles, evaporites, margues, carnioles i roques bàsiques",0,67221
+147,2006M3,Triàsic mitjà - superior (Muschelkalk),Calcàries micrítiques i dolomies laminades.,0.15,2152489
+148,2101M4,Miocè superior,Conglomerats i llims rojos amb graves,0.05,3321848
+149,2101M4,Miocè superior (Tortonià),Calcàries arrecifals i calcarenites,0.2,34230511
+150,2101M4,Quaternari,Argiles de descalcificació (karst),0,3553809
+151,2101M4,Quaternari,"Llims, argiles i graves. Eolianites a la costa.",0.12,39274703
+1,1901M1,Carbonífer,Turbidites mixtes siliciclàstiques i carbonatades,0,16101
+2,1901M1,Miocè superior (Tortonià-Messinià),Calcarenites i calcisilites amb còdols.,0.25,116121888
+3,1901M1,Quaternari,"Llims, argiles i graves",0.15,851849
+4,1901M1,Triàsic inferior-mitjà (Buntsandstein),Gresos i lutites vermelles,0,21960
+5,1901M2,Carbonífer,Turbidites mixtes siliciclàstiques i carbonatades,0,313
+6,1901M2,Devonià,Gresos i pissarres,0,14
+7,1901M2,Miocè superior (Tortonià-Messinià),Calcarenites i calcisilites amb còdols.,0.23,98568495
+8,1901M2,Quaternari,"Llims, argiles i graves",0.15,4222319
+9,1901M2,Triàsic inferior-mitjà (Buntsandstein),Gresos i lutites vermelles,0,237938
+10,1901M3,Carbonífer,Turbidites mixtes siliciclàstiques i carbonatades,0,20181
+11,1901M3,Juràssic inferior,Dolomies i calcàries,0.18,16398968
+12,1901M3,Miocè inferior-mitjà (Aquitanià-Burdigalià),Conglomerats i gresos,0.05,365407
+13,1901M3,Miocè superior (Tortonià-Messinià),Calcarenites i calcisilites amb còdols.,0.25,142213646
+14,1901M3,Quaternari,"Llims, argiles i graves",0.15,4755548
+15,1901M3,Triàsic (Keuper),Margues i evaporites,0,345343
+16,1901M3,Triàsic inferior-mitjà (Buntsandstein),Gresos i lutites vermelles,0,198080
+17,1901M3,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.08,947171
+18,1902M2,Juràssic inferior,Dolomies i calcàries,0.15,29190008
+19,1902M2,Miocè superior (Tortonià-Messinià),Calcarenites i calcisilites amb còdols.,0.2,3471670
+20,1902M2,Quaternari,"Llims, argiles i graves",0.15,357872
+21,1902M2,Triàsic (Keuper),Margues i evaporites,0,4057267
+22,1902M2,Triàsic inferior-mitjà (Buntsandstein),Gresos i lutites vermelles,0,524051
+23,1902M2,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.08,2458518
+24,1902M3,Devonià,Gresos i pissarres,0,10634
+25,1902M3,Juràssic inferior,Dolomies i calcàries,0.15,15886390
+26,1902M3,Quaternari,"Llims, argiles i graves",0.15,818644
+27,1902M3,Triàsic (Keuper),Margues i evaporites,0,3346156
+28,1902M3,Triàsic inferior-mitjà (Buntsandstein),Gresos i lutites vermelles,0,3299836
+29,1902M3,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.08,6232815
+30,1903M3,Carbonífer,Turbidites mixtes siliciclàstiques i carbonatades,0,44142405
+31,1903M3,Cretaci inferior-mitjà,Margues pelàgiques blanques i calcàries,0,1224017
+32,1903M3,Devonià,Gresos i pissarres,0,394389
+33,1903M3,Juràssic inferior,Dolomies i calcàries,0.18,12012458
+34,1903M3,Juràssic mitjà,Margocalcàries,0,1698020
+35,1903M3,Juràssic superior,Margues,0,1100135
+36,1903M3,Miocè inferior-mitjà (Aquitanià-Burdigalià),Conglomerats i gresos,0.05,312881
+37,1903M3,Miocè superior (Tortonià-Messinià),Calcarenites i calcisilites amb còdols.,0.25,255190
+38,1903M3,Quaternari,"Llims, argiles i graves",0.18,5435546
+39,1903M3,Triàsic (Keuper),Margues i evaporites,0,514354
+40,1903M3,Triàsic inferior-mitjà (Buntsandstein),Gresos i lutites vermelles,0,19675623
+41,1903M3,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.08,820561
+42,1903M4,Carbonífer,Turbidites mixtes siliciclàstiques i carbonatades,0,51726867
+43,1903M4,Devonià,Gresos i pissarres,0,16099862
+44,1903M4,Juràssic inferior,Dolomies i calcàries,0.15,2378467
+45,1903M4,Miocè superior (Tortonià-Messinià),Calcarenites i calcisilites amb còdols.,0.2,1119956
+46,1903M4,Quarsqueratofir,Quarsqueratofir,0,229315
+47,1903M4,Quaternari,"Llims, argiles i graves",0.15,18403018
+48,1903M4,Triàsic (Keuper),Margues i evaporites,0,206
+49,1903M4,Triàsic inferior-mitjà (Buntsandstein),Gresos i lutites vermelles,0,58651454
+50,1903M4,Triàsic mitjà-superior (Muschelkalk),Calcàries micrítiques i dolomies laminades,0.08,421065
