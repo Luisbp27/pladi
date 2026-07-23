@@ -1,12 +1,12 @@
 memoria.md
 
-ingestas:
+ingestas con polars y delta lake:
 - dgrh: abastecimiento urbano
 - aemet: lluvia acumulada
 - ibestat: censo
 - ideib: municipios, pozos, masas
 
-visualizaciones:
+visualizaciones/frontales:
 - mapa
 - dashboards
 - simulacion
