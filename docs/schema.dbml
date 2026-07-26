@@ -1,54 +1,51 @@
 // ============================================================
 // pladi — Modelo de datos normalizado (PostGIS, SRID 4326)
 // Renderizar en: https://dbdiagram.io
-// Generado: 2026-07-20
 // ============================================================
 
 Table provincia {
-  cod_provincia_ine text [pk, note: "Código INE de provincia"]
+  cod_provincia text [pk]
   nombre_provincia text
-  cod_zona_geografica text [note: "Código IBESTAT para cruce con datos turísticos"]
+  cod_zona_geografica text
 }
 
 Table municipio {
-  cod_municipio_ine text [pk, note: "5 dígitos: 2 provincia + 3 municipio"]
-  cod_provincia_ine text [not null, ref: > provincia.cod_provincia_ine, note: "FK a provincia"]
-  cod_municipio char(3) [note: "3 dígitos municipio sin provincia"]
+  cod_municipio text [pk]
+  cod_provincia text [not null, ref: > provincia.cod_provincia]
   nombre_municipio varchar(255)
-  poblacion_ine_2025 bigint
-  superficie_km2 double
-  geometry GEOMETRY(POLYGON, 4326)
-  created_at timestamptz [default: `now()`, note: "ETL"]
-  updated_at timestamptz [default: `now()`, note: "ETL"]
+  area_km2 double
+  geometry GEOMETRY(MULTIPOLYGON, 4326)
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
 
   indexes {
     geometry [type: GIST, name: "idx_municipio_geom"]
-    cod_provincia_ine [name: "idx_municipio_provincia"]
+    cod_provincia [name: "idx_municipio_provincia"]
   }
 }
 
 Table unidad_demanda {
   id_unidad_demanda bigint [pk]
   nombre text
-  cod_provincia_ine text [ref: > provincia.cod_provincia_ine]
-  superficie_km2 double
+  cod_provincia text [ref: > provincia.cod_provincia]
+  area_km2 double
   geometry GEOMETRY(MULTIPOLYGON, 4326)
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
 
   indexes {
     geometry [type: GIST, name: "idx_ud_geom"]
-    cod_provincia_ine [name: "idx_ud_provincia"]
+    cod_provincia [name: "idx_ud_provincia"]
   }
 }
 
 Table masa_subterranea {
-  cod_masa text [pk, note: "Código oficial DGRH del acuífero"]
+  cod_masa text [pk]
   id_unidad_demanda bigint [not null, ref: > unidad_demanda.id_unidad_demanda]
   nombre_masa text
-  area_m2 integer [note: "Superficie del acuífero"]
-  geometry GEOMETRY(MULTIPOLYGON, 4326) [note: "Perímetro del acuífero"]
-  proporcion_area_masa_ud double [note: "[0,1] Proporción sobre su unidad de demanda"]
+  area_km2 double
+  geometry GEOMETRY(MULTIPOLYGON, 4326)
+  proporcion_area_masa_ud double
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
 
@@ -59,74 +56,71 @@ Table masa_subterranea {
 }
 Table pozos {
   cod_pozo text [pk]
-  cod_pozo_antiguo text [note: "Código anterior para datos históricos"]
+  cod_pozo_antiguo text
   nombre text
-  cod_masa text [ref: > masa_subterranea.cod_masa, note: "Acuífero al que pertenece"]
-  cod_municipio_ine text [ref: > municipio.cod_municipio_ine, note: "Municipio donde se ubica"]
-  tipo text [note: "Sondeo, pozo excavado, galería…"]
-  uso_principal text [note: "Abastecimiento, riego, control…"]
-  cota_terreno_m double [note: "Metros sobre nivel del mar"]
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  cod_municipio text [ref: > municipio.cod_municipio]
+  tipo text
+  uso_principal text
+  cota_terreno_m double
   geometry GEOMETRY(POINT, 4326)
-  red_cualitativa integer [note: "0/1 = pertenece a red de calidad"]
-  frecuencia_muestreo_cualitativa_iso8601 text [note: "P6M = cada 6 meses, P1Y = anual"]
-  red_piezometrica integer [note: "0/1 = pertenece a red piezométrica"]
-  frecuencia_medicion_piezometrica_iso8601 text [note: "P1M = mensual"]
+  red_cualitativa boolean
+  frecuencia_muestreo_cualitativa_iso8601 text
+  red_piezometrica boolean
+  frecuencia_medicion_piezometrica_iso8601 text
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
 
   indexes {
     geometry [type: GIST, name: "idx_pozos_geom"]
     cod_masa [name: "idx_pozos_masa"]
-    cod_municipio_ine [name: "idx_pozos_municipio"]
+    cod_municipio [name: "idx_pozos_municipio"]
   }
 }
 
 Table balance_masas_subterraneas_porcentajes {
-  cod_masa text [pk, ref: > masa_subterranea.cod_masa, note: "Formato ANCHO intencionado: una columna por componente del balance"]
-  infiltracion_lluvia double [note: "Principal entrada. Valores típicos: 30-70%"]
+  cod_masa text [pk, ref: > masa_subterranea.cod_masa]
+  infiltracion_lluvia double
   transferencia_entre_masas double
   infiltracion_torrentes double
   retorno_riegos double
   perdida_redes_abastecimiento double
   perdida_redes_alcantarillado double
-  intrusion_salina double [note: "Alto = masa sobreexplotada o costera"]
-  abastecimiento_red double [note: "Principal demanda humana"]
+  intrusion_salina double
+  abastecimiento_red double
   agrojardineria double
   industria double
   regadio double
   ganaderia double
-  torrentes double [note: "Descarga natural hacia torrentes"]
+  torrentes double
   manantiales double
   humedales double
   transferencia_a_masas double
-  salida_mar double [note: "Si baja mucho = riesgo de intrusión salina"]
+  salida_mar double
   salida_zzhh double
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
 }
 
 Table infiltracion_epoca_material {
-  id_infiltracion_epoca_material bigint [pk, note: "Surrogate key"]
+  id_infiltracion_epoca_material bigint [pk]
   cod_masa text [ref: > masa_subterranea.cod_masa]
-  epoca text [note: "Húmeda / seca"]
-  material text [note: "Tipo de suelo/roca"]
-  infiltracion_lluvia_porcentaje double [note: "% de lluvia que se infiltra. Depende de (cod_masa, material, epoca)"]
-  area_m2 integer
+  epoca text
+  material text
+  infiltracion_lluvia_porcentaje double
+  area_km2 double
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
 
   indexes {
     cod_masa [name: "idx_infiltracion_masa"]
+    (cod_masa, epoca, material) [unique, name: "uq_infiltracion_masa_epoca_material"]
   }
 }
 
-// ============================================================
-// Tablas de relación N:M
-// ============================================================
-
 Table masa_subterranea_estacion_aemet {
   cod_masa text [ref: > masa_subterranea.cod_masa]
-  cod_estacion text [note: "Código estación AEMET"]
+  cod_estacion text
 
   indexes {
     (cod_masa, cod_estacion) [pk, name: "pk_masa_estacion"]
@@ -135,13 +129,13 @@ Table masa_subterranea_estacion_aemet {
 }
 
 Table municipio_masa_subterranea {
-  cod_municipio_ine text [ref: > municipio.cod_municipio_ine]
+  cod_municipio text [ref: > municipio.cod_municipio]
   cod_masa text [ref: > masa_subterranea.cod_masa]
   abastecimiento_agua_media_ponderada_anual_hm3 double
 
   indexes {
-    (cod_municipio_ine, cod_masa) [pk, name: "pk_municipio_masa"]
-    cod_municipio_ine [name: "idx_mun_masa_mun"]
+    (cod_municipio, cod_masa) [pk, name: "pk_municipio_masa"]
+    cod_municipio [name: "idx_mun_masa_mun"]
     cod_masa [name: "idx_mun_masa_masa"]
   }
 }

@@ -1,0 +1,5 @@
+polars>=1.0
+deltalake>=0.18
+boto3
+minio
+psycopg2-binary

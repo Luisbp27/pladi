@@ -1,0 +1,16 @@
+services:
+  postgis:
+    image: postgis/postgis:17-3.5
+    container_name: pladi-postgis
+    env_file: ../.env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ../../sql/dgrh_bbdd_postgis.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

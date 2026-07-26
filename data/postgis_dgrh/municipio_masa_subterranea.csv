@@ -1,4 +1,4 @@
-cod_municipio_ine,cod_masa,abastecimiento_agua_media_ponderada_anual_hm3
+cod_municipio,cod_masa,abastecimiento_agua_media_ponderada_anual_hm3
 07001,1809M2,0.334
 07002,1901M1,0.317
 07002,1901M2,1.051
@@ -31,7 +31,6 @@ cod_municipio_ine,cod_masa,abastecimiento_agua_media_ponderada_anual_hm3
 07016,1809M2,0.441
 07017,1814M1,0.062
 07018,1802M3,0.101
-07019,1803M1,0.026
 07019,1806M2,0.005
 07020,1802M2,0.184
 07020,1807M1,0.102
@@ -41,7 +40,6 @@ cod_municipio_ine,cod_masa,abastecimiento_agua_media_ponderada_anual_hm3
 07022,1819M2,0.075
 07022,1820M2,0.326
 07023,1901M2,0.394
-07024,2101M1,0.091
 07025,1806M1,0.023
 07025,1806M2,0.017
 07026,2002M3,0.04
@@ -58,7 +56,6 @@ cod_municipio_ine,cod_masa,abastecimiento_agua_media_ponderada_anual_hm3
 07031,1814M1,3.055
 07031,1821M1,0.947
 07032,1901M1,2.161
-07032,1903SM,0.136
 07033,1817M3,0.069
 07033,1818M1,2.009
 07033,1818M2,1.306
