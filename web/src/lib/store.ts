@@ -2,8 +2,8 @@ import { atom, map } from 'nanostores';
 import { fetchLayer, CAPA_INFO_MAP } from './api';
 
 export const activeLayers = map<Record<string, boolean>>({
-  masas: true,
-  pozos: true,
+  masas: false,
+  pozos: false,
   municipios: false,
   unidades_demanda: false,
 });
@@ -22,6 +22,8 @@ export const geojsonData = map<Record<string, GeoJSON.FeatureCollection | null>>
   unidades_demanda: null,
 });
 
+export const theme = atom<'dark' | 'light'>('light');
+
 export const panelCollapsed = atom<boolean>(false);
 
 export const drawerOpen = atom<boolean>(false);
@@ -33,10 +35,12 @@ export async function loadLayer(layerId: string): Promise<void> {
   layerLoading.setKey(layerId, true);
   try {
     const info = CAPA_INFO_MAP[layerId];
+    console.log(`[pladi] loadLayer: fetching ${layerId} → ${info?.endpoint || 'NOT FOUND'}`);
     const data = await fetchLayer(info.endpoint);
+    console.log(`[pladi] loadLayer: ${layerId} OK — ${data.features?.length || 0} features`);
     geojsonData.setKey(layerId, data);
   } catch (err) {
-    console.error(`pladi: error loading layer ${layerId}`, err);
+    console.error(`[pladi] loadLayer ERROR ${layerId}:`, err);
     geojsonData.setKey(layerId, null);
   } finally {
     layerLoading.setKey(layerId, false);

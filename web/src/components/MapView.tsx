@@ -5,6 +5,7 @@ import {
   featureProperties,
   selectedLayerLabel,
   geojsonData,
+  theme,
 } from '../lib/store';
 import { LAYER_OPTIONS } from '../lib/api';
 
@@ -30,6 +31,8 @@ export default function MapView() {
   const prevGeo = useRef<Record<string, boolean>>({});
 
   const $geojsonData = useStore(geojsonData);
+  const $theme = useStore(theme);
+  const tileRef = useRef<{ dark: any; light: any }>({ dark: null, light: null });
 
   const buildPopup = useCallback((props: Record<string, unknown>, layerId: string): string => {
     const label = LAYER_LABELS[layerId] || layerId;
@@ -40,22 +43,25 @@ export default function MapView() {
       if (k.startsWith('created') || k.startsWith('updated')) continue;
       if (k === 'nombre' || k === 'nombre_masa' || k === 'nombre_municipio') continue;
       let v = props[k];
-      if (v === null || v === undefined) v = '<span class="text-zinc-500">—</span>';
+      if (v === null || v === undefined) v = '<span class="text-zinc-400 dark:text-zinc-500">—</span>';
       else if (typeof v === 'number') v = v.toLocaleString('es-ES', { maximumFractionDigits: 2 });
       else if (typeof v === 'boolean') v = v ? 'Sí' : 'No';
-      rows += `<div class="flex justify-between gap-3 py-1 border-b border-zinc-800/50"><span class="text-[11px] text-zinc-500 whitespace-nowrap">${k.replace(/_/g, ' ')}</span><span class="text-[12px] text-zinc-200 text-right font-medium">${v}</span></div>`;
+      rows += `<div class="flex justify-between gap-3 py-1 border-b border-zinc-200/50 dark:border-zinc-800/50"><span class="text-[11px] text-zinc-400 dark:text-zinc-500 whitespace-nowrap">${k.replace(/_/g, ' ')}</span><span class="text-[12px] text-zinc-800 dark:text-zinc-200 text-right font-medium">${v}</span></div>`;
     }
     return `<div class="min-w-[240px] max-w-[340px] font-sans">`
-      + `<div class="text-[13px] font-semibold text-blue-400 mb-2 pb-1.5 border-b border-blue-800/50">${name || label}</div>`
-      + `<div class="text-[10px] text-zinc-500 mb-2">${label}</div>`
+      + `<div class="text-[13px] font-semibold text-blue-600 dark:text-blue-400 mb-2 pb-1.5 border-b border-blue-200 dark:border-blue-800/50">${name || label}</div>`
+      + `<div class="text-[10px] text-zinc-400 dark:text-zinc-500 mb-2">${label}</div>`
       + `<div class="max-h-[300px] overflow-y-auto mb-2">${rows}</div>`
-      + `<button onclick="window.__pladiFeatureDetail('${layerId}', '${btoa(unescape(encodeURIComponent(JSON.stringify(props))))}')" class="w-full py-1.5 px-3 text-[11px] font-medium text-blue-400 bg-blue-950/40 hover:bg-blue-900/40 border border-blue-800/40 rounded-md transition-colors cursor-pointer">Ver detalle →</button>`
+      + `<button onclick="window.__pladiFeatureDetail('${layerId}', '${btoa(unescape(encodeURIComponent(JSON.stringify(props))))}')" class="w-full py-1.5 px-3 text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/40 hover:bg-blue-200/60 dark:hover:bg-blue-900/40 border border-blue-300/40 dark:border-blue-800/40 rounded-md transition-colors cursor-pointer">Ver detalle →</button>`
       + '</div>';
   }, []);
 
   const addLayer = useCallback((id: string, data: GeoJSON.FeatureCollection, options: Record<string, unknown>) => {
     const L = (window as any).L;
-    if (!mapRef.current || !L) return;
+    if (!mapRef.current || !L) {
+      console.warn(`[pladi] addLayer ${id}: map or L not ready (map=${!!mapRef.current}, L=${!!L})`);
+      return;
+    }
     try {
       if (layersRef.current[id]) mapRef.current.removeLayer(layersRef.current[id]);
 
@@ -120,28 +126,35 @@ export default function MapView() {
       jsLoaded.current = true;
       const L = (window as any).L;
 
-      const darkTile = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | &copy; <a href="https://carto.com/">CARTO</a>' }
-      );
-
       const lightTile = L.tileLayer(
         'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
         { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | &copy; <a href="https://carto.com/">CARTO</a>' }
       );
 
+      const darkTile = L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | &copy; <a href="https://carto.com/">CARTO</a>' }
+      );
+
+      tileRef.current = { dark: darkTile, light: lightTile };
+
+      const initialTheme = (() => {
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem('pladi-theme') || 'light';
+        }
+        return 'light';
+      })();
+
+      if (initialTheme !== theme.get()) {
+        theme.set(initialTheme as 'dark' | 'light');
+      }
+
       mapRef.current = L.map('pladi-map', {
         center: [39.6, 3.0],
         zoom: 8,
-        zoomControl: true,
-        layers: [darkTile],
+        zoomControl: false,
+        layers: [initialTheme === 'dark' ? darkTile : lightTile],
       });
-
-      L.control.layers(
-        { Oscuro: darkTile, Claro: lightTile },
-        undefined,
-        { position: 'bottomright' }
-      ).addTo(mapRef.current);
 
       // FeatureDetail bridge for popup buttons → React state
       (window as any).__pladiFeatureDetail = (layerId: string, propsB64: string) => {
@@ -160,9 +173,11 @@ export default function MapView() {
 
   // Sync geojsonData changes → map layers
   useEffect(() => {
+    console.log('[pladi] sync useEffect triggered, geojsonData:', JSON.stringify(Object.keys($geojsonData).reduce((acc, k) => ({ ...acc, [k]: $geojsonData[k] ? 'GeoJSON' : null }), {})));
     for (const [id, data] of Object.entries($geojsonData)) {
       if (data) {
         const options = { ...LAYER_OPTIONS[id] };
+        console.log(`[pladi] sync: adding layer ${id} (options: ${JSON.stringify(options)})`);
         addLayer(id, data, options);
         prevGeo.current[id] = true;
       } else if (prevGeo.current[id]) {
@@ -171,6 +186,21 @@ export default function MapView() {
       }
     }
   }, [$geojsonData, addLayer, removeLayer]);
+
+  // Switch map tiles when theme changes
+  useEffect(() => {
+    if (!mapRef.current || !tileRef.current.dark || !tileRef.current.light) return;
+    const { dark, light } = tileRef.current;
+    if ($theme === 'dark' && mapRef.current.hasLayer(light)) {
+      mapRef.current.removeLayer(light);
+      dark.addTo(mapRef.current);
+      dark.bringToBack();
+    } else if ($theme === 'light' && mapRef.current.hasLayer(dark)) {
+      mapRef.current.removeLayer(dark);
+      light.addTo(mapRef.current);
+      light.bringToBack();
+    }
+  }, [$theme]);
 
   // Listen for map popup feature-detail events
   useEffect(() => {

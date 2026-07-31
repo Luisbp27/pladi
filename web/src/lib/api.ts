@@ -12,13 +12,13 @@ export interface CapaInfo {
 
 export const CAPAS: CapaInfo[] = [
   {
-    id: 'masas',
-    label: 'Masas subterráneas',
-    endpoint: 'masas',
-    color: '#3b82f6',
-    icon: 'layers',
-    count: 87,
-    description: 'Acuíferos y masas de agua subterránea',
+    id: 'municipios',
+    label: 'Municipios',
+    endpoint: 'municipios',
+    color: '#a855f7',
+    icon: 'map-pin',
+    count: 67,
+    description: 'Límites municipales de las Illes Balears',
   },
   {
     id: 'pozos',
@@ -30,13 +30,13 @@ export const CAPAS: CapaInfo[] = [
     description: 'Red de control de calidad y piezometría',
   },
   {
-    id: 'municipios',
-    label: 'Municipios',
-    endpoint: 'municipios',
-    color: '#a855f7',
-    icon: 'map-pin',
-    count: 67,
-    description: 'Límites municipales de las Illes Balears',
+    id: 'masas',
+    label: 'Masas subterráneas',
+    endpoint: 'masas',
+    color: '#3b82f6',
+    icon: 'layers',
+    count: 87,
+    description: 'Acuíferos y masas de agua subterránea',
   },
   {
     id: 'unidades_demanda',
