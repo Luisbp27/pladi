@@ -55,11 +55,10 @@
       "skillPath": "doc/skills/postgis/SKILL.md",
       "computedHash": "9773e1eb4583859feab7c37e1bb3bcaf87f3f2b55729660d298b5f208f2afc47"
     },
-    "reflex-docs": {
-      "source": "reflex-dev/agent-skills",
-      "sourceType": "github",
-      "skillPath": "skills/reflex-docs/SKILL.md",
-      "computedHash": "8a1802f2214e97e56d0548c660c7774b4ff9470b9e07ba3750b4918c864c0432"
+    "astro": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/astro/SKILL.md"
     }
   }
 }

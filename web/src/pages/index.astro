@@ -1,0 +1,24 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import MapView from '../components/MapView';
+import LayerPanel from '../components/LayerPanel';
+import Drawer from '../components/Drawer';
+---
+
+<MainLayout title="pladi · Inicio">
+  <Navbar />
+
+  <div class="h-screen w-screen relative overflow-hidden bg-[#09090b] pt-11 pb-9">
+    <MapView client:load />
+
+    <div class="absolute top-14 left-3 z-10">
+      <LayerPanel client:load />
+    </div>
+
+    <Drawer client:load />
+  </div>
+
+  <Footer />
+</MainLayout>
