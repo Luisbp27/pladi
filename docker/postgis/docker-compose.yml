@@ -4,7 +4,7 @@ services:
     container_name: pladi-postgis
     env_file: ../.env
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     volumes:
       - postgis_data:/var/lib/postgresql/data
       - ../../sql:/docker-entrypoint-initdb.d

@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.PUBLIC_PLADI_API_URL || 'http://localhost:8000/api/v1/mapa';
+const API_BASE = import.meta.env.PUBLIC_PLADI_API_URL || '/api/v1/mapa';
 
 export interface CapaInfo {
   id: string;

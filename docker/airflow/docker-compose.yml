@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:-airflow}
       POSTGRES_DB: airflow
     ports:
-      - "${AIRFLOW_DB_PORT:-5433}:5432"
+      - "127.0.0.1:${AIRFLOW_DB_PORT:-5433}:5432"
     volumes:
       - airflow_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -28,12 +28,19 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-admin}
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pladi}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pladi2024}
+      POSTGRES_USER: ${POSTGRES_USER:-pladi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pladi}
+      POSTGRES_DB: ${POSTGRES_DB:-pladi}
     command: |
       bash -c "
       airflow db migrate
-      echo '{\"admin\": \"admin\"}' > /opt/airflow/simple_auth_manager_passwords.json.generated
-      airflow connections add minio_default --conn-type aws --conn-login pladi --conn-password pladi2024 --conn-extra '{\"endpoint_url\": \"http://minio:9000\"}'
-      airflow connections add postgis_pladi --conn-type postgres --conn-host postgis --conn-port 5432 --conn-schema pladi --conn-login pladi --conn-password pladi
+      echo \"{\\\"${AIRFLOW_ADMIN_USER:-admin}\\\": \\\"${AIRFLOW_ADMIN_PASSWORD:-admin}\\\"}\" > /opt/airflow/simple_auth_manager_passwords.json.generated
+      airflow connections add minio_default --conn-type aws --conn-login ${MINIO_ROOT_USER:-pladi} --conn-password ${MINIO_ROOT_PASSWORD:-pladi2024} --conn-extra \"{\\\"endpoint_url\\\": \\\"http://minio:9000\\\"}\"
+      airflow connections add postgis_pladi --conn-type postgres --conn-host postgis --conn-port 5432 --conn-schema ${POSTGRES_DB:-pladi} --conn-login ${POSTGRES_USER:-pladi} --conn-password ${POSTGRES_PASSWORD:-pladi}
       echo '=== Init complete ==='
       "
     volumes:
@@ -51,7 +58,7 @@ services:
     environment: *airflow-env
     command: api-server
     ports:
-      - "${AIRFLOW_WS_PORT:-8080}:8080"
+      - "127.0.0.1:${AIRFLOW_WS_PORT:-8080}:8080"
     volumes:
       - ./dags:/opt/airflow/dags
       - ./plugins:/opt/airflow/plugins
