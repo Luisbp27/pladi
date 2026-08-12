@@ -185,3 +185,44 @@ CREATE TABLE IF NOT EXISTS municipio_masa_subterranea (
 );
 CREATE INDEX IF NOT EXISTS idx_mun_masa_mun  ON municipio_masa_subterranea (cod_municipio);
 CREATE INDEX IF NOT EXISTS idx_mun_masa_masa ON municipio_masa_subterranea (cod_masa);
+
+
+-- ============================================================
+-- GOLD — Tablas de hechos / agregadas
+-- ============================================================
+
+CREATE SCHEMA IF NOT EXISTS gold;
+
+-- ============================================================
+-- 10. gold.abastecimiento_urbano_baleares
+-- ============================================================
+CREATE TABLE gold.abastecimiento_urbano_baleares (
+    cod_municipio          VARCHAR(5)   NOT NULL,
+    nombre_municipio       TEXT         NOT NULL,
+    cod_provincia          VARCHAR(3)   NOT NULL,
+    nombre_provincia       TEXT         NOT NULL,
+    anio                   INTEGER      NOT NULL,
+
+    subterranea_hm3        DOUBLE PRECISION,
+    desalinizada_hm3       DOUBLE PRECISION,
+    indiferenciada_hm3     DOUBLE PRECISION,
+    superficial_hm3        DOUBLE PRECISION,
+    potabilizada_hm3       DOUBLE PRECISION,
+    rechazo_hm3            DOUBLE PRECISION,
+    otros_destinos_hm3     DOUBLE PRECISION,
+    total_suministrado_hm3 DOUBLE PRECISION,
+    consumo_hm3            DOUBLE PRECISION,
+
+    created_at             TIMESTAMPTZ DEFAULT now(),
+    updated_at             TIMESTAMPTZ DEFAULT now(),
+
+    CONSTRAINT pk_abastecimiento_urbano PRIMARY KEY (cod_municipio, anio),
+    CONSTRAINT fk_abast_municipio FOREIGN KEY (cod_municipio)
+        REFERENCES public.municipio (cod_municipio) ON DELETE RESTRICT,
+    CONSTRAINT fk_abast_provincia FOREIGN KEY (cod_provincia)
+        REFERENCES public.provincia (cod_provincia) ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_abast_anio             ON gold.abastecimiento_urbano_baleares (anio);
+CREATE INDEX IF NOT EXISTS idx_abast_cod_provincia    ON gold.abastecimiento_urbano_baleares (cod_provincia);
+CREATE INDEX IF NOT EXISTS idx_abast_nombre_provincia ON gold.abastecimiento_urbano_baleares (nombre_provincia);

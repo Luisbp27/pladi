@@ -5,6 +5,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+pyvenv.cfg
 
 # === Node / Astro ===
 web/node_modules/
@@ -13,6 +14,7 @@ web/.astro/
 
 # === Docker secrets ===
 docker/.env
+docker/airflow/logs/
 
 # === IDE / OS ===
 .vscode/

@@ -82,11 +82,9 @@ pladi/
 
 | Ubicación | Formato | Uso |
 |---|---|---|
-| `{dev,pro}/bronze/` | Raw (Excel, CSV, JSON) | Datos crudos de ingestas |
-| `{dev,pro}/silver/` | Delta Lake | Datos limpios / transformados |
-| `{dev,pro}/gold/` | Delta Lake | Datos agregados para dashboards y modelo |
-
-Los entornos se separan por prefijo (no por bucket) para facilitar la limpieza de dev sin afectar producción.
+| `bronze/` | Raw (Excel, CSV, JSON) | Datos crudos de ingestas |
+| `silver/` | Delta Lake | Datos limpios / transformados |
+| `gold/` | Delta Lake | Datos agregados para dashboards y modelo |
 
 ---
 
@@ -178,80 +176,101 @@ cd web && npm run build
 ### Arquitectura de datos
 
 Las ingestas siguen el patrón medallón (bronze → silver → gold) orquestadas por Airflow.
-Los entornos (dev/pro) se separan por prefijo en MinIO, no por bucket.
 
 ```
 MinIO
-├── dev/
-│   ├── bronze/    ← datos crudos (raw: Excel, CSV, JSON)
-│   ├── silver/    ← datos limpios (Delta Lake)
-│   └── gold/      ← datos agregados (Delta Lake)
-│
-└── pro/
-    ├── bronze/
-    ├── silver/
-    └── gold/
+├── bronze/    ← datos crudos (raw: Excel, CSV, JSON)
+├── silver/    ← datos limpios (Delta Lake)
+└── gold/      ← datos agregados (Delta Lake) → PostGIS gold.*
 ```
 
-### Estructura de archivos
+### Estructura de archivos (real)
 
 ```
 docker/airflow/
-├── dags/                           # DAGs = jobs de Databricks
-│   ├── 00_setup_buckets.py         # one-time: crea estructura en MinIO
-│   ├── 01_ingest_dgrh.py           # DGRH: extract (Excel/ODS) → clean (silver)
-│   ├── 01_ingest_aemet.py          # AEMET: extract (API) → clean (silver)
-│   ├── 01_ingest_ibestat.py        # IBESTAT: extract (CSV) → clean (silver)
-│   ├── 02_gold_balance.py          # gold: balance hídrico por masa
-│   └── 02_gold_consumo.py          # gold: consumo por UD (DGRH+IBESTAT)
+├── dags/                                    # 12 DAGs
+│   ├── setup_buckets.py                     # one-time: estructura de buckets MinIO
+│   ├── abastecimiento_urbano_baleares.py    # gold DGRH (4 islas → PostGIS)
+│   ├── aemet_estaciones.py                  # AEMET: estaciones
+│   ├── aemet_historico_meteo.py             # AEMET: histórico meteorológico
+│   ├── dgrh_abastecimiento_urbano_*.py      # ×4 (mallorca/menorca/ibiza/formentera)
+│   └── ibestat_*.py                         # ×4 (censo/iph/hotelera/apartamentos)
 │
-├── include/                        # módulos reutilizables (~notebooks de Databricks)
-│   ├── config.py                   # PLADI_ENV, paths MinIO, Airflow Variables
+├── include/                                 # módulos reutilizables
+│   ├── config.py                            # IBESTAT_URLS + paths MinIO + BUCKET
+│   ├── parsers/
+│   │   ├── dgrh.py                          # parser Excel/ODS por isla
+│   │   └── ibestat.py                       # lector CSV bilingüe IBESTAT
 │   ├── bronze/
-│   │   ├── dgrh.py                 # extract: leer Excel/ODS → MinIO raw
-│   │   ├── aemet.py                # extract: API AEMET → MinIO raw
-│   │   └── ibestat.py              # extract: CSV IBESTAT → MinIO raw
+│   │   ├── ibestat.py                       # core: extract() HTTP→MinIO (boto3)
+│   │   └── ibestat_*.py                     # ×4 thin wrappers por dataset
 │   ├── silver/
-│   │   ├── dgrh.py                 # clean: normalizar columnas, tipar con Polars
-│   │   ├── aemet.py                # clean: filtrar estaciones, join con masa_subterranea
-│   │   └── ibestat.py              # clean: filtrar Illes Balears, tipar
+│   │   ├── ibestat.py                       # helpers: parse_time_period, filter_municipal, enrich_geo, DELTA_STORAGE_OPTIONS
+│   │   └── ibestat_*.py                     # ×4 limpieza específica (Polars → Delta)
 │   └── gold/
-│       ├── balance.py              # aggregate: balance hídrico por masa
-│       └── consumo.py              # aggregate: consumo por UD (join DGRH+IBESTAT)
+│       ├── abastecimiento_urbano_baleares.py  # DGRH → gold.abastecimiento_urbano_baleares
+│       ├── censo_municipal.py               # → gold.censo_municipal
+│       ├── presion_humana.py                # → gold.presion_humana
+│       └── ocupacion_turistica.py           # → gold.ocupacion_turistica
 │
-├── Dockerfile                      # apache/airflow:3.3.0 + polars + deltalake + boto3
-├── requirements.txt                # polars, deltalake, boto3, minio, psycopg2-binary
-└── docker-compose.yml              # Airflow + postgres + init (conexiones MinIO/PostGIS)
+├── Dockerfile                               # apache/airflow:3.3.0 + polars + deltalake + boto3
+├── requirements.txt                         # polars, deltalake, boto3, minio, psycopg2-binary
+└── docker-compose.yml                       # Airflow + postgres + init + dag-processor
 ```
+
+### Arquitectura Airflow 3 (notas)
+
+- Airflow 3.3.0 requiere un contenedor **`airflow-dag-processor`** separado para parsear DAGs.
+- `PYTHONPATH=/opt/airflow` para que los imports de `include.*` funcionen.
+- Scheduler ejecuta con `--also-serve-api` + `AIRFLOW__CORE__INTERNAL_API_URL=http://airflow-webserver:8080` para que LocalExecutor pueda ejecutar tareas.
+- Bronze IBESTAT usa **boto3 directo** (no `S3Hook`) con timeouts `(15, 300)` + retry (los CSV de IBESTAT superan los 3 MB y requieren read-timeout amplio).
 
 ### Mapeo Databricks → Airflow
 
 | Databricks | Airflow | Explicación |
 |---|---|---|
 | Notebook | Módulo `.py` en `include/` | Código reutilizable, testable, funciones puras |
-| Job | DAG | Orquesta tareas (extract → clean → aggregate) |
+| Job | DAG | Orquesta tareas (extract → clean → load) |
 | Table update trigger | `Dataset` + `schedule=[ds]` | DAG gold se dispara cuando silver se actualiza |
-| Widgets / parámetros | Airflow Variables | `PLADI_ENV`, `AEMET_API_KEY`, etc. |
+| Widgets / parámetros | Airflow Variables | `AEMET_API_KEY`, etc. |
 
 ### Patrón de DAGs
 
-- **DAGs 01\* (ingestas)**: una tarea `extract` (bronze) + una tarea `clean` (silver). Se ejecutan con schedule.
-- **DAGs 02\* (gold)**: tareas de `aggregate` que dependen de uno o varios datasets de silver vía Airflow Datasets. Sin schedule fijo, solo se disparan por trigger.
+- **DAGs de ingesta** (dgrh/aemet/ibestat): `extract` (bronze) → `clean` (silver) → `load_gold` (PostGIS). Schedule `@daily`.
+- **DAGs gold**: cargan de silver a PostGIS `gold.*` con upsert (`ON CONFLICT ... DO UPDATE`).
 
-### Variables de Airflow
+### IBESTAT — datasets implementados
 
-| Variable | dev | pro | Uso |
+| Dataset | URL (IBESTAT API) | Granularidad | Tiempo |
 |---|---|---|---|
-| `PLADI_ENV` | `dev` | `pro` | Define el prefijo en MinIO |
-| `AEMET_API_KEY` | (key) | (key) | API key de AEMET OpenData |
+| `censo_baleares` | `.../000305A_000010/~latest.csv` | Municipal (INE) | Anual |
+| `indice_presion_humana` | `.../000011A_000002/~latest.csv` | Isla (NUTS) | Diario → agregado mensual |
+| `ocupacion_hotelera` | `.../000061A_000006/~latest.csv` | Municipal (INE) | Mensual |
+| `ocupacion_apartamentos_turisticos` | `.../000060A_000006/~latest.csv` | Municipal (INE) | Mensual |
+
+Los datasets de `ocupacion_campings` y `ocupacion_turismo_rural` fueron descartados (sin desglose municipal).
+
+Los CSVs IBESTAT contienen datos a múltiples granularidades (Baleares → isla → municipio).
+En silver se filtra a la granularidad más baja (`TERRITORIO_CODE` INE de 5 dígitos `07xxxx`),
+excepto IPH que solo existe a nivel isla (NUTS).
+
+### Tablas gold IBESTAT (DDL en `sql/gold_ibestat.sql`)
+
+| Tabla | PK | Columnas |
+|---|---|---|
+| `gold.censo_municipal` | `(cod_municipio_ine, anio)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, poblacion |
+| `gold.presion_humana` | `(nombre_isla, anio, mes)` | cod_provincia_ine, nombre_provincia, nombre_isla, anio, mes, iph |
+| `gold.ocupacion_turistica` | `(cod_municipio_ine, anio, mes, tipo_alojamiento)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, mes, tipo_alojamiento, ocupacion_plazas_pct |
+
+`ocupacion_turistica` unifica hotelera + apartamentos con columna `tipo_alojamiento` y solo la métrica `ocupacion_plazas_pct`.
 
 ### Fuentes de datos
 
 | Fuente | Dato | Formato origen | Destino |
 |---|---|---|---|
-| DGRH | Abastecimiento urbano (4 islas) | Excel/ODS | `{env}/bronze/dgrh/` → `{env}/silver/dgrh/` |
-| AEMET | Precipitación por estación | API REST | `{env}/bronze/aemet/` → `{env}/silver/aemet/` |
-| IBESTAT | Censo / padrón municipal | CSV | `{env}/bronze/ibestat/` → `{env}/silver/ibestat/` |
+| DGRH | Abastecimiento urbano (4 islas) | Excel/ODS | `bronze/dgrh/` → `silver/dgrh/` |
+| AEMET | Precipitación por estación | API REST | `bronze/aemet/` → `silver/aemet/` |
+| IBESTAT | Censo, IPH, ocupación turística | CSV (API) | `bronze/ibestat/` → `silver/ibestat/` |
 | IDEIB | Dimensiones geográficas | ya en PostGIS | — |
 
 ### Airflow connections (auto-configuradas en init)
@@ -269,10 +288,10 @@ docker/airflow/
 |---|---|
 | FASE I — Arquitectura | ✅ Completada |
 | FASE II — Diseño de frontales | ✅ Completada (Astro 5 + React islands) |
-| FASE III — Ingestas + poblar BBDD | ❌ |
+| FASE III — Ingestas + poblar BBDD | 🚧 IBESTAT implementado; DGRH/AEMET pendientes de test |
 | FASE IV — Modelos + data science | ❌ |
 | FASE V — Frontend (Astro) | ✅ (unificado con FASE II) |
-| FASE VI — Despliegue real | ❌ |
+| FASE VI — Despliegue real | 🚧 En curso (VPS Ubuntu 24.04) |
 
 ---
 
@@ -280,16 +299,18 @@ docker/airflow/
 
 ### Entornos y despliegue
 
-- **dev vs pro**: separados por prefijo en MinIO (`dev/`, `pro/`), no por buckets distintos.
-- **Dominio**: `pladi.dadesbalears.es` (configurado en dondominio, IP pública 88.23.187.133, router Movistar).
-- **Reverse proxy**: Caddy con SSL automático (Let's Encrypt), pendiente de desplegar.
+- **Dominio**: `pladi.dadesbalears.es` (registro en dondominio).
+- **Hosting**: VPS con Ubuntu 24.04 (x86_64) — Docker + Docker Compose.
+- **Reverse proxy**: Caddy con SSL automático (Let's Encrypt). Único servicio expuesto (80/443); el resto de servicios bind a `127.0.0.1`.
+- **Acceso admin** (Airflow/MinIO): vía SSH tunnel (`ssh -L 8080:localhost:8080 -L 9001:localhost:9001 user@vps`).
 
 ### Ingestas (FASE III)
 
-- Cada ingesta es un DAG que cubre bronze → silver (extract + clean).
-- Módulos de lógica pura en `docker/airflow/include/` separados por capa (bronze/, silver/, gold/).
-- DAGs gold usan Airflow **Datasets** como triggers (equivalente a "table update" en Databricks).
-- Formato: bronze = raw (archivo original), silver = Delta Lake (Polars), gold = Delta Lake (agregaciones).
+- Cada ingesta es un DAG que cubre bronze → silver → gold (extract + clean + load).
+- Módulos de lógica pura en `docker/airflow/include/` separados por capa (bronze/, silver/, gold/) + `parsers/`.
+- Formato: bronze = raw (archivo original), silver = Delta Lake (Polars), gold = PostGIS (`gold.*`).
+- Bronze IBESTAT: `boto3` directo, timeout `(15, 300)` + retry HTTP.
+- Silver comparte helpers en `include/silver/ibestat.py` (parse_time_period, filter_municipal, enrich_geo, DELTA_STORAGE_OPTIONS).
 
 ### Frontend (FASE II)
 

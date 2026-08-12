@@ -28,6 +28,8 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow
+      AIRFLOW__CORE__INTERNAL_API_URL: http://airflow-webserver:8080
       AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-admin}
       AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pladi}
@@ -45,6 +47,7 @@ services:
       "
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./include:/opt/airflow/include
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
       - airflow_home_data:/opt/airflow
@@ -61,6 +64,7 @@ services:
       - "127.0.0.1:${AIRFLOW_WS_PORT:-8080}:8080"
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./include:/opt/airflow/include
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
       - airflow_home_data:/opt/airflow
@@ -79,9 +83,26 @@ services:
       airflow-init:
         condition: service_completed_successfully
     environment: *airflow-env
-    command: scheduler
+    command: scheduler --also-serve-api
     volumes:
       - ./dags:/opt/airflow/dags
+      - ./include:/opt/airflow/include
+      - ./plugins:/opt/airflow/plugins
+      - ./logs:/opt/airflow/logs
+      - airflow_home_data:/opt/airflow
+    restart: unless-stopped
+
+  airflow-dag-processor:
+    image: pladi-airflow:latest
+    container_name: pladi-airflow-dag-processor
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    environment: *airflow-env
+    command: dag-processor
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./include:/opt/airflow/include
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
       - airflow_home_data:/opt/airflow
