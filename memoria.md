@@ -288,10 +288,10 @@ excepto IPH que solo existe a nivel isla (NUTS).
 |---|---|
 | FASE I — Arquitectura | ✅ Completada |
 | FASE II — Diseño de frontales | ✅ Completada (Astro 5 + React islands) |
-| FASE III — Ingestas + poblar BBDD | 🚧 IBESTAT implementado; DGRH/AEMET pendientes de test |
+| FASE III — Ingestas + poblar BBDD | 🚧 IBESTAT ✅ end-to-end (bronze→silver→gold); DGRH/AEMET pendientes de test |
 | FASE IV — Modelos + data science | ❌ |
 | FASE V — Frontend (Astro) | ✅ (unificado con FASE II) |
-| FASE VI — Despliegue real | 🚧 En curso (VPS Ubuntu 24.04) |
+| FASE VI — Despliegue real | ✅ Completada — VPS en producción |
 
 ---
 
@@ -299,10 +299,13 @@ excepto IPH que solo existe a nivel isla (NUTS).
 
 ### Entornos y despliegue
 
-- **Dominio**: `pladi.dadesbalears.es` (registro en dondominio).
-- **Hosting**: VPS con Ubuntu 24.04 (x86_64) — Docker + Docker Compose.
+- **Dominio**: `pladi.dadesbalears.es` (dondominio, registro A → `169.58.169.55`).
+- **Hosting**: VPS Ubuntu 24.04 (x86_64) — Docker + Docker Compose.
 - **Reverse proxy**: Caddy con SSL automático (Let's Encrypt). Único servicio expuesto (80/443); el resto de servicios bind a `127.0.0.1`.
-- **Acceso admin** (Airflow/MinIO): vía SSH tunnel (`ssh -L 8080:localhost:8080 -L 9001:localhost:9001 user@vps`).
+- **Acceso admin** (Airflow/MinIO): vía SSH tunnel (`ssh -L 8080:localhost:8080 -L 9001:localhost:9001 root@169.58.169.55`).
+- **Carga de datos PostGIS**: `postgis/docker-compose.yml` monta `data/postgis_dgrh → /tmp/pladi_data` para que `load_data.sql` cargue los CSVs automáticamente en el primer init.
+- **Credenciales**: `docker/.env` (gitignored) con contraseñas aleatorias por entorno.
+- **Frontend en producción**: build con `npm run build` → `web/dist/` servido por Caddy.
 
 ### Ingestas (FASE III)
 
