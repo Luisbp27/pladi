@@ -8,6 +8,7 @@ services:
     volumes:
       - postgis_data:/var/lib/postgresql/data
       - ../../sql:/docker-entrypoint-initdb.d
+      - ../../data/postgis_dgrh:/tmp/pladi_data:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
