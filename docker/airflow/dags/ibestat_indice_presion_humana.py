@@ -35,7 +35,9 @@ def indice_presion_humana():
     def load_gold(source_path: str | None = None) -> str:
         return gold.load()
 
-    extract() >> clean() >> load_gold()
+    extract_result = extract()
+    clean_result = clean(source_path=extract_result)
+    load_gold(source_path=clean_result)
 
 
 indice_presion_humana()

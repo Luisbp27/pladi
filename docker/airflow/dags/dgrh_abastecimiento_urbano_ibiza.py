@@ -30,7 +30,7 @@ def abastecimiento_urbano_ibiza():
     def clean(source_path: str | None = None) -> str:
         return silver.clean(source_path)
 
-    extract() >> clean()
+    clean(source_path=extract())
 
 
 abastecimiento_urbano_ibiza()

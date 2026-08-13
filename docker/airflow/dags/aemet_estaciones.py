@@ -30,7 +30,7 @@ def estaciones():
     def clean(source_path: str | None = None) -> str:
         return silver.clean(source_path)
 
-    extract() >> clean()
+    clean(source_path=extract())
 
 
 estaciones()

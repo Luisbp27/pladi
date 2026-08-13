@@ -29,7 +29,8 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres:5432/airflow
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       PYTHONPATH: /opt/airflow
-      AIRFLOW__CORE__INTERNAL_API_URL: http://airflow-webserver:8080
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
+      AIRFLOW__API__BASE_URL: http://airflow-webserver:8080
       AIRFLOW_ADMIN_USER: ${AIRFLOW_ADMIN_USER:-admin}
       AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pladi}
@@ -39,6 +40,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-pladi}
     command: |
       bash -c "
+      mkdir -p /opt/airflow/logs
+      chown -R 50000:50000 /opt/airflow/logs
       airflow db migrate
       echo \"{\\\"${AIRFLOW_ADMIN_USER:-admin}\\\": \\\"${AIRFLOW_ADMIN_PASSWORD:-admin}\\\"}\" > /opt/airflow/simple_auth_manager_passwords.json.generated
       airflow connections add minio_default --conn-type aws --conn-login ${MINIO_ROOT_USER:-pladi} --conn-password ${MINIO_ROOT_PASSWORD:-pladi2024} --conn-extra \"{\\\"endpoint_url\\\": \\\"http://minio:9000\\\"}\"
@@ -50,7 +53,9 @@ services:
       - ./include:/opt/airflow/include
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
+      - ../../data:/opt/airflow/data:ro
       - airflow_home_data:/opt/airflow
+    restart: unless-stopped
 
   airflow-webserver:
     image: pladi-airflow:latest
@@ -67,6 +72,7 @@ services:
       - ./include:/opt/airflow/include
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
+      - ../../data:/opt/airflow/data:ro
       - airflow_home_data:/opt/airflow
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:8080/api/v2/monitor/health >/dev/null || exit 1"]
@@ -83,12 +89,13 @@ services:
       airflow-init:
         condition: service_completed_successfully
     environment: *airflow-env
-    command: scheduler --also-serve-api
+    command: scheduler
     volumes:
       - ./dags:/opt/airflow/dags
       - ./include:/opt/airflow/include
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
+      - ../../data:/opt/airflow/data:ro
       - airflow_home_data:/opt/airflow
     restart: unless-stopped
 
@@ -105,6 +112,7 @@ services:
       - ./include:/opt/airflow/include
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
+      - ../../data:/opt/airflow/data:ro
       - airflow_home_data:/opt/airflow
     restart: unless-stopped
 

@@ -222,7 +222,10 @@ docker/airflow/
 
 - Airflow 3.3.0 requiere un contenedor **`airflow-dag-processor`** separado para parsear DAGs.
 - `PYTHONPATH=/opt/airflow` para que los imports de `include.*` funcionen.
-- Scheduler ejecuta con `--also-serve-api` + `AIRFLOW__CORE__INTERNAL_API_URL=http://airflow-webserver:8080` para que LocalExecutor pueda ejecutar tareas.
+- Scheduler ejecuta con `scheduler` (Airflow 3.3 no soporta `--also-serve-api`). El API server corre por separado en `airflow-webserver`.
+- `AIRFLOW__CORE__EXECUTION_API_SERVER_URL=http://airflow-webserver:8080/execution/` + `AIRFLOW__API__BASE_URL=http://airflow-webserver:8080` para que LocalExecutor pueda ejecutar tareas. La config `INTERNAL_API_URL` de Airflow 2 no existe en 3.3 y es ignorada.
+- `airflow-init` crea `/opt/airflow/logs` con ownership `50000:50000` (usuario `airflow`) para que scheduler y dag-processor puedan escribir logs.
+- Volumen `../../data:/opt/airflow/data:ro` montado en todos los servicios Airflow para que los DAGs DGRH puedan leer los Excel/ODS de abastecimiento urbano.
 - Bronze IBESTAT usa **boto3 directo** (no `S3Hook`) con timeouts `(15, 300)` + retry (los CSV de IBESTAT superan los 3 MB y requieren read-timeout amplio).
 
 ### Mapeo Databricks → Airflow
@@ -237,6 +240,7 @@ docker/airflow/
 ### Patrón de DAGs
 
 - **DAGs de ingesta** (dgrh/aemet/ibestat): `extract` (bronze) → `clean` (silver) → `load_gold` (PostGIS). Schedule `@daily`.
+  - XComs se pasan como argumento: `clean(source_path=extract())` y `load_gold(source_path=clean_result)`. El operador `>>` solo establece orden, no pasa XComs.
 - **DAGs gold**: cargan de silver a PostGIS `gold.*` con upsert (`ON CONFLICT ... DO UPDATE`).
 
 ### IBESTAT — datasets implementados
