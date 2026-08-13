@@ -55,7 +55,6 @@ services:
       - ./logs:/opt/airflow/logs
       - ../../data:/opt/airflow/data:ro
       - airflow_home_data:/opt/airflow
-    restart: unless-stopped
 
   airflow-webserver:
     image: pladi-airflow:latest
