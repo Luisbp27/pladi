@@ -15,6 +15,7 @@ LAYERS = ["bronze", "silver", "gold"]
     schedule="@once",
     start_date=datetime(2026, 1, 1),
     catchup=False,
+    max_active_runs=1,
     tags=["setup", "minio"],
     description="Crea la estructura de prefijos en MinIO (bronze/silver/gold)",
 )

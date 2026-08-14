@@ -6,6 +6,7 @@ from deltalake import write_deltalake
 
 from include.config import get_s3_client, silver_path
 from include.parsers.dgrh import normalize
+from include.silver.dgrh import enrich_geo
 
 
 def clean(source_path: str, **context) -> str:
@@ -24,6 +25,11 @@ def clean(source_path: str, **context) -> str:
 
         df = pl.read_delta(input_dir)
         df = normalize(df, "ibiza")
+
+        from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+        pg_hook = PostgresHook(postgres_conn_id="postgis_pladi")
+        df = enrich_geo(df, pg_hook)
 
         write_deltalake(output_dir, df)
 

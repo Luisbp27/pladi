@@ -94,7 +94,7 @@ def _is_continuation(text: str, prev: str = "") -> bool:
     if not prev:
         return False
     prev_ends_with_prefix = bool(re.search(
-        r"\b(DE|DES|DEL|D['\'']|DE LA|DE SA|GRAN)\s*$", prev, re.IGNORECASE,
+        r"\b(DE|DES|DEL|D['\'']|DE LA|DE SA|GRAN|SANTA)\s*$", prev, re.IGNORECASE,
     ))
     if not prev_ends_with_prefix:
         return False
@@ -150,9 +150,12 @@ def parse_raw(filepath: str, isla: str) -> pl.DataFrame:
                 # Es la segunda parte: concatenar con el nombre anterior
                 prev = resolved[-1] if resolved else raw_muni
                 full = f"{prev} {raw_muni}"
-                # Retroceder y corregir la fila anterior tambien
-                if resolved:
-                    resolved[-1] = full
+                # Retroceder y corregir TODAS las entradas consecutivas previas
+                # con el nombre base (cadenas de 3+ partes: SANTA/EULÀRIA/DES RIU)
+                k = len(resolved) - 1
+                while k >= 0 and resolved[k] == prev:
+                    resolved[k] = full
+                    k -= 1
                 resolved.append(full)
             else:
                 resolved.append(raw_muni)

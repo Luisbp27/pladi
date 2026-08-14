@@ -15,15 +15,19 @@ DELTA_STORAGE_OPTIONS = {
 }
 
 
-def parse_time_period(cod_tiempo: str) -> dict[str, int | None]:
+def parse_time_period(cod_tiempo: str | int) -> dict[str, int | None]:
+    cod_tiempo = str(cod_tiempo)
     if "-" not in cod_tiempo:
         return {"anio": int(cod_tiempo)}
-    if len(cod_tiempo) == 10 and cod_tiempo[4] == "-":
-        parts = cod_tiempo.split("-")
+    parts = cod_tiempo.split("-")
+    if len(parts) == 2:
+        anio = int(parts[0])
+        mes_part = parts[1].lstrip("M")
+        if mes_part.isdigit():
+            return {"anio": anio, "mes": int(mes_part)}
+        return {"anio": anio}
+    if len(parts) == 3:
         return {"anio": int(parts[0]), "mes": int(parts[1]), "dia": int(parts[2])}
-    if len(cod_tiempo) == 7 and cod_tiempo[4] == "-":
-        parts = cod_tiempo.split("-")
-        return {"anio": int(parts[0]), "mes": int(parts[1])}
     return {"anio": int(cod_tiempo)}
 
 
@@ -36,6 +40,7 @@ def filter_valid(df: pl.DataFrame) -> pl.DataFrame:
 def filter_municipal(df: pl.DataFrame) -> pl.DataFrame:
     if "cod_territorio" not in df.columns:
         return df
+    df = df.with_columns(pl.col("cod_territorio").cast(pl.Utf8))
     return df.filter(
         pl.col("cod_territorio").str.len_chars() == 5,
         pl.col("cod_territorio").str.starts_with("07"),

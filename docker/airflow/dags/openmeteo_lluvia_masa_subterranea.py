@@ -1,28 +1,28 @@
-"""Ingesta DGRH: Abastecimiento Urbano Formentera."""
+"""Ingesta Open-Meteo: lluvia por masa subterranea (extract -> clean)."""
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
-from include.bronze import dgrh_abastecimiento_urbano_formentera as bronze
-from include.silver import dgrh_abastecimiento_urbano_formentera as silver
+from include.bronze import openmeteo_lluvia_masa_subterranea as bronze
+from include.silver import openmeteo_lluvia_masa_subterranea as silver
 
 
 @dag(
-    dag_id="dgrh_abastecimiento_urbano_formentera",
+    dag_id="openmeteo_lluvia_masa_subterranea",
     schedule="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
-    tags=["dgrh"],
+    tags=["openmeteo"],
     default_args={
         "owner": "pladi",
         "retries": 3,
         "retry_delay": timedelta(minutes=5),
     },
-    description="Ingesta DGRH: abastecimiento urbano de Formentera (extract -> clean)",
+    description="Ingesta Open-Meteo: precipitacion diaria por masa subterranea sin estacion AEMET",
 )
-def abastecimiento_urbano_formentera():
+def openmeteo_lluvia_masa_subterranea():
     @task
     def extract() -> str:
         return bronze.extract()
@@ -34,4 +34,4 @@ def abastecimiento_urbano_formentera():
     clean(source_path=extract())
 
 
-abastecimiento_urbano_formentera()
+openmeteo_lluvia_masa_subterranea()

@@ -57,7 +57,7 @@ def clean(source_path: str, **context) -> str:
         "nombre_isla", "anio", "mes", "iph",
     ])
 
-    output_path = f"{silver_path("ibestat")}indice_presion_humana/"
+    output_path = f"s3://{BUCKET}/{silver_path("ibestat")}indice_presion_humana/"
     df.write_delta(
         output_path,
         mode="overwrite",

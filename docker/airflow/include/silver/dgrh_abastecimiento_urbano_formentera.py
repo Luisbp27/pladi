@@ -7,6 +7,7 @@ from deltalake import write_deltalake
 
 from include.config import get_s3_client, silver_path
 from include.parsers.dgrh import normalize
+from include.silver.dgrh import enrich_geo
 
 
 def clean(source_path: str, **context) -> str:
@@ -25,6 +26,11 @@ def clean(source_path: str, **context) -> str:
         df = pl.read_delta(tmpdir)
 
     normalized = normalize(df, "formentera")
+
+    from airflow.providers.postgres.hooks.postgres import PostgresHook
+
+    pg_hook = PostgresHook(postgres_conn_id="postgis_pladi")
+    normalized = enrich_geo(normalized, pg_hook)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         write_deltalake(tmpdir, normalized)

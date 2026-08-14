@@ -8,10 +8,10 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from include.config import get_s3_client, silver_path
 
 SILVER_SOURCES = [
-    "dgrh_abastecimiento_urbano_mallorca",
-    "dgrh_abastecimiento_urbano_menorca",
-    "dgrh_abastecimiento_urbano_ibiza",
-    "dgrh_abastecimiento_urbano_formentera",
+    "abastecimiento_urbano_mallorca",
+    "abastecimiento_urbano_menorca",
+    "abastecimiento_urbano_ibiza",
+    "abastecimiento_urbano_formentera",
 ]
 
 UPSERT_SQL = """
@@ -62,54 +62,6 @@ def _read_silver_sources(client):
     return pl.concat(dfs, how="diagonal_relaxed")
 
 
-def _build_municipio_mapping(cur):
-    cur.execute("SELECT cod_municipio, nombre_municipio FROM public.municipio")
-    name_to_code = {}
-    for code, name in cur.fetchall():
-        key = name.lower()
-        name_to_code[key] = code
-        if ", " in key:
-            parts = key.split(", ")
-            name_to_code[f"{parts[1]} {parts[0]}"] = code
-
-    name_to_code["ciutadella"] = name_to_code.get("ciutadella de menorca")
-    name_to_code["lloret de vista alegre"] = name_to_code.get(
-        "lloret de vistalegre"
-    )
-    name_to_code["santa maria del camí"] = name_to_code.get(
-        "santa maría del camí"
-    )
-
-    return name_to_code
-
-
-def _enrich_metadata(df, cur):
-    cur.execute(
-        """
-        SELECT m.cod_municipio, m.nombre_municipio, m.cod_provincia, p.nombre_provincia
-        FROM public.municipio m
-        JOIN public.provincia p USING (cod_provincia)
-        """
-    )
-    info = {
-        row[0]: (row[1], row[2], row[3]) for row in cur.fetchall()
-    }
-
-    df = df.with_columns([
-        pl.col("cod_municipio")
-        .replace_strict({k: v[0] for k, v in info.items()})
-        .alias("nombre_municipio"),
-        pl.col("cod_municipio")
-        .replace_strict({k: v[1] for k, v in info.items()})
-        .alias("cod_provincia"),
-        pl.col("cod_municipio")
-        .replace_strict({k: v[2] for k, v in info.items()})
-        .alias("nombre_provincia"),
-    ])
-
-    return df
-
-
 def aggregate(**context) -> str:
     client = get_s3_client()
     df = _read_silver_sources(client)
@@ -118,27 +70,7 @@ def aggregate(**context) -> str:
     conn = pg_hook.get_conn()
     cur = conn.cursor()
 
-    name_to_code = _build_municipio_mapping(cur)
-
     df = df.rename({"anyo": "anio"})
-    df = df.with_columns(
-        pl.col("municipio")
-        .str.to_lowercase()
-        .replace_strict(name_to_code, default=None)
-        .alias("cod_municipio")
-    )
-
-    unmatched = df.filter(pl.col("cod_municipio").is_null())
-    if unmatched.height > 0:
-        unmatched_names = (
-            unmatched.select("municipio").unique().to_series().to_list()
-        )
-        raise ValueError(
-            f"Municipios sin correspondencia en PostGIS: {unmatched_names}"
-        )
-
-    df = _enrich_metadata(df, cur)
-    df = df.drop("municipio")
 
     columns = [
         "cod_municipio", "nombre_municipio", "cod_provincia", "nombre_provincia", "anio",

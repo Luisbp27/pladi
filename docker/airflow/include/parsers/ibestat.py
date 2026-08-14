@@ -15,13 +15,21 @@ COLUMN_RENAME = {
     "time_period_code": "cod_tiempo",
     "sexo_code": "cod_sexo",
     "edad_code": "cod_edad",
-    "medida_code": "cod_medida",
+    "medidas_code": "cod_medida",
     "estado_observacion_code": "cod_estado_observacion",
 }
 
 
 def read_ibestat_csv(filepath: str) -> pl.DataFrame:
-    df = pl.read_csv(filepath, separator=",", ignore_errors=True)
+    df = pl.read_csv(
+        filepath,
+        separator=",",
+        ignore_errors=True,
+        schema_overrides={
+            "TERRITORIO_CODE": pl.Utf8,
+            "TIME_PERIOD_CODE": pl.Utf8,
+        },
+    )
 
     rename = {}
     for col in df.columns:

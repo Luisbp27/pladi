@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
 from include.bronze import ibestat_censo_baleares as bronze
-from include.gold import censo_municipal as gold
+from include.gold import censo_municipal_baleares as gold
 from include.silver import ibestat_censo_baleares as silver
 
 
@@ -14,6 +14,7 @@ from include.silver import ibestat_censo_baleares as silver
     schedule="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
+    max_active_runs=1,
     tags=["ibestat"],
     default_args={
         "owner": "pladi",

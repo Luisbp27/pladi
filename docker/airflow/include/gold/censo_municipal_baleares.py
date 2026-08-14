@@ -1,4 +1,4 @@
-"""Carga censo municipal desde silver IBESTAT → PostGIS gold.censo_municipal."""
+"""Carga censo municipal desde silver IBESTAT → PostGIS gold.censo_municipal_baleares."""
 from __future__ import annotations
 
 import os
@@ -10,7 +10,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 from include.config import BUCKET, get_s3_client, silver_path
 
 UPSERT_SQL = """
-    INSERT INTO gold.censo_municipal (
+    INSERT INTO gold.censo_municipal_baleares (
         cod_provincia_ine, nombre_provincia,
         cod_municipio_ine, nombre_municipio,
         anio, poblacion
@@ -62,4 +62,4 @@ def load(**context) -> str:
     cur.close()
     conn.close()
 
-    return "gold.censo_municipal"
+    return "gold.censo_municipal_baleares"

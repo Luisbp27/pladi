@@ -13,6 +13,7 @@ from include.silver import aemet_estaciones as silver
     schedule="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
+    max_active_runs=1,
     tags=["aemet"],
     default_args={
         "owner": "pladi",

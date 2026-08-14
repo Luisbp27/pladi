@@ -35,7 +35,10 @@ def clean(source_path: str, **context) -> str:
     time_map = {}
     for t in times:
         parsed = parse_time_period(t)
-        time_map[t] = (parsed["anio"], parsed["mes"])
+        if "mes" in parsed:
+            time_map[t] = (parsed["anio"], parsed["mes"])
+
+    df = df.filter(pl.col("cod_tiempo").is_in(list(time_map.keys())))
 
     df = df.with_columns([
         pl.col("cod_tiempo").replace_strict(
@@ -80,7 +83,7 @@ def clean(source_path: str, **context) -> str:
         "ocupacion_finde_pct", "ocupacion_apartamentos_finde_pct",
     ])
 
-    output_path = f"{silver_path("ibestat")}ocupacion_apartamentos_turisticos/"
+    output_path = f"s3://{BUCKET}/{silver_path("ibestat")}ocupacion_apartamentos_turisticos/"
     df.write_delta(
         output_path,
         mode="overwrite",

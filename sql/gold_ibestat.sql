@@ -4,10 +4,10 @@
 -- ============================================================
 
 -- ============================================================
--- 1. gold.censo_municipal
+-- 1. gold.censo_municipal_baleares
 -- Poblacion anual por municipio (fuente: IBESTAT censo)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS gold.censo_municipal (
+CREATE TABLE IF NOT EXISTS gold.censo_municipal_baleares (
     cod_provincia_ine    VARCHAR(3)   NOT NULL,
     nombre_provincia     TEXT         NOT NULL,
     cod_municipio_ine    VARCHAR(5)   NOT NULL,
@@ -16,15 +16,15 @@ CREATE TABLE IF NOT EXISTS gold.censo_municipal (
     poblacion            BIGINT       NOT NULL,
     created_at           TIMESTAMPTZ  DEFAULT now(),
     updated_at           TIMESTAMPTZ  DEFAULT now(),
-    CONSTRAINT pk_censo_municipal PRIMARY KEY (cod_municipio_ine, anio),
-    CONSTRAINT fk_censo_municipio FOREIGN KEY (cod_municipio_ine)
+    CONSTRAINT pk_censo_municipal_baleares PRIMARY KEY (cod_municipio_ine, anio),
+    CONSTRAINT fk_censo_baleares_municipio FOREIGN KEY (cod_municipio_ine)
         REFERENCES public.municipio (cod_municipio) ON DELETE RESTRICT,
-    CONSTRAINT fk_censo_provincia FOREIGN KEY (cod_provincia_ine)
+    CONSTRAINT fk_censo_baleares_provincia FOREIGN KEY (cod_provincia_ine)
         REFERENCES public.provincia (cod_provincia) ON DELETE RESTRICT
 );
 
-CREATE INDEX IF NOT EXISTS idx_censo_anio ON gold.censo_municipal (anio);
-CREATE INDEX IF NOT EXISTS idx_censo_provincia ON gold.censo_municipal (cod_provincia_ine);
+CREATE INDEX IF NOT EXISTS idx_censo_baleares_anio ON gold.censo_municipal_baleares (anio);
+CREATE INDEX IF NOT EXISTS idx_censo_baleares_provincia ON gold.censo_municipal_baleares (cod_provincia_ine);
 
 
 -- ============================================================

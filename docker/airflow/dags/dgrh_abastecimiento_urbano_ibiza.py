@@ -13,6 +13,7 @@ from include.silver import dgrh_abastecimiento_urbano_ibiza as silver
     schedule="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
+    max_active_runs=1,
     tags=["dgrh"],
     default_args={
         "owner": "pladi",
