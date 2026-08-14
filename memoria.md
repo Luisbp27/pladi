@@ -188,13 +188,15 @@ MinIO
 
 ```
 docker/airflow/
-├── dags/                                    # 12 DAGs
+├── dags/                                    # 15 DAGs (todos con max_active_runs=1)
 │   ├── setup_buckets.py                     # one-time: estructura de buckets MinIO
 │   ├── abastecimiento_urbano_baleares.py    # gold DGRH (4 islas → PostGIS)
-│   ├── aemet_estaciones.py                  # AEMET: estaciones
-│   ├── aemet_historico_meteo.py             # AEMET: histórico meteorológico
+│   ├── aemet_estaciones.py                  # AEMET: estaciones (44 Baleares)
+│   ├── aemet_historico_meteo.py             # AEMET: histórico diario 2015→mes cerrado
 │   ├── dgrh_abastecimiento_urbano_*.py      # ×4 (mallorca/menorca/ibiza/formentera)
-│   └── ibestat_*.py                         # ×4 (censo/iph/hotelera/apartamentos)
+│   ├── ibestat_*.py                         # ×4 (censo/iph/hotelera/apartamentos)
+│   ├── openmeteo_lluvia_masa_subterranea.py # Open-Meteo: lluvia diaria × masa sin estación
+│   └── lluvia_masa_subterranea.py           # gold: fusión AEMET+Open-Meteo mensual × masa
 │
 ├── include/                                 # módulos reutilizables
 │   ├── config.py                            # IBESTAT_URLS + paths MinIO + BUCKET
@@ -206,10 +208,12 @@ docker/airflow/
 │   │   └── ibestat_*.py                     # ×4 thin wrappers por dataset
 │   ├── silver/
 │   │   ├── ibestat.py                       # helpers: parse_time_period, filter_municipal, enrich_geo, DELTA_STORAGE_OPTIONS
-│   │   └── ibestat_*.py                     # ×4 limpieza específica (Polars → Delta)
+│   │   ├── dgrh.py                          # helpers: enrich_geo (nombre→cod_municipio + aliases)
+│   │   ├── aemet_estaciones.py              # DMS→decimal + spatial join municipio
+│   │   └── ibestat_*.py / dgrh_*.py         # limpieza específica (Polars → Delta)
 │   └── gold/
 │       ├── abastecimiento_urbano_baleares.py  # DGRH → gold.abastecimiento_urbano_baleares
-│       ├── censo_municipal.py               # → gold.censo_municipal
+│       ├── censo_municipal_baleares.py       # → gold.censo_municipal_baleares
 │       ├── presion_humana.py                # → gold.presion_humana
 │       └── ocupacion_turistica.py           # → gold.ocupacion_turistica
 │
@@ -262,9 +266,10 @@ excepto IPH que solo existe a nivel isla (NUTS).
 
 | Tabla | PK | Columnas |
 |---|---|---|
-| `gold.censo_municipal` | `(cod_municipio_ine, anio)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, poblacion |
+| `gold.censo_municipal_baleares` | `(cod_municipio_ine, anio)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, poblacion |
 | `gold.presion_humana` | `(nombre_isla, anio, mes)` | cod_provincia_ine, nombre_provincia, nombre_isla, anio, mes, iph |
 | `gold.ocupacion_turistica` | `(cod_municipio_ine, anio, mes, tipo_alojamiento)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, mes, tipo_alojamiento, ocupacion_plazas_pct |
+| `gold.lluvia_masa_subterranea` | `(cod_masa, anio, mes)` | cod_masa, anio, mes, precipitacion_mm, fuente (`aemet`/`openmeteo`) |
 
 `ocupacion_turistica` unifica hotelera + apartamentos con columna `tipo_alojamiento` y solo la métrica `ocupacion_plazas_pct`.
 
@@ -276,6 +281,30 @@ excepto IPH que solo existe a nivel isla (NUTS).
 | AEMET | Precipitación por estación | API REST | `bronze/aemet/` → `silver/aemet/` |
 | IBESTAT | Censo, IPH, ocupación turística | CSV (API) | `bronze/ibestat/` → `silver/ibestat/` |
 | IDEIB | Dimensiones geográficas | ya en PostGIS | — |
+
+### Bugs corregidos en DGRH y AEMET (2026-08-14)
+
+- **Parser DGRH nombres compuestos**: `_is_continuation` no reconocía `EULÀRIA` tras `SANTA` (Eivissa) → añadido `SANTA` al regex de prefijos. La 1ª pasada ahora propaga hacia atrás el nombre completo en cadenas de 3+ partes (`SANTA EULÀRIA DES RIU` ya no deja residuos `SANTA EULÀRIA`).
+- **`SILVER_SOURCES` del gold**: usaba prefijos `silver/dgrh/dgrh_abastecimiento_urbano_*` cuando los reales son `silver/dgrh/abastecimiento_urbano_*` (sin `dgrh_`). Era la causa del `TableNotFoundError` en el gold DGRH.
+- **odfpy**: sí estaba instalado (módulo importable `odf`, no `odfpy`). `pd.read_excel` lee los `.ods` sin problema.
+- **AEMET inventario**: endpoint correcto es `.../inventarioestaciones/todasestaciones` (no `todaslasestaciones`). Las coordenadas vienen en **DMS** (`394924N`) → parser `_dms_to_decimal` en silver.
+- **Spatial join AEMET**: `ST_Contains` contra `public.municipio` + fallback al municipio más cercano (`<->`) para estaciones en el borde (B569X Capdepera a ~30 m del límite). Se filtran solo estaciones de Baleares (26).
+
+### Convención: conformación con la dimensión en silver
+
+Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.provincia` en la capa **silver** (nunca en gold):
+- IBESTAT: por código INE (`enrich_geo` en `silver/ibestat.py`)
+- DGRH: por nombre literal + aliases (`enrich_geo` en `silver/dgrh.py`)
+- AEMET: por spatial join (`silver/aemet_estaciones.py`)
+- El gold solo concatena silvers y hace upsert a PostGIS.
+
+### Bugs corregidos en IBESTAT (2026-08-14)- **`parse_time_period`**: `cod_tiempo` puede llegar como Int64 (años puros) → `str()` defensivo. Soportados los formatos reales de IBESTAT: `2025` (anual), `2026-M06` (mensual) y `2026-05-31` (fecha completa).
+- **`write_delta` en local**: los paths `silver/...` sin esquema se escribían en disco local del scheduler. FIX: prefijo `s3://{BUCKET}/` en los 4 módulos silver IBESTAT.
+- **`read_ibestat_csv`**: `schema_overrides` fuerza `TERRITORIO_CODE` y `TIME_PERIOD_CODE` a Utf8 (los CSV traen códigos municipales con ceros a la izquierda sin comillas, p. ej. `07003`).
+- **Typo en `COLUMN_RENAME`**: `medida_code` → `medidas_code` (la columna CSV es `MEDIDAS_CODE`); sin esto `cod_medida` no existía y fallaba el pivot de ocupación.
+- **Filas anuales en ocupación**: los CSV de hotelera/apartamentos mezclan períodos anuales (`2025`) y mensuales (`2026-M06`). Silver descarta las filas sin `mes` antes del `replace_strict` (la tabla gold exige `mes` en PK).
+- **DAGs pausados**: los DAGs IBESTAT (excepto censo) estaban `paused=True` en Airflow → runs manuales se quedaban en `queued`. Requieren unpause.
+- **Tabla renombrada**: `gold.censo_municipal` → `gold.censo_municipal_baleares` (módulo `include/gold/censo_municipal_baleares.py`, DDL en `sql/gold_ibestat.sql`).
 
 ### Airflow connections (auto-configuradas en init)
 
@@ -292,10 +321,55 @@ excepto IPH que solo existe a nivel isla (NUTS).
 |---|---|
 | FASE I — Arquitectura | ✅ Completada |
 | FASE II — Diseño de frontales | ✅ Completada (Astro 5 + React islands) |
-| FASE III — Ingestas + poblar BBDD | 🚧 IBESTAT ✅ end-to-end (bronze→silver→gold); DGRH/AEMET pendientes de test |
-| FASE IV — Modelos + data science | ❌ |
+| FASE III — Ingestas + poblar BBDD | ✅ Completada (IBESTAT, DGRH, AEMET, Open-Meteo, gold lluvia — 2026-08-14) |
+| FASE IV — Dashboards + UI/UX | ✅ Completada (2026-08-15) — ver sección "Dashboards y analítica" |
 | FASE V — Frontend (Astro) | ✅ (unificado con FASE II) |
 | FASE VI — Despliegue real | ✅ Completada — VPS en producción |
+| FASE VII — Modelos + data science | ❌ Pendiente (decisión: se priorizó dashboarding antes) |
+
+---
+
+## Dashboards y analítica (FASE IV — ✅ 2026-08-15)
+
+### Backend — `api/routers/analytics.py`
+
+| Endpoint | Contenido |
+|---|---|
+| `GET /api/v1/analytics/resumen?isla=` | KPIs: lluvia AH + desviación, IPH pico, ocupación, población, consumo, masas en déficit |
+| `GET /api/v1/analytics/lluvia?isla=&masa=` | Serie mensual + media de referencia (2015-25) |
+| `GET /api/v1/analytics/lluvia/ranking?isla=` | Desviación % por masa (AH) |
+| `GET /api/v1/analytics/abastecimiento?isla=` | Anual por origen + top municipios |
+| `GET /api/v1/analytics/presion?isla=` | IPH mensual + media |
+| `GET /api/v1/analytics/ocupacion?isla=&tipo=` | Ocupación mensual por tipo |
+| `GET /api/v1/analytics/entidad/{tipo}/{cod}` | KPIs + sparkline para drawer (masa/municipio/pozo/ud) |
+
+- **Año hidrológico** (sep-ago) como estándar para agregaciones de lluvia: `ah = anio + (mes >= 9 ? 1 : 0)`.
+- Isla de una masa: vía `masa_subterranea.id_unidad_demanda → unidad_demanda.cod_provincia → provincia.nombre_provincia`.
+- Cruces UD↔municipio: `ST_Intersects` (geometrías indexadas con GIST).
+
+### Frontend — página `/dashboards`
+
+- **Shell estilo datoasturias**: sidebar izquierdo fijo con 5 secciones (Visión general, Lluvia, Abastecimiento, Presión humana, Ocupación turística) + selector global de isla (Baleares + 4) en cabecera. Simulación queda como pestaña propia del navbar.
+- **Charts**: Recharts 3 (`recharts@^3.10` en package.json) — React 19, theming dark/light vía nanostores.
+- **Contexto desde el mapa**: `/dashboards?tipo=masa&cod=X&nombre=Y` (masa → vista Lluvia prefijada; breadcrumb con ✕ para quitar filtro).
+- Componentes: `web/src/components/dashboards/` (DashboardsShell, DashboardGeneral, DashboardLluvia, DashboardAbastecimiento, DashboardPresion, DashboardOcupacion, ui.tsx).
+
+### Mapa — drawer con KPIs (clic → sidebar, sin popup)
+
+- **Popup eliminado por completo** — clic en feature abre directamente el Drawer derecho con KPIs de la entidad (`/analytics/entidad/{tipo}/{cod}`):
+  - Masa: lluvia AH vs media (+% desviación), último mes vs media, fuente del dato, estaciones, municipios abastecidos y demanda; sparkline lluvia 24 meses (⚠️ balance hídrico descartado de momento)
+  - Municipio: población + variación, consumo 2024, ocupación del mes, lluvia AH de sus masas, pozos; sparkline ocupación 12 meses
+  - Pozo: ficha técnica + botón "Ver masa"
+  - U.D.: isla, área, municipios, población, consumo, masas y lluvia AH media
+- CTA **"Más detalle"** → `/dashboards?tipo=...&cod=...` (deep link con contexto).
+- Hover sobre features: resalte de estilo (sin tooltip).
+- `PUBLIC_PLADI_API_URL=/api/v1` en `web/.env.production` (Caddy proxys `/api/*` → FastAPI; en dev se usa `http://localhost:8000/api/v1`).
+
+### Notas técnicas
+
+- `web/src/lib/api.ts` — cliente analítico (`fetchResumen`, `fetchLluvia`, `fetchLluviaRanking`, `fetchAbastecimiento`, `fetchPresion`, `fetchOcupacion`, `fetchEntidad`).
+- `web/src/lib/store.ts` — atoms `dashIsla`, `dashVista`, `dashEntidad` (contexto) y `entidad*` (drawer).
+- Errores comunes SQL con asyncpg: `round(double, int)` no existe → usar `::numeric`; ids enteros (`id_unidad_demanda`) deben pasarse como int.
 
 ---
 
@@ -314,10 +388,16 @@ excepto IPH que solo existe a nivel isla (NUTS).
 ### Ingestas (FASE III)
 
 - Cada ingesta es un DAG que cubre bronze → silver → gold (extract + clean + load).
+- **Decisión (2026-08)**: las masas de agua SUPERFICIAL DGRH (río/costa/transición/lago, CSVs con geometría EWKB en `data/postgis_dgrh/`) se descartan temporalmente por decisión de proyecto — no se cargan en PostGIS. Los CSVs se conservan por si se retoman.
+- **Todos los DAGs llevan `max_active_runs=1`** — prohibida la ejecución concurrente de un mismo DAG (los triggers extra quedan en cola). Es convención obligatoria del proyecto.
 - Módulos de lógica pura en `docker/airflow/include/` separados por capa (bronze/, silver/, gold/) + `parsers/`.
 - Formato: bronze = raw (archivo original), silver = Delta Lake (Polars), gold = PostGIS (`gold.*`).
 - Bronze IBESTAT: `boto3` directo, timeout `(15, 300)` + retry HTTP.
 - Silver comparte helpers en `include/silver/ibestat.py` (parse_time_period, filter_municipal, enrich_geo, DELTA_STORAGE_OPTIONS).
+- **Llamadas AEMET**: helper `include/bronze/aemet.py` → `aemet_request()` con espera fija ~61s en 429 (cruza la ventana de rate limit por minuto) + backoff corto en 5xx. El rate limit de AEMET también llega como `estado: 429` en body con HTTP 200.
+- **Ingestas históricas** (AEMET histórico, Open-Meteo): patrón incremental obligatorio — bronze comprueba la última fecha en silver y solo pide lo que falta (con solape de 1 mes o 30 días); silver se reescribe completo con dedupe keep-last `(clave, fecha)`. El histórico vive en silver; bronze solo acumula ventanas nuevas.
+- AEMET diarios: ventanas máx. 6 meses por estación; mensuales 36 meses; todasestaciones 15 días. Coordenadas en DMS (`394924N`). Precipitación `Ip` → 0.0 mm.
+- Open-Meteo archive (`daily=precipitation_sum`): gratuito sin key; 429 horario posible en IPs de datacenter → backoff con espera de 60s.
 
 ### Frontend (FASE II)
 
