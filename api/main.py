@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import close_pool
+from routers.analytics import router as analytics_router
 from routers.mapa import router as mapa_router
 
 
@@ -23,6 +24,7 @@ app.add_middleware(
 )
 
 app.include_router(mapa_router)
+app.include_router(analytics_router)
 
 
 @app.get("/api/v1/health")

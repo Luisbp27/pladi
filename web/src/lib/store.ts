@@ -27,9 +27,18 @@ export const theme = atom<'dark' | 'light'>('light');
 export const panelCollapsed = atom<boolean>(false);
 
 export const drawerOpen = atom<boolean>(false);
-export const selectedLayerLabel = atom<string>('');
-export const selectedFeature = atom<Record<string, unknown>>({});
-export const featureProperties = atom<Array<{ key: string; value: string }>>([]);
+
+// ── Dashboards ──────────────────────────────────────────────────────────────
+export const dashIsla = atom<string>('Baleares');
+export const dashVista = atom<string>('general');
+export const dashEntidad = atom<{ tipo: string; cod: string; nombre: string } | null>(null);
+
+// ── Drawer analitico (clic en mapa) ─────────────────────────────────────────
+export const entidadTipo = atom<string>('');
+export const entidadCod = atom<string>('');
+export const entidadNombre = atom<string>('');
+export const entidadKpis = atom<Record<string, unknown> | null>(null);
+export const entidadLoading = atom<boolean>(false);
 
 export async function loadLayer(layerId: string): Promise<void> {
   layerLoading.setKey(layerId, true);

@@ -2,25 +2,20 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useStore } from '@nanostores/react';
 import {
   drawerOpen,
-  featureProperties,
-  selectedLayerLabel,
+  entidadTipo,
+  entidadCod,
+  entidadNombre,
   geojsonData,
   theme,
 } from '../lib/store';
 import { LAYER_OPTIONS } from '../lib/api';
 
-const LAYER_LABELS: Record<string, string> = {
-  masas: 'Masa subterránea',
-  pozos: 'Pozo',
-  municipios: 'Municipio',
-  unidades_demanda: 'Unidad de demanda',
-};
-
-const CAPA_INFO: Record<string, { label: string }> = {
-  masas: { label: 'Masas subterráneas' },
-  pozos: { label: 'Pozos' },
-  municipios: { label: 'Municipios' },
-  unidades_demanda: { label: 'Unidades de demanda' },
+// Capa de mapa → entidad analítica (tipo, campo codigo, campo nombre)
+const ENTIDAD_POR_CAPA: Record<string, [string, string, string]> = {
+  masas: ['masa', 'cod_masa', 'nombre_masa'],
+  municipios: ['municipio', 'cod_municipio', 'nombre_municipio'],
+  pozos: ['pozo', 'cod_pozo', 'nombre'],
+  unidades_demanda: ['ud', 'id_unidad_demanda', 'nombre'],
 };
 
 export default function MapView() {
@@ -34,26 +29,16 @@ export default function MapView() {
   const $theme = useStore(theme);
   const tileRef = useRef<{ dark: any; light: any }>({ dark: null, light: null });
 
-  const buildPopup = useCallback((props: Record<string, unknown>, layerId: string): string => {
-    const label = LAYER_LABELS[layerId] || layerId;
-    const name = (props.nombre || props.nombre_masa || props.nombre_municipio || '') as string;
-    let rows = '';
-    for (const k in props) {
-      if (!Object.prototype.hasOwnProperty.call(props, k)) continue;
-      if (k.startsWith('created') || k.startsWith('updated')) continue;
-      if (k === 'nombre' || k === 'nombre_masa' || k === 'nombre_municipio') continue;
-      let v = props[k];
-      if (v === null || v === undefined) v = '<span class="text-zinc-400 dark:text-zinc-500">—</span>';
-      else if (typeof v === 'number') v = v.toLocaleString('es-ES', { maximumFractionDigits: 2 });
-      else if (typeof v === 'boolean') v = v ? 'Sí' : 'No';
-      rows += `<div class="flex justify-between gap-3 py-1 border-b border-zinc-200/50 dark:border-zinc-800/50"><span class="text-[11px] text-zinc-400 dark:text-zinc-500 whitespace-nowrap">${k.replace(/_/g, ' ')}</span><span class="text-[12px] text-zinc-800 dark:text-zinc-200 text-right font-medium">${v}</span></div>`;
-    }
-    return `<div class="min-w-[240px] max-w-[340px] font-sans">`
-      + `<div class="text-[13px] font-semibold text-blue-600 dark:text-blue-400 mb-2 pb-1.5 border-b border-blue-200 dark:border-blue-800/50">${name || label}</div>`
-      + `<div class="text-[10px] text-zinc-400 dark:text-zinc-500 mb-2">${label}</div>`
-      + `<div class="max-h-[300px] overflow-y-auto mb-2">${rows}</div>`
-      + `<button onclick="window.__pladiFeatureDetail('${layerId}', '${btoa(unescape(encodeURIComponent(JSON.stringify(props))))}')" class="w-full py-1.5 px-3 text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/40 hover:bg-blue-200/60 dark:hover:bg-blue-900/40 border border-blue-300/40 dark:border-blue-800/40 rounded-md transition-colors cursor-pointer">Ver detalle →</button>`
-      + '</div>';
+  const onFeatureClick = useCallback((layerId: string, props: Record<string, unknown>) => {
+    const mapping = ENTIDAD_POR_CAPA[layerId];
+    if (!mapping) return;
+    const [tipo, campoCod, campoNombre] = mapping;
+    const cod = props[campoCod];
+    if (cod === null || cod === undefined || cod === '') return;
+    entidadTipo.set(tipo);
+    entidadCod.set(String(cod));
+    entidadNombre.set(String(props[campoNombre] ?? cod));
+    drawerOpen.set(true);
   }, []);
 
   const addLayer = useCallback((id: string, data: GeoJSON.FeatureCollection, options: Record<string, unknown>) => {
@@ -70,10 +55,11 @@ export default function MapView() {
           ...options,
           onEachFeature: (feature: any, layer: any) => {
             if (feature.properties) {
-              layer.bindPopup(buildPopup(feature.properties, id), {
-                maxWidth: 380,
-                className: 'pladi-popup',
-              });
+              layer.on('click', () => onFeatureClick(id, feature.properties));
+              layer.on('mouseover', () => layer.setStyle && layer.setStyle({ weight: 3, fillOpacity: 0.55 }));
+              layer.on('mouseout', () =>
+                layer.setStyle && layer.setStyle({ weight: (options.weight as number) || 1, fillOpacity: (options.fillOpacity as number) || 0.3 })
+              );
             }
           },
         };
@@ -95,7 +81,7 @@ export default function MapView() {
     } catch (e) {
       console.error('pladi layer error:', e);
     }
-  }, [buildPopup]);
+  }, [onFeatureClick]);
 
   const removeLayer = useCallback((id: string) => {
     if (layersRef.current[id] && mapRef.current) {
@@ -156,13 +142,6 @@ export default function MapView() {
         layers: [initialTheme === 'dark' ? darkTile : lightTile],
       });
 
-      // FeatureDetail bridge for popup buttons → React state
-      (window as any).__pladiFeatureDetail = (layerId: string, propsB64: string) => {
-        window.dispatchEvent(new CustomEvent('pladi:feature-detail', {
-          detail: { layerId, propsB64 },
-        }));
-      };
-
       // Load default active layers
       import('../lib/store').then(({ loadDefaultLayers }) => {
         loadDefaultLayers();
@@ -173,11 +152,9 @@ export default function MapView() {
 
   // Sync geojsonData changes → map layers
   useEffect(() => {
-    console.log('[pladi] sync useEffect triggered, geojsonData:', JSON.stringify(Object.keys($geojsonData).reduce((acc, k) => ({ ...acc, [k]: $geojsonData[k] ? 'GeoJSON' : null }), {})));
     for (const [id, data] of Object.entries($geojsonData)) {
       if (data) {
         const options = { ...LAYER_OPTIONS[id] };
-        console.log(`[pladi] sync: adding layer ${id} (options: ${JSON.stringify(options)})`);
         addLayer(id, data, options);
         prevGeo.current[id] = true;
       } else if (prevGeo.current[id]) {
@@ -201,37 +178,6 @@ export default function MapView() {
       light.bringToBack();
     }
   }, [$theme]);
-
-  // Listen for map popup feature-detail events
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { layerId: string; propsB64: string };
-      const info = CAPA_INFO[detail.layerId] || { label: detail.layerId };
-
-      try {
-        const decoded = JSON.parse(decodeURIComponent(escape(atob(detail.propsB64))));
-        selectedLayerLabel.set(info.label);
-
-        const props: Array<{ key: string; value: string }> = [];
-        for (const [k, v] of Object.entries(decoded as Record<string, unknown>)) {
-          if (k.startsWith('created') || k.startsWith('updated')) continue;
-          let val = v;
-          if (v === null) val = '—';
-          else if (typeof v === 'number') val = v.toLocaleString('es-ES', { maximumFractionDigits: 2 });
-          else if (typeof v === 'boolean') val = v ? 'Sí' : 'No';
-          else val = String(v);
-          props.push({ key: k.replace(/_/g, ' '), value: val as string });
-        }
-        featureProperties.set(props);
-        drawerOpen.set(true);
-      } catch (err) {
-        console.error('pladi: error decoding feature detail', err);
-      }
-    };
-
-    window.addEventListener('pladi:feature-detail', handler);
-    return () => window.removeEventListener('pladi:feature-detail', handler);
-  }, []);
 
   return <div id="pladi-map" className="absolute inset-0 z-0" />;
 }
