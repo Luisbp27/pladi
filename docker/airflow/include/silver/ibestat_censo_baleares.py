@@ -18,6 +18,9 @@ def clean(source_path: str, **context) -> str:
         df = read_ibestat_csv(tmp.name)
 
     df = df.filter(pl.col("cod_sexo") == "_T")
+    # Solo la fila total de edad (_T): el CSV trae edades individuales (Y0..Y_GE100)
+    # que sumadas a la fila total duplicarian la poblacion
+    df = df.filter(pl.col("cod_edad") == "_T")
     df = filter_valid(df)
     df = filter_municipal(df)
 

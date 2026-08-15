@@ -305,6 +305,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 - **Filas anuales en ocupación**: los CSV de hotelera/apartamentos mezclan períodos anuales (`2025`) y mensuales (`2026-M06`). Silver descarta las filas sin `mes` antes del `replace_strict` (la tabla gold exige `mes` en PK).
 - **DAGs pausados**: los DAGs IBESTAT (excepto censo) estaban `paused=True` en Airflow → runs manuales se quedaban en `queued`. Requieren unpause.
 - **Tabla renombrada**: `gold.censo_municipal` → `gold.censo_municipal_baleares` (módulo `include/gold/censo_municipal_baleares.py`, DDL en `sql/gold_ibestat.sql`).
+- **Población duplicada (2026-08-15)**: el CSV del censo trae la dimensión `EDAD_CODE` con edades individuales (`Y0`…`Y_GE100`) **más una fila total `_T`**. El silver sumaba todas → población ×2 (Baleares 2,5M en vez de 1,25M). FIX: filtrar `cod_edad == "_T"` en el silver del censo (la fila total cuadra con la suma de edades individuales).
 
 ### Airflow connections (auto-configuradas en init)
 
