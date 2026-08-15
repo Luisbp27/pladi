@@ -11,7 +11,7 @@ from include.silver import ibestat_indice_presion_humana as silver
 
 @dag(
     dag_id="ibestat_indice_presion_humana",
-    schedule="@daily",
+    schedule="@monthly",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

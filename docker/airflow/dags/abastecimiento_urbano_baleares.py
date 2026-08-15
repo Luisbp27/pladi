@@ -4,12 +4,16 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
+from airflow.sdk.definitions.asset import Asset
+
 from include.gold import abastecimiento_urbano_baleares as gold
+
+DGRH_ASSET = Asset("pladi://silver/dgrh/abastecimiento_urbano")
 
 
 @dag(
     dag_id="abastecimiento_urbano_baleares",
-    schedule="@daily",
+    schedule=[DGRH_ASSET],
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

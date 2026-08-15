@@ -243,9 +243,27 @@ docker/airflow/
 
 ### Patrón de DAGs
 
-- **DAGs de ingesta** (dgrh/aemet/ibestat): `extract` (bronze) → `clean` (silver) → `load_gold` (PostGIS). Schedule `@daily`.
+- **DAGs de ingesta** (dgrh/aemet/ibestat): `extract` (bronze) → `clean` (silver) → `load_gold` (PostGIS).
   - XComs se pasan como argumento: `clean(source_path=extract())` y `load_gold(source_path=clean_result)`. El operador `>>` solo establece orden, no pasa XComs.
 - **DAGs gold**: cargan de silver a PostGIS `gold.*` con upsert (`ON CONFLICT ... DO UPDATE`).
+
+### Schedules (revisados 2026-08-15, cadencia = publicación de la fuente)
+
+| Schedule | DAGs |
+|---|---|
+| `@monthly` | 4× IBESTAT, aemet_estaciones, aemet_historico_meteo, openmeteo_lluvia_masa_subterranea, 4× dgrh_abastecimiento_urbano_* |
+| **Asset-triggered** | `abastecimiento_urbano_baleares` (← 4 islas DGRH), `lluvia_masa_subterranea` (← aemet_histórico OR openmeteo), `agua_infiltrada_masa_subterranea` (← lluvia), `balance_hidrico_baleares` (← agua_infiltrada) |
+| `@once` | setup_buckets |
+
+- **Cadena event-driven completa** (los golds corren justo después de sus fuentes):
+  ```
+  dgrh ×4 ──Asset──► abastecimiento_urbano_baleares
+  aemet_historico ──Asset──► lluvia_masa_subterranea ──► agua_infiltrada ──► balance
+  openmeteo ───────Asset────┘
+  ```
+- **Productores**: los DAGs upstream devuelven `Asset(uri)` desde su último task (Airflow 3.3 registra el outlet por el valor de retorno). URIs: `pladi://silver/dgrh/abastecimiento_urbano` (compartido por las 4 islas), `pladi://silver/aemet/historico_meteo`, `pladi://silver/openmeteo/lluvia_masa_subterranea`, `pladi://gold/lluvia_masa_subterranea`.
+- ⚠️ **Multi-asset**: una lista simple en `schedule=[A, B]` se comporta como AND (el DAG no dispara hasta que TODOS tengan eventos). Para OR usar `schedule=AssetAny(A, B)` (caso de lluvia_masa_subterranea).
+- Los runs manuales de un upstream también disparan el gold (el mecanismo es por evento de asset, no por schedule).
 
 ### IBESTAT — datasets implementados
 

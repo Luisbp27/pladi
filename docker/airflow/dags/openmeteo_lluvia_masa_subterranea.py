@@ -4,13 +4,17 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
+from airflow.sdk.definitions.asset import Asset
+
 from include.bronze import openmeteo_lluvia_masa_subterranea as bronze
 from include.silver import openmeteo_lluvia_masa_subterranea as silver
+
+OPENMETEO_ASSET = Asset("pladi://silver/openmeteo/lluvia_masa_subterranea")
 
 
 @dag(
     dag_id="openmeteo_lluvia_masa_subterranea",
-    schedule="@daily",
+    schedule="@monthly",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
@@ -28,8 +32,9 @@ def openmeteo_lluvia_masa_subterranea():
         return bronze.extract()
 
     @task
-    def clean(source_path: str | None = None) -> str:
-        return silver.clean(source_path)
+    def clean(source_path: str | None = None) -> Asset:
+        silver.clean(source_path)
+        return OPENMETEO_ASSET
 
     clean(source_path=extract())
 

@@ -11,7 +11,7 @@ from include.silver import ibestat_ocupacion_hotelera as silver
 
 @dag(
     dag_id="ibestat_ocupacion_hotelera",
-    schedule="@daily",
+    schedule="@monthly",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

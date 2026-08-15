@@ -10,7 +10,7 @@ from include.silver import aemet_estaciones as silver
 
 @dag(
     dag_id="aemet_estaciones",
-    schedule="@daily",
+    schedule="@monthly",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

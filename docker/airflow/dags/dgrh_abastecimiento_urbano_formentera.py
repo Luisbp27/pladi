@@ -4,13 +4,16 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
+from airflow.sdk.definitions.asset import Asset
 from include.bronze import dgrh_abastecimiento_urbano_formentera as bronze
 from include.silver import dgrh_abastecimiento_urbano_formentera as silver
 
 
+DGRH_ASSET = Asset("pladi://silver/dgrh/abastecimiento_urbano")
+
 @dag(
     dag_id="dgrh_abastecimiento_urbano_formentera",
-    schedule="@daily",
+    schedule="@monthly",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
@@ -28,8 +31,9 @@ def abastecimiento_urbano_formentera():
         return bronze.extract()
 
     @task
-    def clean(source_path: str | None = None) -> str:
-        return silver.clean(source_path)
+    def clean(source_path: str | None = None) -> Asset:
+        silver.clean(source_path)
+        return DGRH_ASSET
 
     clean(source_path=extract())
 

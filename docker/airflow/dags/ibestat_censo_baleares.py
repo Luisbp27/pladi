@@ -11,7 +11,7 @@ from include.silver import ibestat_censo_baleares as silver
 
 @dag(
     dag_id="ibestat_censo_baleares",
-    schedule="@daily",
+    schedule="@monthly",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
