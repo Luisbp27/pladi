@@ -552,6 +552,16 @@ async def presion(isla: str | None = Query(default=None)):
     else:
         nombre_isla = None
 
+    # Poblacion censal anual por serie NUTS (Eivissa i Formentera agrupadas)
+    poblacion = await _q(
+        """
+        SELECT c.anio, c.nombre_provincia, SUM(c.poblacion) AS poblacion
+        FROM gold.censo_municipal_baleares c
+        GROUP BY c.anio, c.nombre_provincia
+        ORDER BY c.anio, c.nombre_provincia
+        """
+    )
+
     if nombre_isla:
         serie = await _q(
             """
@@ -570,7 +580,7 @@ async def presion(isla: str | None = Query(default=None)):
             """,
             nombre_isla,
         )
-        return {"isla": isla, "serie": serie, "referencia": referencia}
+        return {"isla": isla, "serie": serie, "referencia": referencia, "poblacion": poblacion}
 
     serie = await _q(
         """
@@ -578,7 +588,7 @@ async def presion(isla: str | None = Query(default=None)):
         WHERE anio >= 2015 ORDER BY nombre_isla, anio, mes
         """
     )
-    return {"isla": "Baleares", "serie": serie, "referencia": []}
+    return {"isla": "Baleares", "serie": serie, "referencia": [], "poblacion": poblacion}
 
 
 @router.get("/ocupacion")
@@ -648,6 +658,45 @@ async def ocupacion(
         *params,
     )
     return {"isla": "Baleares", "serie": serie}
+
+
+@router.get("/ocupacion/ranking")
+async def ocupacion_ranking(
+    isla: str | None = Query(default=None),
+    anio: int | None = Query(default=None),
+    tipo: str | None = Query(default=None),
+):
+    if isla and isla not in ISLAS:
+        raise HTTPException(400, f"isla no valida: {isla}")
+    if tipo and tipo not in ("hotelera", "apartamentos"):
+        raise HTTPException(400, "tipo debe ser hotelera o apartamentos")
+    if anio is None:
+        anio_max = await _qrow(
+            "SELECT MAX(anio) AS anio FROM gold.ocupacion_turistica"
+        )
+        anio = anio_max["anio"]
+
+    isla_sql = "AND o.nombre_provincia = $2" if isla else ""
+    tipo_sql = "AND o.tipo_alojamiento = $3" if tipo else ""
+    params: list = [anio]
+    if isla:
+        params.append(isla)
+    if tipo:
+        params.append(tipo)
+
+    rows = await _q(
+        f"""
+        SELECT o.cod_municipio_ine, o.nombre_municipio, o.nombre_provincia AS isla,
+               ROUND((AVG(o.ocupacion_plazas_pct) * 100)::numeric, 1) AS ocupacion_media_pct,
+               COUNT(*) AS meses_con_datos
+        FROM gold.ocupacion_turistica o
+        WHERE o.anio = $1 {isla_sql} {tipo_sql}
+        GROUP BY o.cod_municipio_ine, o.nombre_municipio, o.nombre_provincia
+        ORDER BY ocupacion_media_pct DESC NULLS LAST
+        """,
+        *params,
+    )
+    return {"anio": anio, "tipo": tipo or "ambos", "municipios": rows}
 
 
 @router.get("/entidad/{tipo}/{cod}")
@@ -781,14 +830,20 @@ async def entidad(tipo: str, cod: str):
             """,
             cod,
         )
-        oc_anio, oc_mes = await _last_ocupacion_month()
+        # Ocupacion con ventana propia del municipio (su ultimo mes con datos)
         ocupa = await _qrow(
             """
-            SELECT ROUND(AVG(ocupacion_plazas_pct)::numeric * 100, 1) AS ocupacion_pct
+            SELECT anio, mes, ROUND(AVG(ocupacion_plazas_pct)::numeric * 100, 1) AS ocupacion_pct
             FROM gold.ocupacion_turistica
-            WHERE cod_municipio_ine = $1 AND anio = $2 AND mes = $3
+            WHERE cod_municipio_ine = $1
+              AND (anio, mes) = (
+                  SELECT anio, mes FROM gold.ocupacion_turistica
+                  WHERE cod_municipio_ine = $1
+                  ORDER BY anio * 12 + mes DESC LIMIT 1
+              )
+            GROUP BY anio, mes
             """,
-            cod, oc_anio, oc_mes,
+            cod,
         )
         masas = await _q(
             """
@@ -831,10 +886,14 @@ async def entidad(tipo: str, cod: str):
             SELECT anio, mes, ROUND(AVG(ocupacion_plazas_pct)::numeric * 100, 1) AS ocupacion_pct
             FROM gold.ocupacion_turistica
             WHERE cod_municipio_ine = $1
-              AND (anio * 12 + mes) > $2 * 12 + $3 - 12
+              AND (anio * 12 + mes) > (
+                  SELECT MAX(anio * 12 + mes) - 12
+                  FROM gold.ocupacion_turistica
+                  WHERE cod_municipio_ine = $1
+              )
             GROUP BY anio, mes ORDER BY anio, mes
             """,
-            cod, anio_fin, mes_fin,
+            cod,
         )
         return {
             "tipo": "municipio",
@@ -845,7 +904,7 @@ async def entidad(tipo: str, cod: str):
             "poblacion_var_pct": var_pct,
             "consumo_serie": consumo,
             "ocupacion_ultimo_mes_pct": ocupa["ocupacion_pct"] if ocupa else None,
-            "ocupacion_mes_cerrado": f"{oc_anio}-{oc_mes:02d}",
+            "ocupacion_mes_cerrado": f"{ocupa['anio']}-{ocupa['mes']:02d}" if ocupa else None,
             "n_masas": len(masas),
             "masas": masas,
             "infiltracion_ah_media_hm3": lluvia_masas["infiltracion_ah_media_hm3"] if lluvia_masas else None,

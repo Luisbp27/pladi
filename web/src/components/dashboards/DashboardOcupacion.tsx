@@ -3,7 +3,7 @@ import { useStore } from '@nanostores/react';
 import {
   Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { fetchOcupacion, fetchMunicipios, MESES } from '../../lib/api';
+import { fetchOcupacion, fetchMunicipios, fetchOcupacionRanking, MESES } from '../../lib/api';
 import { dashIsla } from '../../lib/store';
 import { Card, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
@@ -26,6 +26,9 @@ export default function DashboardOcupacion() {
   const [comparativa, setComparativa] = useState<boolean>(false);
   const [municipios, setMunicipios] = useState<SelectOption[]>([]);
   const [rows, setRows] = useState<OcupRow[]>([]);
+  const [ranking, setRanking] = useState<
+    { nombre_municipio: string; isla: string; ocupacion_media_pct: number | null; meses_con_datos: number }[]
+  >([]);
   const [err, setErr] = useState('');
 
   useEffect(() => {
@@ -81,6 +84,24 @@ export default function DashboardOcupacion() {
   const maxAnio = rows.length > 0 ? rows[rows.length - 1].anio : 2026;
   const rangoEf: Rango = rango ?? { desde: Math.max(minAnio, maxAnio - 4), hasta: maxAnio };
   const rowsFiltrados = rows.filter((r) => r.anio >= rangoEf.desde && r.anio <= rangoEf.hasta);
+
+  // Ranking de municipios del año "hasta" del rango (respetando el toggle de tipo)
+  useEffect(() => {
+    let alive = true;
+    fetchOcupacionRanking({
+      isla: islaParam,
+      anio: rangoEf.hasta,
+      tipo: tipo === 'ambos' ? undefined : tipo,
+    })
+      .then((r) => alive && setRanking(r.municipios))
+      .catch(() => alive && setRanking([]));
+    return () => {
+      alive = false;
+    };
+  }, [islaParam, tipo, rangoEf.hasta]);
+
+  const topRanking = ranking.slice(0, 5);
+  const bottomRanking = ranking.slice(-5).reverse();
 
   const valorDe = (r: OcupRow): number | null => {
     if (tipo === 'hotelera') return r.hotelera;
@@ -214,6 +235,47 @@ export default function DashboardOcupacion() {
           </ResponsiveContainer>
         )}
       </Card>
+
+      {!municipio && ranking.length > 0 && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <Card title="Top municipios turísticos" subtitle={`Año ${rangoEf.hasta} · ocupación media`}>
+            <RankingTable rows={topRanking} />
+          </Card>
+          <Card title="Menor ocupación" subtitle={`Año ${rangoEf.hasta} · ocupación media`}>
+            <RankingTable rows={bottomRanking} />
+          </Card>
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-600 -mt-2 xl:col-span-2">
+            Solo se muestran municipios con datos de ocupación turística.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RankingTable({
+  rows,
+}: {
+  rows: { nombre_municipio: string; isla: string; ocupacion_media_pct: number | null; meses_con_datos: number }[];
+}) {
+  return (
+    <div className="flex flex-col">
+      {rows.map((m) => (
+        <div
+          key={m.nombre_municipio}
+          className="flex items-center justify-between py-2 border-b border-zinc-200/50 dark:border-zinc-800/50 last:border-0"
+        >
+          <div className="flex flex-col">
+            <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">{m.nombre_municipio}</span>
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-600">
+              {m.isla} · {m.meses_con_datos} meses
+            </span>
+          </div>
+          <span className="text-xs text-zinc-600 dark:text-zinc-300 tabular-nums">
+            {m.ocupacion_media_pct !== null ? `${m.ocupacion_media_pct}%` : '—'}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

@@ -9,6 +9,19 @@ import { Card, ErrorBox, RangoTemporal, Spinner, useIsDark, type Rango } from '.
 
 const nf = new Intl.NumberFormat('es-ES');
 
+// Serie NUTS del IPH → nombre de provincia(es) del censo
+const NUTS_A_PROVINCIAS: Record<string, string[]> = {
+  Mallorca: ['Mallorca'],
+  Menorca: ['Menorca'],
+  'Eivissa i Formentera': ['Eivissa', 'Formentera'],
+};
+
+const LINE_COLORS: Record<string, string> = {
+  Mallorca: '#3b82f6',
+  Menorca: '#22c55e',
+  'Eivissa i Formentera': '#f59e0b',
+};
+
 export default function DashboardPresion() {
   const isla = useStore(dashIsla);
   const islaParam = isla === 'Baleares' ? undefined : isla;
@@ -16,6 +29,7 @@ export default function DashboardPresion() {
 
   const [rango, setRango] = useState<Rango | null>(null);
   const [serie, setSerie] = useState<Array<Record<string, string | number>>>([]);
+  const [ratio, setRatio] = useState<{ iph: number; pob: number; isla: string } | null>(null);
   const [err, setErr] = useState('');
 
   useEffect(() => {
@@ -25,6 +39,19 @@ export default function DashboardPresion() {
       .then((r) => {
         if (!alive) return;
         const ref = r.referencia;
+
+        // Población anual por serie NUTS (suma de provincias censales)
+        const porAnio = new Map<number, Record<string, number>>();
+        for (const p of r.poblacion) {
+          const entry = porAnio.get(p.anio) ?? {};
+          for (const [nuts, provs] of Object.entries(NUTS_A_PROVINCIAS)) {
+            if (provs.includes(p.nombre_provincia)) {
+              entry[nuts] = (entry[nuts] ?? 0) + p.poblacion;
+            }
+          }
+          porAnio.set(p.anio, entry);
+        }
+
         if (r.isla === 'Baleares') {
           const byMes = new Map<string, Record<string, string | number>>();
           for (const x of r.serie) {
@@ -32,24 +59,55 @@ export default function DashboardPresion() {
             const entry = byMes.get(key) ?? {
               label: `${MESES[x.mes - 1]} ${String(x.anio).slice(2)}`,
               anio: x.anio,
+              mes: x.mes,
             };
             entry[x.nombre_isla ?? ''] = x.iph;
             byMes.set(key, entry);
           }
-          setSerie(
-            [...byMes.values()].sort((a, b) =>
-              String(a.label).localeCompare(String(b.label))
-            )
+          const rows = [...byMes.values()].sort((a, b) =>
+            String(a.label).localeCompare(String(b.label))
           );
+          // Merge población censal (constante dentro del año → escalón)
+          for (const row of rows) {
+            const p = porAnio.get(Number(row.anio));
+            if (p) {
+              for (const nuts of Object.keys(NUTS_A_PROVINCIAS)) {
+                if (p[nuts] !== undefined) row[`pob_${nuts}`] = Number(p[nuts]);
+              }
+            }
+          }
+          setSerie(rows);
         } else {
-          setSerie(
-            r.serie.map((x) => ({
-              label: `${MESES[x.mes - 1]} ${String(x.anio).slice(2)}`,
-              anio: x.anio,
-              iph: x.iph,
-              media: ref.find((m) => m.mes === x.mes)?.media_iph ?? 0,
-            }))
+          const rows: Array<Record<string, string | number>> = r.serie.map((x) => ({
+            label: `${MESES[x.mes - 1]} ${String(x.anio).slice(2)}`,
+            anio: x.anio,
+            mes: x.mes,
+            iph: x.iph,
+            media: ref.find((m) => m.mes === x.mes)?.media_iph ?? 0,
+          }));
+          const nuts = r.isla === 'Eivissa' || r.isla === 'Formentera' ? 'Eivissa i Formentera' : r.isla;
+          for (const row of rows) {
+            const p = porAnio.get(Number(row.anio));
+            if (p && p[nuts] !== undefined) row['pob'] = Number(p[nuts]);
+          }
+          setSerie(rows);
+        }
+
+        // Ratio IPH pico del año más reciente con IPH vs población de ese año (o más cercana)
+        const serieIslas = r.isla === 'Baleares' ? r.serie : r.serie.map((x) => ({ ...x, nombre_isla: r.isla }));
+        const ultimoAnio = serieIslas.length > 0 ? Math.max(...serieIslas.map((x) => x.anio)) : null;
+        if (ultimoAnio) {
+          const delAnio = serieIslas.filter((x) => x.anio === ultimoAnio);
+          const pico = delAnio.reduce<typeof delAnio[0] | null>(
+            (acc, x) => (acc === null || x.iph > acc.iph ? x : acc),
+            null
           );
+          if (pico && pico.nombre_isla) {
+            const pobRows = r.poblacion.filter((p) => p.anio === ultimoAnio);
+            const provs = NUTS_A_PROVINCIAS[pico.nombre_isla] ?? [pico.nombre_isla];
+            const pob = pobRows.filter((p) => provs.includes(p.nombre_provincia)).reduce((s, p) => s + p.poblacion, 0);
+            if (pob > 0) setRatio({ iph: pico.iph, pob, isla: pico.nombre_isla });
+          }
         }
       })
       .catch((e) => alive && setErr(String(e)));
@@ -73,12 +131,29 @@ export default function DashboardPresion() {
     <div className="flex flex-col gap-4">
       {err && <ErrorBox msg={err} />}
 
+      {ratio && (
+        <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-1.5 max-w-sm">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+            IPH pico vs población
+          </span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold tabular-nums" style={{ color: LINE_COLORS[ratio.isla] ?? '#3b82f6' }}>
+              ×{(ratio.iph / ratio.pob).toFixed(1)}
+            </span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">{ratio.isla}</span>
+          </div>
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-600 tabular-nums">
+            IPH {nf.format(ratio.iph)} · población {nf.format(ratio.pob)}
+          </span>
+        </div>
+      )}
+
       <Card
         title="Índice de Presión Humana"
         subtitle={
           isla === 'Baleares'
-            ? 'Series mensuales por isla'
-            : 'Línea: media del mes 2015-25'
+            ? 'Series mensuales por isla + población censal anual (líneas discontinuas)'
+            : 'Línea: media del mes 2015-25 · población censal anual (discontinua)'
         }
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -91,7 +166,7 @@ export default function DashboardPresion() {
           <ResponsiveContainer width="100%" height={340}>
             <LineChart data={serieFiltrada}>
               <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
-              <XAxis dataKey="label" tick={tick} interval={3} />
+              <XAxis dataKey="label" tick={tick} interval={5} />
               <YAxis tick={tick} width={44} tickFormatter={(v: number) => nf.format(v)} />
               <Tooltip
                 contentStyle={{
@@ -105,14 +180,18 @@ export default function DashboardPresion() {
               <Legend wrapperStyle={{ fontSize: 11 }} />
               {isla === 'Baleares' ? (
                 <>
-                  <Line type="monotone" dataKey="Mallorca" name="Mallorca" stroke="#3b82f6" dot={false} connectNulls />
-                  <Line type="monotone" dataKey="Menorca" name="Menorca" stroke="#22c55e" dot={false} connectNulls />
-                  <Line type="monotone" dataKey="Eivissa i Formentera" name="Eivissa i Formentera" stroke="#f59e0b" dot={false} connectNulls />
+                  <Line type="monotone" dataKey="Mallorca" name="Mallorca" stroke={LINE_COLORS.Mallorca} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="Menorca" name="Menorca" stroke={LINE_COLORS.Menorca} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="Eivissa i Formentera" name="Eivissa i Formentera" stroke={LINE_COLORS['Eivissa i Formentera']} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="pob_Mallorca" name="Población Mallorca" stroke={LINE_COLORS.Mallorca} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="pob_Menorca" name="Población Menorca" stroke={LINE_COLORS.Menorca} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="pob_Eivissa i Formentera" name="Población Eivissa i Formentera" stroke={LINE_COLORS['Eivissa i Formentera']} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
                 </>
               ) : (
                 <>
-                  <Line type="monotone" dataKey="iph" name="IPH" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="iph" name="IPH" stroke={LINE_COLORS[isla] ?? '#f59e0b'} strokeWidth={2} dot={false} connectNulls />
                   <Line type="monotone" dataKey="media" name="Media" stroke={dark ? '#f4f4f5' : '#52525b'} strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="pob" name="Población censal" stroke={LINE_COLORS[isla] ?? '#f59e0b'} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
                 </>
               )}
             </LineChart>

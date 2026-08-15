@@ -193,7 +193,26 @@ export const fetchPresion = (isla?: string) =>
     isla: string;
     serie: { nombre_isla?: string; anio: number; mes: number; iph: number }[];
     referencia: { mes: number; media_iph: number }[];
+    poblacion: { anio: number; nombre_provincia: string; poblacion: number }[];
   }>(`presion${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`);
+
+export const fetchOcupacionRanking = (opts: { isla?: string; anio?: number; tipo?: string } = {}) => {
+  const q = new URLSearchParams();
+  if (opts.isla) q.set('isla', opts.isla);
+  if (opts.anio) q.set('anio', String(opts.anio));
+  if (opts.tipo) q.set('tipo', opts.tipo);
+  return getJson<{
+    anio: number;
+    tipo: string;
+    municipios: {
+      cod_municipio_ine: string;
+      nombre_municipio: string;
+      isla: string;
+      ocupacion_media_pct: number | null;
+      meses_con_datos: number;
+    }[];
+  }>(`ocupacion/ranking?${q.toString()}`);
+};
 
 export const fetchOcupacion = (opts: { isla?: string; tipo?: string; municipio?: string } = {}) => {
   const q = new URLSearchParams();
