@@ -39,6 +39,19 @@ const TIPO_META: Record<string, { label: string; color: string; icon: string }> 
 
 const nf = new Intl.NumberFormat('es-ES');
 
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-zinc-300/70 dark:border-zinc-700/70 bg-zinc-50/50 dark:bg-zinc-900/30 p-3.5 flex items-center gap-2.5">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+        <circle cx="12" cy="12" r="10" opacity="0.4" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-snug">{text}</p>
+    </div>
+  );
+}
+
 function InfoCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-200/60 dark:border-zinc-800/50 p-3.5">
@@ -292,7 +305,9 @@ export default function Drawer() {
                 </InfoCard>
                 {(() => {
                   const bal = kpis.balance as Record<string, unknown> | null;
-                  if (!bal) return null;
+                  if (!bal) {
+                    return <EmptyState text="Balance hídrico no calculable — sin recurso potencial definido." />;
+                  }
                   const estado = bal.estado_cuantitativo as string | null;
                   const color = estado ? ESTADO_COLORS[estado] ?? '#71717a' : '#71717a';
                   return (
@@ -352,22 +367,28 @@ export default function Drawer() {
                     accent="text-blue-500"
                   />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <KpiBlock
-                    label="Ocupación último mes"
-                    value={kpis.ocupacion_ultimo_mes_pct != null ? `${nf.format(Number(kpis.ocupacion_ultimo_mes_pct))}%` : '—'}
-                    sub={kpis.ocupacion_mes_cerrado ? `mes ${kpis.ocupacion_mes_cerrado}` : undefined}
-                    accent="text-amber-500"
-                  />
-                  <KpiBlock
-                    label="Lluvia AH en sus masas"
-                    value={kpis.lluvia_ah_media_mm != null ? `${nf.format(Number(kpis.lluvia_ah_media_mm))} mm` : '—'}
-                    accent="text-sky-500"
-                  />
-                </div>
-                <InfoCard title="Ocupación turística · 12 meses">
-                  <Sparkline data={(kpis.sparkline_ocupacion as Record<string, unknown>[]) ?? []} dataKey="ocupacion_pct" color="#f59e0b" unit="%" />
-                </InfoCard>
+                {kpis.ocupacion_ultimo_mes_pct != null ? (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      <KpiBlock
+                        label="Ocupación media (12 meses)"
+                        value={`${nf.format(Number(kpis.ocupacion_ultimo_mes_pct))}%`}
+                        sub={(() => {
+                          const spark = (kpis.sparkline_ocupacion as Array<{ ocupacion_pct: number; mes: number }>) ?? [];
+                          if (spark.length === 0) return undefined;
+                          const pico = spark.reduce((a, b) => (b.ocupacion_pct > a.ocupacion_pct ? b : a), spark[0]);
+                          return `pico ${MESES[pico.mes - 1]} ${nf.format(pico.ocupacion_pct)}%`;
+                        })()}
+                        accent="text-amber-500"
+                      />
+                    </div>
+                    <InfoCard title="Ocupación turística · 12 meses">
+                      <Sparkline data={(kpis.sparkline_ocupacion as Record<string, unknown>[]) ?? []} dataKey="ocupacion_pct" color="#f59e0b" unit="%" />
+                    </InfoCard>
+                  </>
+                ) : (
+                  <EmptyState text="Sin datos de ocupación turística en este municipio." />
+                )}
                 <InfoCard title="Recursos hídricos">
                   <InfoRow icon={ICONS.water} k="Masas que lo abastecen" v={String(kpis.n_masas ?? 0)} />
                   <InfoRow icon={ICONS.well} k="Pozos en su término" v={String(kpis.n_pozos ?? 0)} />
@@ -425,7 +446,9 @@ export default function Drawer() {
                 </div>
                 {(() => {
                   const bal = kpis.balance as Record<string, unknown> | null;
-                  if (!bal) return null;
+                  if (!bal) {
+                    return <EmptyState text="Balance hídrico no calculable — sin recurso potencial definido." />;
+                  }
                   return (
                     <InfoCard title={`Balance hídrico · ${bal.anio ?? '—'}`}>
                       <InfoRow

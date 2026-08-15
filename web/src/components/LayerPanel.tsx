@@ -109,6 +109,7 @@ export default function LayerPanel() {
                   { label: 'Buen estado', color: '#22c55e' },
                   { label: 'En riesgo', color: '#f59e0b' },
                   { label: 'Mal estado', color: '#f43f5e' },
+                  { label: 'Sin dato', color: '#71717a' },
                 ].map((l) => (
                   <div key={l.label} className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />

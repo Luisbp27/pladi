@@ -342,8 +342,9 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 | `GET /api/v1/analytics/balance?nivel=masa|ud&isla=&entidad=` | Serie anual del balance por masa/UD/isla (sumas, explotación ponderada, conteos de estado) |
 | `GET /api/v1/analytics/balance/ranking?nivel=&isla=&anio=` | Ranking por masa/UD del año indicado (default último disponible) |
 | `GET /api/v1/analytics/abastecimiento?isla=&municipio=` | Anual por origen + top municipios |
-| `GET /api/v1/analytics/presion?isla=` | IPH mensual + media |
+| `GET /api/v1/analytics/presion?isla=` | IPH mensual + media + **población censal anual por serie NUTS** |
 | `GET /api/v1/analytics/ocupacion?isla=&tipo=&municipio=` | Ocupación mensual (Baleares = media de las islas) |
+| `GET /api/v1/analytics/ocupacion/ranking?isla=&anio=&tipo=` | Ranking de municipios por ocupación media anual (solo con datos) |
 | `GET /api/v1/analytics/uds?isla=` / `municipios?isla=` / `masas?isla=` | Catálogos para SearchSelect |
 | `GET /api/v1/analytics/entidad/{tipo}/{cod}` | KPIs + sparkline para drawer (masa: infiltración + balance; municipio/pozo/ud) |
 
@@ -386,6 +387,13 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 
 - **Logo**: icono de capas (bronze/silver/gold) en navbar + **favicon.svg** (pestaña del navegador).
 - **Responsive completa** (iPhone SE 320px → iPad): labels del navbar ocultas en móvil, footer con scroll horizontal, selector de islas con scroll, sidebar móvil con backdrop, panel de capas auto-colapsado <640px, KPI cards 1 col <360px, desglose sin % en xs, tooltips con soporte tap, `:focus-visible` global, leyendas de charts compactas en móvil.
+
+### Turismo — IPH vs población y ranking de ocupación (2026-08-15)
+
+- **DashboardPresion**: KPI "IPH pico vs población" (ratio `×2,1` + desglose IPH/población) y líneas discontinuas de **población censal anual** bajo el IPH (modo isla y Baleares). El IPH es a nivel NUTS: **Eivissa i Formentera van juntas** (sin estimaciones).
+- **DashboardOcupacion**: ranking top 5 / bottom 5 de municipios (media anual del año `hasta` del rango, respeta el toggle de tipo, nota "solo municipios con datos" — 26 de 67 tienen turismo).
+- **Drawer municipio**: sin card de infiltración; ocupación = media 12 meses + pico mensual + sparkline con **ventana propia del municipio** (fix: Alaior acaba en 2025-09 y Sant Joan de Labritja en 2024-10, el corte global los dejaba vacíos).
+- **EmptyState** (borde discontinuo + icono + texto contextual) para entidades sin datos: municipios sin turismo, masas/UDs sin balance, vista Ocupación sin datos; leyenda del mapa con "Sin dato" (gris); KpiBlocks con sub explicativo en vez de `—`.
 
 ---
 
