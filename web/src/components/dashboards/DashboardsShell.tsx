@@ -1,39 +1,105 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
-import { dashEntidad, dashIsla, dashVista } from '../../lib/store';
+import { dashIsla, dashVista } from '../../lib/store';
 import { ISLAS } from '../../lib/api';
 import DashboardGeneral from './DashboardGeneral';
-import DashboardLluvia from './DashboardLluvia';
+import DashboardInfiltrada from './DashboardInfiltrada';
+import DashboardBalance from './DashboardBalance';
 import DashboardAbastecimiento from './DashboardAbastecimiento';
 import DashboardPresion from './DashboardPresion';
 import DashboardOcupacion from './DashboardOcupacion';
 
-const VISTAS = [
-  { id: 'general', label: 'Visión general', icon: 'M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6V11h-6v9zm0-16v5h6V4h-6z' },
-  { id: 'lluvia', label: 'Lluvia', icon: 'M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17h-8v-2.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z' },
-  { id: 'abastecimiento', label: 'Abastecimiento', icon: 'M12 2l6 6h-4v6h4l-6 6-6-6h4V8H6l6-6z' },
-  { id: 'presion', label: 'Presión humana', icon: 'M16 8a4 4 0 1 0-8 0c0 2 1 3 2 4v2h4v-2c1-1 2-2 2-4zM9 18h6' },
-  { id: 'ocupacion', label: 'Ocupación turística', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01' },
+const GRUPOS = [
+  {
+    id: 'rh',
+    label: 'Recursos Hídricos',
+    icon: 'M12 2l6 6h-4v6h4l-6 6-6-6h4V8H6l6-6z',
+    items: [
+      { id: 'infiltrada', label: 'Agua infiltrada', icon: 'M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17h-8v-2.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z' },
+      { id: 'balance', label: 'Balance hídrico', icon: 'M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6V11h-6v9zm0-16v5h6V4h-6z' },
+      { id: 'abastecimiento', label: 'Abastecimiento', icon: 'M4 6h16M5 6v3a7 7 0 0 0 14 0V6M12 13v4m-2.5 0a2.5 2.5 0 0 0 5 0c0-1.8-1.6-2.6-2.5-4-.9 1.4-2.5 2.2-2.5 4z' },
+    ],
+  },
+  {
+    id: 'turismo',
+    label: 'Turismo',
+    icon: 'M16 8a4 4 0 1 0-8 0c0 2 1 3 2 4v2h4v-2c1-1 2-2 2-4zM9 18h6',
+    items: [
+      { id: 'presion', label: 'Presión humana', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+      { id: 'ocupacion', label: 'Ocupación turística', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01' },
+    ],
+  },
 ];
+
+const GENERAL_ITEM = {
+  id: 'general',
+  label: 'Visión general',
+  icon: 'M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6V11h-6v9zm0-16v5h6V4h-6z',
+};
+
+// Acento de color por vista (diferenciación visual dentro de los grupos)
+const VISTA_ACCENT: Record<string, string> = {
+  general: '#3b82f6',
+  infiltrada: '#3b82f6',
+  balance: '#06b6d4',
+  abastecimiento: '#22c55e',
+  presion: '#f59e0b',
+  ocupacion: '#f43f5e',
+};
 
 export default function DashboardsShell() {
   const isla = useStore(dashIsla);
   const vista = useStore(dashVista);
-  const entidad = useStore(dashEntidad);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [presetTarget, setPresetTarget] = useState<string | null>(null);
+  const [presetMasa, setPresetMasa] = useState<string | undefined>(undefined);
+  const [presetMunicipio, setPresetMunicipio] = useState<string | undefined>(undefined);
+  const [presetNivel, setPresetNivel] = useState<'masa' | 'ud' | undefined>(undefined);
+  const [presetUd, setPresetUd] = useState<string | undefined>(undefined);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ rh: true, turismo: true });
 
+  // Presets desde el mapa ("Más detalle"): se leen una sola vez y se limpia la URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tipo = params.get('tipo');
-    const cod = params.get('cod');
-    if (tipo && cod) {
-      dashEntidad.set({ tipo, cod, nombre: params.get('nombre') ?? cod });
-      if (tipo === 'masa') dashVista.set('lluvia');
+    const vistaParam = params.get('vista');
+    const masa = params.get('masa');
+    const municipio = params.get('municipio');
+    const ud = params.get('ud');
+    const nivel = params.get('nivel');
+    if (!vistaParam && !masa && !municipio && !ud) return;
+
+    if (vistaParam) {
+      dashVista.set(vistaParam);
+      setPresetTarget(vistaParam);
     }
+    if (masa) setPresetMasa(masa);
+    if (municipio) setPresetMunicipio(municipio);
+    if (ud) setPresetUd(ud);
+    if (nivel === 'masa' || nivel === 'ud') setPresetNivel(nivel);
+    window.history.replaceState({}, '', window.location.pathname);
   }, []);
+
+  const goVista = (id: string) => {
+    dashVista.set(id);
+    setSidebarOpen(false);
+    // Los presets del "Más detalle" no persisten al navegar manualmente
+    setPresetTarget(null);
+    setPresetMasa(undefined);
+    setPresetMunicipio(undefined);
+    setPresetUd(undefined);
+    setPresetNivel(undefined);
+  };
 
   return (
     <div className="h-screen w-screen flex pt-11 pb-9 bg-zinc-50 dark:bg-[#09090b] overflow-hidden">
+      {/* Backdrop móvil del sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-zinc-900/30 dark:bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`${
@@ -44,25 +110,40 @@ export default function DashboardsShell() {
           Dashboards
         </p>
         <nav className="flex flex-col gap-1">
-          {VISTAS.map((v) => (
-            <button
-              key={v.id}
-              onClick={() => {
-                dashVista.set(v.id);
-                setSidebarOpen(false);
-              }}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-[13px] font-medium transition-colors cursor-pointer ${
-                vista === v.id
-                  ? 'bg-blue-500/10 text-blue-500'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
-              }`}
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d={v.icon} />
-              </svg>
-              {v.label}
-            </button>
-          ))}
+          <SidebarItem item={GENERAL_ITEM} active={vista === GENERAL_ITEM.id} onClick={() => goVista(GENERAL_ITEM.id)} />
+
+          {GRUPOS.map((g) => {
+            const open = openGroups[g.id] ?? true;
+            const hasActive = g.items.some((i) => i.id === vista);
+            return (
+              <div key={g.id} className="mt-1.5">
+                <button
+                  onClick={() => setOpenGroups((prev) => ({ ...prev, [g.id]: !open }))}
+                  className={`flex items-center gap-2 px-3 py-1.5 w-full rounded-lg text-left text-[11px] font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+                    hasActive ? 'text-blue-500' : 'text-zinc-400 dark:text-zinc-600 hover:text-zinc-600 dark:hover:text-zinc-400'
+                  }`}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d={g.icon} />
+                  </svg>
+                  {g.label}
+                  <svg
+                    width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className={`ml-auto transition-transform ${open ? '' : '-rotate-90'}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                {open && (
+                  <div className="flex flex-col gap-1 mt-1 ml-3 border-l border-zinc-200/60 dark:border-zinc-800/60 pl-2">
+                    {g.items.map((item) => (
+                      <SidebarItem key={item.id} item={item} active={vista === item.id} onClick={() => goVista(item.id)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
       </aside>
 
@@ -81,34 +162,22 @@ export default function DashboardsShell() {
             </svg>
           </button>
 
-          <h1 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-            {VISTAS.find((v) => v.id === vista)?.label}
+          <h1 className="flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ background: VISTA_ACCENT[vista] ?? '#3b82f6' }}
+            />
+            {vista === GENERAL_ITEM.id
+              ? GENERAL_ITEM.label
+              : GRUPOS.flatMap((g) => g.items).find((i) => i.id === vista)?.label ?? ''}
           </h1>
 
-          {entidad && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-500">
-              <span className="font-medium capitalize">{entidad.tipo}:</span>
-              <span className="truncate max-w-[140px]">{entidad.nombre}</span>
-              <button
-                onClick={() => {
-                  dashEntidad.set(null);
-                  dashIsla.set('Baleares');
-                  window.history.replaceState({}, '', window.location.pathname);
-                }}
-                className="ml-0.5 text-violet-400 hover:text-violet-300 cursor-pointer"
-                aria-label="Quitar filtro"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
-          <div className="ml-auto flex gap-1">
+          <div className="ml-auto flex gap-1 overflow-x-auto no-scrollbar max-w-[62vw] sm:max-w-none">
             {['Baleares', ...ISLAS].map((i) => (
               <button
                 key={i}
                 onClick={() => dashIsla.set(i)}
-                className={`text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                className={`shrink-0 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
                   isla === i
                     ? 'bg-blue-500/10 text-blue-500 border-blue-500/30'
                     : 'bg-white dark:bg-zinc-900 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
@@ -122,12 +191,49 @@ export default function DashboardsShell() {
 
         <main className="p-5 max-w-[1400px] mx-auto">
           {vista === 'general' && <DashboardGeneral />}
-          {vista === 'lluvia' && <DashboardLluvia masaInicial={entidad?.tipo === 'masa' ? entidad.cod : undefined} />}
-          {vista === 'abastecimiento' && <DashboardAbastecimiento />}
+          {vista === 'infiltrada' && (
+            <DashboardInfiltrada masaInicial={vista === presetTarget ? presetMasa : undefined} />
+          )}
+          {vista === 'balance' && (
+            <DashboardBalance
+              nivelInicial={vista === presetTarget ? presetNivel : undefined}
+              masaInicial={vista === presetTarget ? presetMasa : undefined}
+              udInicial={vista === presetTarget ? presetUd : undefined}
+            />
+          )}
+          {vista === 'abastecimiento' && (
+            <DashboardAbastecimiento municipioInicial={vista === presetTarget ? presetMunicipio : undefined} />
+          )}
           {vista === 'presion' && <DashboardPresion />}
           {vista === 'ocupacion' && <DashboardOcupacion />}
         </main>
       </div>
     </div>
+  );
+}
+
+function SidebarItem({
+  item,
+  active,
+  onClick,
+}: {
+  item: { id: string; label: string; icon: string };
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left text-[13px] font-medium transition-colors cursor-pointer ${
+        active
+          ? 'bg-blue-500/10 text-blue-500'
+          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+      }`}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d={item.icon} />
+      </svg>
+      {item.label}
+    </button>
   );
 }

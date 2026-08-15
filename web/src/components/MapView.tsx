@@ -18,6 +18,31 @@ const ENTIDAD_POR_CAPA: Record<string, [string, string, string]> = {
   unidades_demanda: ['ud', 'id_unidad_demanda', 'nombre'],
 };
 
+const ZOOM_POZOS_INDIVIDUALES = 10;
+
+const DMA_COLOR: Record<string, string> = {
+  buen_estado: '#22c55e',
+  en_riesgo: '#f59e0b',
+  mal_estado: '#f43f5e',
+};
+
+function dmaStyleFor(layerId: string, props: Record<string, unknown>): { color: string; fillColor: string } | null {
+  if (layerId === 'masas') {
+    const e = props.estado_cuantitativo;
+    if (!e) return null;
+    const c = DMA_COLOR[String(e)];
+    return c ? { color: c, fillColor: c } : null;
+  }
+  if (layerId === 'unidades_demanda') {
+    const x = props.explotacion_porcentaje;
+    if (x === null || x === undefined) return null;
+    const n = Number(x);
+    const c = n > 1 ? '#f43f5e' : n >= 0.8 ? '#f59e0b' : '#22c55e';
+    return { color: c, fillColor: c };
+  }
+  return null;
+}
+
 export default function MapView() {
   const cssLoaded = useRef(false);
   const jsLoaded = useRef(false);
@@ -28,6 +53,7 @@ export default function MapView() {
   const $geojsonData = useStore(geojsonData);
   const $theme = useStore(theme);
   const tileRef = useRef<{ dark: any; light: any }>({ dark: null, light: null });
+  const pozosClustered = useRef(false);
 
   const onFeatureClick = useCallback((layerId: string, props: Record<string, unknown>) => {
     const mapping = ENTIDAD_POR_CAPA[layerId];
@@ -41,6 +67,45 @@ export default function MapView() {
     drawerOpen.set(true);
   }, []);
 
+  const nombreDe = useCallback((layerId: string, props: Record<string, unknown>): string => {
+    const mapping = ENTIDAD_POR_CAPA[layerId];
+    if (!mapping) return '';
+    return String(props[mapping[2]] ?? '');
+  }, []);
+
+  const addPozosClustered = useCallback((data: GeoJSON.FeatureCollection, options: Record<string, unknown>) => {
+    const L = (window as any).L;
+    if (!mapRef.current || !L?.markerClusterGroup) return false;
+    if (layersRef.current['pozos']) mapRef.current.removeLayer(layersRef.current['pozos']);
+
+    const cluster = L.markerClusterGroup({
+      disableClusteringAtZoom: ZOOM_POZOS_INDIVIDUALES,
+      showCoverageOnHover: false,
+      maxClusterRadius: 55,
+    });
+
+    for (const feature of data.features) {
+      const props = feature.properties ?? {};
+      const [lon, lat] = (feature.geometry as GeoJSON.Point).coordinates;
+      const marker = L.circleMarker([lat, lon], {
+        radius: (options.radius as number) || 6,
+        fillColor: options.fillColor,
+        color: options.color,
+        weight: options.weight,
+        fillOpacity: options.fillOpacity,
+      });
+      const nombre = nombreDe('pozos', props);
+      if (nombre) marker.bindTooltip(nombre, { className: 'pladi-tooltip', direction: 'top', offset: [0, -6] });
+      marker.on('click', () => onFeatureClick('pozos', props));
+      cluster.addLayer(marker);
+    }
+
+    cluster.addTo(mapRef.current);
+    layersRef.current['pozos'] = cluster;
+    pozosClustered.current = true;
+    return true;
+  }, [nombreDe, onFeatureClick]);
+
   const addLayer = useCallback((id: string, data: GeoJSON.FeatureCollection, options: Record<string, unknown>) => {
     const L = (window as any).L;
     if (!mapRef.current || !L) {
@@ -50,11 +115,33 @@ export default function MapView() {
     try {
       if (layersRef.current[id]) mapRef.current.removeLayer(layersRef.current[id]);
 
+      if (id === 'pozos' && L.markerClusterGroup && addPozosClustered(data, options)) {
+        return;
+      }
+      if (id === 'pozos') {
+        (window as any).__pladiPozosGeo = data;
+      }
+
       if (data && data.type === 'FeatureCollection' && data.features.length > 0) {
         const geoJsonOptions: any = {
           ...options,
+          style: (feature: any) => {
+            if (id === 'masas' || id === 'unidades_demanda') {
+              const dma = dmaStyleFor(id, feature.properties ?? {});
+              if (dma) return { ...dma, weight: 1.5, fillOpacity: 0.45 };
+            }
+            return undefined;
+          },
           onEachFeature: (feature: any, layer: any) => {
             if (feature.properties) {
+              const nombre = nombreDe(id, feature.properties);
+              if (nombre) {
+                layer.bindTooltip(nombre, {
+                  className: 'pladi-tooltip',
+                  direction: 'top',
+                  offset: [0, -6],
+                });
+              }
               layer.on('click', () => onFeatureClick(id, feature.properties));
               layer.on('mouseover', () => layer.setStyle && layer.setStyle({ weight: 3, fillOpacity: 0.55 }));
               layer.on('mouseout', () =>
@@ -81,7 +168,7 @@ export default function MapView() {
     } catch (e) {
       console.error('pladi layer error:', e);
     }
-  }, [onFeatureClick]);
+  }, [onFeatureClick, nombreDe, addPozosClustered]);
 
   const removeLayer = useCallback((id: string) => {
     if (layersRef.current[id] && mapRef.current) {
@@ -136,11 +223,33 @@ export default function MapView() {
       }
 
       mapRef.current = L.map('pladi-map', {
-        center: [39.6, 3.0],
-        zoom: 8,
+        center: [39.57, 2.9],
+        zoom: 9,
         zoomControl: false,
         layers: [initialTheme === 'dark' ? darkTile : lightTile],
       });
+
+      // MarkerCluster (clustering de pozos) — CDN tras Leaflet
+      const mcCss = document.createElement('link');
+      mcCss.rel = 'stylesheet';
+      mcCss.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
+      document.head.appendChild(mcCss);
+      const mcCssDefault = document.createElement('link');
+      mcCssDefault.rel = 'stylesheet';
+      mcCssDefault.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css';
+      document.head.appendChild(mcCssDefault);
+      const mcJs = document.createElement('script');
+      mcJs.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';
+      mcJs.onload = () => {
+        // Si los pozos ya se pintaron en plano antes de cargar el cluster, los actualizamos
+        if (!pozosClustered.current && L.markerClusterGroup) {
+          const geojson = (window as any).__pladiPozosGeo as GeoJSON.FeatureCollection | undefined;
+          if (geojson) {
+            addPozosClustered(geojson, { ...LAYER_OPTIONS['pozos'] });
+          }
+        }
+      };
+      document.head.appendChild(mcJs);
 
       // Load default active layers
       import('../lib/store').then(({ loadDefaultLayers }) => {

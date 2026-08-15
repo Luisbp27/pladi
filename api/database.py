@@ -58,3 +58,16 @@ async def fetch_geojson_feature_collection(
         if isinstance(raw, str):
             return json.loads(raw)
         return raw
+
+
+async def fetch_geojson_from_query(query: str, *params) -> dict:
+    """Ejecuta una query que devuelva una columna 'geojson' (jsonb FeatureCollection)."""
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(query, *params)
+        if row is None:
+            return {"type": "FeatureCollection", "features": []}
+        raw = row["geojson"]
+        if isinstance(raw, str):
+            return json.loads(raw)
+        return raw

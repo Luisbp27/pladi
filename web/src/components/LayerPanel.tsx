@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { activeLayers, layerLoading, panelCollapsed, toggleLayer } from '../lib/store';
 import { CAPAS } from '../lib/api';
@@ -64,6 +65,16 @@ function LayerItem({ capa }: { capa: typeof CAPAS[number] }) {
 
 export default function LayerPanel() {
   const $panelCollapsed = useStore(panelCollapsed);
+  const $activeLayers = useStore(activeLayers);
+
+  // En móvil el panel arranca colapsado para no tapar el mapa
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      panelCollapsed.set(true);
+    }
+  }, []);
+
+  const showDmaLegend = $activeLayers['masas'] || $activeLayers['unidades_demanda'];
 
   return (
     <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 rounded-xl shadow-2xl w-60 p-3">
@@ -87,6 +98,26 @@ export default function LayerPanel() {
           {CAPAS.map((capa) => (
             <LayerItem key={capa.id} capa={capa} />
           ))}
+          {showDmaLegend && (
+            <>
+              <hr className="border-zinc-300/40 dark:border-zinc-700/40" />
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
+                  Estado DMA (último año)
+                </span>
+                {[
+                  { label: 'Buen estado', color: '#22c55e' },
+                  { label: 'En riesgo', color: '#f59e0b' },
+                  { label: 'Mal estado', color: '#f43f5e' },
+                ].map((l) => (
+                  <div key={l.label} className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-500">{l.label}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="flex items-center justify-between w-full">

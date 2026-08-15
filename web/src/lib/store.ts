@@ -31,7 +31,6 @@ export const drawerOpen = atom<boolean>(false);
 // ── Dashboards ──────────────────────────────────────────────────────────────
 export const dashIsla = atom<string>('Baleares');
 export const dashVista = atom<string>('general');
-export const dashEntidad = atom<{ tipo: string; cod: string; nombre: string } | null>(null);
 
 // ── Drawer analitico (clic en mapa) ─────────────────────────────────────────
 export const entidadTipo = atom<string>('');
