@@ -325,51 +325,92 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 | FASE IV — Dashboards + UI/UX | ✅ Completada (2026-08-15) — ver sección "Dashboards y analítica" |
 | FASE V — Frontend (Astro) | ✅ (unificado con FASE II) |
 | FASE VI — Despliegue real | ✅ Completada — VPS en producción |
-| FASE VII — Modelos + data science | ❌ Pendiente (decisión: se priorizó dashboarding antes) |
+| FASE VII — Modelos + data science | 🚧 Diseño acordado; pendiente notebook de experimentos (ver "Simulación") |
 
 ---
 
-## Dashboards y analítica (FASE IV — ✅ 2026-08-15)
+## Dashboards y analítica (FASE IV — ✅ 2026-08-15, ampliada con infiltración y balance)
 
 ### Backend — `api/routers/analytics.py`
 
 | Endpoint | Contenido |
 |---|---|
-| `GET /api/v1/analytics/resumen?isla=` | KPIs: lluvia AH + desviación, IPH pico, ocupación, población, consumo, masas en déficit |
-| `GET /api/v1/analytics/lluvia?isla=&masa=` | Serie mensual + media de referencia (2015-25) |
-| `GET /api/v1/analytics/lluvia/ranking?isla=` | Desviación % por masa (AH) |
-| `GET /api/v1/analytics/abastecimiento?isla=` | Anual por origen + top municipios |
+| `GET /api/v1/analytics/resumen?isla=&municipio=` | KPIs: infiltración AH total del ámbito + desviación, IPH pico, ocupación (Baleares = media de islas), población, consumo, masas en déficit |
+| `GET /api/v1/analytics/infiltrada?isla=&masa=` | Serie mensual hm³ (suma por ámbito o por masa) + media de referencia (2015-25) |
+| `GET /api/v1/analytics/infiltrada/ranking?isla=` | Desviación % AH por masa |
+| `GET /api/v1/analytics/balance?nivel=masa|ud&isla=&entidad=` | Serie anual del balance por masa/UD/isla (sumas, explotación ponderada, conteos de estado) |
+| `GET /api/v1/analytics/balance/ranking?nivel=&isla=&anio=` | Ranking por masa/UD del año indicado (default último disponible) |
+| `GET /api/v1/analytics/abastecimiento?isla=&municipio=` | Anual por origen + top municipios |
 | `GET /api/v1/analytics/presion?isla=` | IPH mensual + media |
-| `GET /api/v1/analytics/ocupacion?isla=&tipo=` | Ocupación mensual por tipo |
-| `GET /api/v1/analytics/entidad/{tipo}/{cod}` | KPIs + sparkline para drawer (masa/municipio/pozo/ud) |
+| `GET /api/v1/analytics/ocupacion?isla=&tipo=&municipio=` | Ocupación mensual (Baleares = media de las islas) |
+| `GET /api/v1/analytics/uds?isla=` / `municipios?isla=` / `masas?isla=` | Catálogos para SearchSelect |
+| `GET /api/v1/analytics/entidad/{tipo}/{cod}` | KPIs + sparkline para drawer (masa: infiltración + balance; municipio/pozo/ud) |
 
-- **Año hidrológico** (sep-ago) como estándar para agregaciones de lluvia: `ah = anio + (mes >= 9 ? 1 : 0)`.
-- Isla de una masa: vía `masa_subterranea.id_unidad_demanda → unidad_demanda.cod_provincia → provincia.nombre_provincia`.
-- Cruces UD↔municipio: `ST_Intersects` (geometrías indexadas con GIST).
+- Los endpoints antiguos `/lluvia` se mantienen sin uso en el front (por si acaso).
+- **Año hidrológico** (sep-ago): `ah = anio + (mes >= 9 ? 1 : 0)`.
+- Isla de una masa: `masa_subterranea.id_unidad_demanda → unidad_demanda.cod_provincia → provincia.nombre_provincia`.
+- Cruces UD↔municipio y pozos↔municipio: `ST_Intersects`/`ST_Contains` (GIST indexado).
+- `mapa/masas` y `mapa/unidades-demanda` incluyen `estado_cuantitativo`, `explotacion_porcentaje` y `disponibilidad_hm3` del último año (coloreado DMA en el mapa).
 
 ### Frontend — página `/dashboards`
 
-- **Shell estilo datoasturias**: sidebar izquierdo fijo con 5 secciones (Visión general, Lluvia, Abastecimiento, Presión humana, Ocupación turística) + selector global de isla (Baleares + 4) en cabecera. Simulación queda como pestaña propia del navbar.
-- **Charts**: Recharts 3 (`recharts@^3.10` en package.json) — React 19, theming dark/light vía nanostores.
-- **Contexto desde el mapa**: `/dashboards?tipo=masa&cod=X&nombre=Y` (masa → vista Lluvia prefijada; breadcrumb con ✕ para quitar filtro).
-- Componentes: `web/src/components/dashboards/` (DashboardsShell, DashboardGeneral, DashboardLluvia, DashboardAbastecimiento, DashboardPresion, DashboardOcupacion, ui.tsx).
+- **Shell estilo datoasturias**: sidebar con **Visión general** + 2 grupos colapsables: **Recursos Hídricos** (Agua infiltrada, Balance hídrico, Abastecimiento) y **Turismo** (Presión humana, Ocupación turística). Acento de color por vista en el header.
+- Selector global de isla (con scroll horizontal en móvil) + SearchSelect con buscador por municipio/masa/UD (opciones filtradas por isla).
+- **Charts**: Recharts 3 — theming dark/light vía nanostores.
+- **RangoTemporal** (presets Todo/Últimos 5/Últimos 10 + desde/hasta, client-side): en Infiltrada (el toggle AH anula el rango), Balance (solo sección evolución), Abastecimiento, Presión y Ocupación (con modo **comparativa interanual**).
+- **DashboardBalance** en 2 secciones: "Situación actual" (último año disponible: disponibilidad con tooltip ℹ️ de la fórmula, explotación % coloreada DMA, diferencia vs RP, estado + **desglose entradas/salidas** con barras apiladas y tabla de componentes) y "Evolución temporal" (rango + charts con umbrales 0.8/1.0 + ranking del año `hasta`).
+- **Contexto desde el mapa** ("Más detalle"): `/dashboards?vista=balance&nivel=masa&masa=X` (masa), `/dashboards?vista=abastecimiento&municipio=X` (municipio). Los presets se aplican **solo a la vista destino** y no persisten al navegar manualmente.
+- Componentes: `web/src/components/dashboards/` (DashboardsShell, DashboardGeneral, DashboardInfiltrada, DashboardBalance, DashboardAbastecimiento, DashboardPresion, DashboardOcupacion, ui.tsx).
+- Visión general: infiltración AH **total del ámbito** (suma), masas en déficit sin chip duplicado, ocupación Baleares = media de islas.
 
 ### Mapa — drawer con KPIs (clic → sidebar, sin popup)
 
-- **Popup eliminado por completo** — clic en feature abre directamente el Drawer derecho con KPIs de la entidad (`/analytics/entidad/{tipo}/{cod}`):
-  - Masa: lluvia AH vs media (+% desviación), último mes vs media, fuente del dato, estaciones, municipios abastecidos y demanda; sparkline lluvia 24 meses (⚠️ balance hídrico descartado de momento)
-  - Municipio: población + variación, consumo 2024, ocupación del mes, lluvia AH de sus masas, pozos; sparkline ocupación 12 meses
-  - Pozo: ficha técnica + botón "Ver masa"
-  - U.D.: isla, área, municipios, población, consumo, masas y lluvia AH media
-- CTA **"Más detalle"** → `/dashboards?tipo=...&cod=...` (deep link con contexto).
-- Hover sobre features: resalte de estilo (sin tooltip).
-- `PUBLIC_PLADI_API_URL=/api/v1` en `web/.env.production` (Caddy proxys `/api/*` → FastAPI; en dev se usa `http://localhost:8000/api/v1`).
+- **Popup eliminado** — clic abre el Drawer con KPIs (`/analytics/entidad/{tipo}/{cod}`):
+  - Masa: infiltración AH vs media (+% desviación), último mes, sparkline 24 meses + **bloque balance** (estado DMA, disponibilidad, explotación, extracción); municipios y demanda
+  - Municipio: población + variación (chip gris), consumo, ocupación del mes consolidado, infiltración AH de sus masas, pozos; sparkline ocupación 12 meses
+  - Pozo: ficha + "Ver masa"
+  - U.D.: KPIs de sus masas + **bloque balance** (chips DMA) + listado de masas clicable
+- CTA "Más detalle": masa → vista balance; municipio → vista abastecimiento.
+- **Capas masas/UDs coloreadas siempre por estado DMA** (bueno verde, riesgo ámbar, malo rojo, sin dato neutro) + **leyenda** en el panel de capas.
+- **Tooltips** con el nombre en hover; **clustering de pozos** (Leaflet.markercluster CDN, `disableClusteringAtZoom: 10`, spiderfy); zoom inicial 9.
+- `PUBLIC_PLADI_API_URL=/api/v1` en `web/.env.production` (Caddy proxys `/api/*` → FastAPI; dev usa `http://localhost:8000/api/v1`).
 
 ### Notas técnicas
 
-- `web/src/lib/api.ts` — cliente analítico (`fetchResumen`, `fetchLluvia`, `fetchLluviaRanking`, `fetchAbastecimiento`, `fetchPresion`, `fetchOcupacion`, `fetchEntidad`).
-- `web/src/lib/store.ts` — atoms `dashIsla`, `dashVista`, `dashEntidad` (contexto) y `entidad*` (drawer).
-- Errores comunes SQL con asyncpg: `round(double, int)` no existe → usar `::numeric`; ids enteros (`id_unidad_demanda`) deben pasarse como int.
+- `web/src/lib/api.ts` — cliente analítico (`fetchResumen`, `fetchInfiltrada`, `fetchInfiltradaRanking`, `fetchBalance`, `fetchBalanceRanking`, `fetchUds`, `fetchMasas`, `fetchMunicipios`, `fetchAbastecimiento`, `fetchPresion`, `fetchOcupacion`, `fetchEntidad`).
+- `web/src/lib/store.ts` — atoms `dashIsla`, `dashVista` y `entidad*` (drawer).
+- Errores comunes SQL con asyncpg: `round(double, int)` no existe → `::numeric`; ids enteros (`id_unidad_demanda`) como int; decimal.Decimal → `float()` antes de dividir.
+
+### Identidad y responsive (2026-08-15)
+
+- **Logo**: icono de capas (bronze/silver/gold) en navbar + **favicon.svg** (pestaña del navegador).
+- **Responsive completa** (iPhone SE 320px → iPad): labels del navbar ocultas en móvil, footer con scroll horizontal, selector de islas con scroll, sidebar móvil con backdrop, panel de capas auto-colapsado <640px, KPI cards 1 col <360px, desglose sin % en xs, tooltips con soporte tap, `:focus-visible` global, leyendas de charts compactas en móvil.
+
+---
+
+## Balance hídrico simplificado (DMA) — ✅ 2026-08-15
+
+Cadena de oro: `gold.lluvia_masa_subterranea` → `gold.agua_infiltrada_masa_subterranea` → `gold.balance_hidrico_baleares`.
+
+- **`recurso_potencial_hm3`** añadido a `balance_masas_subterraneas_porcentajes` (82 masas, CHECK >= 0). CSV fuente: `data/postgis_dgrh/recurso_potencial.csv` (cargado también en `load_data.sql`).
+- **DAG `agua_infiltrada_masa_subterranea`** (gold): `agua_infiltrada_m3 = lluvia_mm × Σ(area_km2 × coef) × 1000`, con coeficientes en **tanto por uno** de `infiltracion_epoca_material` (rango 0-0.4). 84 masas; las 3 sin coeficientes (`1902M1`, `1903M1`, `1903M2`) quedan fuera. ~11.4k filas mensuales.
+- **DAG `balance_hidrico_baleares`** (gold, anual 2015-2024, rango dinámico): modelo DMA fiel al prompt simplificado:
+  - Entradas: infiltración lluvia real + climáticas (`× pct_x/pct_lluvia`) + fijas (`RP × pct/100`); intrusión salina en suma_entradas pero NO en disponibilidad
+  - Salidas: abastecimiento urbano (consumo municipal distribuido con pesos normalizados de `municipio_masa_subterranea`; **Formentera excluida** por no tener mapping) + torrentes/manantiales climáticas + humedales/salida_mar/zzhh fijas
+  - `disponibilidad = (suma_entradas − intrusión) − (salida_mar + salida_zzhh)`, cap 0, NULL si fuente NULL; `explotacion = extraccion/disponibilidad`; estados DMA: <0.8 bueno, 0.8-1 riesgo, >1 o disp=0 malo
+  - 82 masas con RP; 5 sin RP (`1803M3`, `1902M1`, `1903M1`, `1903M2`, `2101M4`) sin balance
+- **Encadenamiento por Assets (Airflow 3.3)**: los outlets se declaran **devolviendo `Asset(uri)` desde el task** (el kwarg `outlets` del DAG ya no existe). `agua_infiltrada` se dispara con `schedule=[Asset("pladi://gold/lluvia_masa_subterranea")]` y el balance con `schedule=[Asset("pladi://gold/agua_infiltrada_masa_subterranea")]`. `lluvia_masa_subterranea` produce su Asset.
+- DDL en `sql/gold_balance.sql`; documentado en `docs/schema.dbml`.
+
+## Simulación (FASE VII — diseño, sin implementar)
+
+**Decisión (2026-08)**: antes de implementar nada, el equipo hará un notebook de experimentos de data science para validar si un modelo propio mejora los básicos usando las tablas extra del proyecto. Solo queda aquí el diseño acordado:
+
+- **Objetivo**: predecir el consumo urbano **anual** por municipio (hm³). Target: `gold.abastecimiento_urbano_baleares` (2000-2024).
+- **Features candidatas** (municipio·año): IPH anual por isla (media y máx), ocupación turística anual (media plazas), precipitación anual del municipio (media de sus masas), temperatura media anual (AEMET), tendencia temporal.
+- **Ventana de entrenamiento**: 2015-2024 (el censo solo cubre 2021-2025, así que la población no entra en esta primera versión).
+- **Modelo**: regresión regularizada o gradient boosting, modelos por municipio o panel; validación temporal.
+- **UI futura** (`/simulacion`): sliders de escenario (variación % IPH/ocupación, lluvia, temperatura) → consumo proyectado por municipio + sensibilidad.
 
 ---
 
