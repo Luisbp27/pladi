@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS balance_masas_subterraneas_porcentajes (
     transferencia_a_masas          DOUBLE PRECISION,
     salida_mar                     DOUBLE PRECISION,
     salida_zzhh                    DOUBLE PRECISION,
+    recurso_potencial_hm3          DOUBLE PRECISION CHECK (recurso_potencial_hm3 >= 0),
     created_at                     TIMESTAMPTZ DEFAULT now(),
     updated_at                     TIMESTAMPTZ DEFAULT now(),
     CONSTRAINT pk_balance_masas_sub PRIMARY KEY (cod_masa),

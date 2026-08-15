@@ -143,3 +143,17 @@ DROP TABLE _tmp_inf;
 -- 9. municipio_masa_subterranea
 -- ============================================================
 \copy municipio_masa_subterranea (cod_municipio, cod_masa, abastecimiento_agua_media_ponderada_anual_hm3) FROM '/tmp/pladi_data/municipio_masa_subterranea.csv' CSV HEADER NULL ''
+
+-- ============================================================
+-- 10. recurso_potencial_hm3 (columna de balance_masas_subterraneas_porcentajes)
+-- ============================================================
+CREATE TEMP TABLE _tmp_rp (
+    cod_masa               TEXT,
+    recurso_potencial_hm3  DOUBLE PRECISION
+);
+\copy _tmp_rp FROM '/tmp/pladi_data/recurso_potencial.csv' CSV HEADER
+UPDATE balance_masas_subterraneas_porcentajes b
+SET recurso_potencial_hm3 = t.recurso_potencial_hm3
+FROM _tmp_rp t
+WHERE b.cod_masa = t.cod_masa;
+DROP TABLE _tmp_rp;

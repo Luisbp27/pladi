@@ -98,6 +98,7 @@ Table balance_masas_subterraneas_porcentajes {
   transferencia_a_masas double
   salida_mar double
   salida_zzhh double
+  recurso_potencial_hm3 double
   created_at timestamptz [default: `now()`]
   updated_at timestamptz [default: `now()`]
 }
@@ -137,5 +138,53 @@ Table municipio_masa_subterranea {
     (cod_municipio, cod_masa) [pk, name: "pk_municipio_masa"]
     cod_municipio [name: "idx_mun_masa_mun"]
     cod_masa [name: "idx_mun_masa_masa"]
+  }
+}
+
+// ── GOLD ──────────────────────────────────────────────────────────────────
+
+Table gold.agua_infiltrada_masa_subterranea {
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  anio int
+  mes int
+  agua_infiltrada_m3 double
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_masa, anio, mes) [pk, name: "pk_agua_infiltrada"]
+    (anio, mes) [name: "idx_agua_infiltrada_anio_mes"]
+  }
+}
+
+Table gold.balance_hidrico_baleares {
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  anio int
+  infiltracion_lluvia_hm3 double
+  infiltracion_torrentes_hm3 double
+  retorno_riegos_hm3 double
+  perdida_redes_abastecimiento_hm3 double
+  perdida_redes_alcantarillado_hm3 double
+  intrusion_salina_hm3 double
+  suma_entradas_hm3 double
+  diferencia_vs_rp_hm3 double
+  abastecimiento_urbano_hm3 double
+  torrentes_hm3 double
+  manantiales_hm3 double
+  humedales_hm3 double
+  salida_mar_hm3 double
+  salida_zzhh_hm3 double
+  suma_salidas_hm3 double
+  disponibilidad_hm3 double
+  extraccion_hm3 double
+  explotacion_porcentaje double
+  estado_cuantitativo text
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_masa, anio) [pk, name: "pk_balance_hidrico"]
+    anio [name: "idx_balance_hidrico_anio"]
+    estado_cuantitativo [name: "idx_balance_hidrico_estado"]
   }
 }
