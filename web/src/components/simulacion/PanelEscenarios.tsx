@@ -92,7 +92,7 @@ export default function PanelEscenarios({
           <>
             <SliderInput
               label="Presión humana (IPH)"
-              hint="Eivissa y Formentera comparten serie (NUTS) · efecto medido: +1,3% consumo por +10%"
+              hint="Eivissa y Formentera comparten serie (NUTS) · efecto medido: +0,9% consumo por +10%"
               value={editable.iph_pct}
               onChange={(v) => updateEditable({ iph_pct: v })}
             />

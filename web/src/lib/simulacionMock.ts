@@ -10,7 +10,7 @@ import {
 export const ESCENARIO_COLORS = ['#3b82f6', '#f59e0b', '#a855f7'];
 
 // Elasticidades reales medidas en 14_interpretabilidad (models/elasticidades.json)
-const ELASTICIDADES = { iph: 0.128, ocupacion: -0.008, lluvia: -0.019 };
+const ELASTICIDADES = { iph: 0.093, ocupacion: 0.008, lluvia: -0.017 };
 const MAPE = 0.087;
 
 const HISTORICO_SINTETICO = [

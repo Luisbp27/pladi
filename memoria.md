@@ -481,10 +481,18 @@ notebooks/
 - **Features (v2)**: `anio`, `iph_media`, `ocupacion_media`, `lluvia_anual_mm`, `lag1`. ~~Temperatura media anual (AEMET)~~ → **fuera**: el gold solo tiene precipitación. `iph_max` fuera por correlación.
 - **Ventana**: 2015-2024 para modelos con features (limitada por lluvia); baselines usan historia completa. Split temporal: train < 2022, test 2022-2024 (predicción recursiva, lag actualizado con la predicción).
 - **Resultados (MAPE medio test 2022-2024)**:
-  - `gb_municipio` **9,3%** (ganador) > `regla_negocio` 10,2% > naive 11,6% ≈ ets 11,7% ≈ gb_temporal 11,7% > arima 12,2% > ridge 15,6% > media 17,8% > gb_panel 28,9% > lasso 33,4%.
-  - **Regla de negocio** (heurística DGRH: Δconsumo = 0,3 × ΔIPH isla) queda **segunda** — muy cerca del modelo; justifica el ML solo con el delta de 0,9 pp + interpretabilidad.
+  - `gb_municipio` **8,7%** (ganador) > `regla_negocio` 10,2% > naive 11,6% ≈ ets 11,7% ≈ gb_temporal 11,7% > arima 12,2% > ridge 13,5% > media 17,8% > gb_panel 25,9% > lasso 29,8%.
+  - **Regla de negocio** (heurística DGRH: Δconsumo = 0,3 × ΔIPH isla) queda **segunda** — muy cerca del modelo; justifica el ML solo con el delta de 1,5 pp + interpretabilidad.
   - **Walk-forward** (1 año, ventanas 2021-2024): gb_municipio estable (MAPE 6,2-7,5%) pero naive gana 2 de 4 ventanas — la ventaja del modelo es modesta y honesta.
-  - **Elasticidades reales** (14_interpretabilidad, perturbación ±10%): IPH **0,128**, ocupación **≈0**, lluvia **−0,019** — el consumo es muy inercial (lag1 domina el SHAP). Estas cifras están cableadas al mock de /simulacion.
+  - **Elasticidades reales** (14_interpretabilidad, perturbación ±10%): IPH **0,093**, ocupación **≈0**, lluvia **−0,017** — el consumo es muy inercial (lag1 domina el SHAP). Estas cifras están cableadas al mock de /simulacion.
+  - **Ablación de configuración (2026-08-30)** — por qué el modelo usa `iph_max` y train desde 2016:
+    | Config | MAPE |
+    |---|---|
+    | **v1 (con `iph_max`, train 2016+)** | **8,7%** |
+    | con `iph_max`, train 2015+ | 9,1% |
+    | sin `iph_max`, train 2016+ | 8,9% |
+    | sin `iph_max`, train 2015+ (v2) | 9,3% |
+    → `iph_max` se conserva pese a |r|>0,85 con `iph_media` (la regla de correlación del protocolo es estética; aporta +0,2 pp) y 2015 se excluye del train (aporta ruido: +0,4 pp). Documentado también en `08_panel_features`.
 - **Interpretabilidad**: SHAP global + por municipio representativo (Palma 07040, Calvià 07011, Sineu 07060) en 14_interpretabilidad.
 
 ### UI `/simulacion` (diseñada 2026-08-30 — frontend con API mock)
