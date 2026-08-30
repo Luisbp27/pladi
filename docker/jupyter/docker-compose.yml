@@ -1,0 +1,12 @@
+services:
+  jupyter:
+    build: .
+    image: pladi-jupyter:latest
+    container_name: pladi-jupyter
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?JUPYTER_TOKEN no definido en docker/.env}
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - ../../notebooks:/home/jovyan/work
+    restart: unless-stopped

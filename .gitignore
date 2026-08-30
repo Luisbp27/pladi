@@ -15,6 +15,11 @@ web/.env
 web/.env.production
 web/.env.*.local
 
+# === Notebooks (FASE VII) ===
+notebooks/data/
+notebooks/.venv/
+notebooks/.ipynb_checkpoints/
+
 # === Docker secrets ===
 docker/.env
 docker/airflow/logs/

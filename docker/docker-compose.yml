@@ -3,6 +3,7 @@ include:
   - path: minio/docker-compose.yml
   - path: airflow/docker-compose.yml
   - path: fastapi/docker-compose.yml
+  - path: jupyter/docker-compose.yml
 
 services:
   caddy:
