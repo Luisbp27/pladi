@@ -79,9 +79,9 @@ export default function ResultadosSimulacion({
         />
         <KpiCard
           label="Sensibilidad IPH"
-          value="+2,0"
+          value="+1,3"
           unit="%"
-          sub="consumo por cada +10% de IPH (elasticidad 0,2)"
+          sub="consumo por cada +10% de IPH (elasticidad real 0,13)"
         />
       </div>
 
