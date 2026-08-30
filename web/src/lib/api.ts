@@ -362,3 +362,74 @@ export const ESTADO_LABELS: Record<string, string> = {
 
 export const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 export const ISLAS = ['Mallorca', 'Menorca', 'Eivissa', 'Formentera'];
+
+// ── Simulación ─────────────────────────────────────────────────────────────
+
+export interface SimulacionEscenario {
+  id: string;
+  nombre: string;
+  iph_pct: number;
+  ocupacion_pct: number;
+  lluvia_pct: number;
+}
+
+export interface ProyeccionPunto {
+  anio: number;
+  consumo_hm3: number;
+  lo: number;
+  hi: number;
+}
+
+export interface EscenarioResultado {
+  id: string;
+  nombre: string;
+  color: string;
+  proyeccion: ProyeccionPunto[];
+  kpis: {
+    consumo_final_hm3: number;
+    delta_vs_base_pct: number;
+    variacion_media_anual_pct: number;
+    sensibilidad: { iph: number; ocupacion: number; lluvia: number };
+  };
+}
+
+export interface MunicipioSim {
+  cod_municipio: string;
+  nombre_municipio: string;
+  isla: string;
+  base_hm3: number;
+  proy_hm3: number;
+  delta_pct: number;
+}
+
+export interface SimulacionResp {
+  ambito: string;
+  municipio?: string;
+  base_anio: number;
+  hasta: number;
+  serie_historica: { anio: number; consumo_hm3: number }[];
+  escenarios: EscenarioResultado[];
+  municipios: Record<string, MunicipioSim[]>;
+}
+
+export interface SimulacionParams {
+  isla?: string;
+  municipio?: string;
+  hasta: number;
+  escenarios: SimulacionEscenario[];
+}
+
+export const SIMULACION_MOCK = import.meta.env.PUBLIC_SIMULACION_MOCK !== 'false';
+
+export async function fetchSimulacion(p: SimulacionParams): Promise<SimulacionResp> {
+  if (SIMULACION_MOCK) {
+    const { getSimulacionMock } = await import('./simulacionMock');
+    return getSimulacionMock(p);
+  }
+  const q = new URLSearchParams();
+  if (p.municipio) q.set('municipio', p.municipio);
+  else if (p.isla) q.set('isla', p.isla);
+  q.set('hasta', String(p.hasta));
+  q.set('escenarios', JSON.stringify(p.escenarios));
+  return getJson<SimulacionResp>(`simulacion/consumo?${q.toString()}`);
+}

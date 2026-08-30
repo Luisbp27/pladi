@@ -468,7 +468,15 @@ notebooks/
 - **Ventana**: 2015-2024 para modelos con features (limitada por lluvia); baselines usan historia completa. Split temporal: train ≤ 2021, test 2022-2024 (predicción recursiva, lag actualizado con la predicción).
 - **Resultados baseline (MAPE medio test 2022-2024)**: `gb_municipio` **8,7%** (ganador) > naive 11,6% ≈ ets 11,7% ≈ gb_temporal 11,7% > arima 12,2% > ridge 13,6% > media 17,8% > gb_panel 25,9% > lasso 29,8%.
   - Los modelos por municipio (GB) sí mejoran el baseline → las features aportan señal. Los modelos panel con one-hot (gb_panel, lasso) empeoran: los efectos por municipio no se capturan linealmente.
-- **UI futura** (`/simulacion`): sliders de escenario (variación % IPH/ocupación, lluvia) → consumo proyectado por municipio + sensibilidad.
+
+### UI `/simulacion` (diseñada 2026-08-30 — frontend con API mock)
+
+- **Layout 2 paneles**: izquierda "PanelEscenarios" (340px), derecha resultados. Header con punto violeta (`#a855f7`) y pills de isla (patrón dashboards). Responsive: panel encima en móvil.
+- **Panel de escenarios** (`web/src/components/simulacion/`): ámbito (isla + SearchSelect municipio), horizonte (2026-2035), sliders % (−30..+30) de IPH / ocupación turística / lluvia (con presets Año seco −30 / Normal / Año húmedo +30), 3 escenarios: **Base** (fijo) + 2 personalizables (nombre, visibilidad en el gráfico). Chip ámbar si |Δ| > 25 (fuera del rango de entrenamiento). Tooltips: IPH NUTS (Eivissa+Formentera juntas), ocupación sin efecto en municipios sin turismo.
+- **Resultados** (`ResultadosSimulacion.tsx`): 4 KpiCards (consumo proyectado + Δ% vs base, consumo base, variación media anual, sensibilidad IPH), ComposedChart Recharts (histórico sólido + proyecciones dashed por escenario + area de incertidumbre; lo/hi en tooltip), ranking top/bottom 5 municipios por Δ%, tabla municipal completa con pills de escenario.
+- **Mock**: `PUBLIC_SIMULACION_MOCK=true` (`.env` y `.env.production`) → `web/src/lib/simulacionMock.ts`. Histórico **real** vía `fetchAbastecimiento` (fallback sintético si la API cae); proyecciones deterministas (seed por municipio·escenario) con elasticidades plausibles (IPH 0,2 · ocupación 0,15 · lluvia −0,04), banda ±MAPE que se ensancha con el horizonte; tabla municipal con nombres reales de `fetchMunicipios`.
+- **Contrato API real (pendiente)**: `GET /api/v1/simulacion/consumo?isla=&municipio=&hasta=&escenarios=[{id,nombre,iph_pct,ocupacion_pct,lluvia_pct}]` → `{ambito, base_anio, serie_historica, escenarios:[{id,nombre,color,proyeccion[{anio,consumo_hm3,lo,hi}],kpis}], municipios:{escenarioId:[{cod,nombre,isla,base_hm3,proy_hm3,delta_pct}]}}`. Cuando exista: quitar el flag mock y conectar. El backend cargará los 67 modelos joblib guardados desde el notebook 11 (artefactos en volumen compartido; reentrenamiento manual).
+- **Pendientes v2**: cruzar la simulación con el balance hídrico (consumo → extracción → masas en déficit); bandas de incertidumbre reales del modelo (no ±MAPE fijo).
 
 ---
 
