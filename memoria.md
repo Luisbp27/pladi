@@ -11,6 +11,7 @@
 | Airflow | 8080 | ✅ | LocalExecutor, conexiones a MinIO y PostGIS |
 | FastAPI | 8000 | ✅ | `/api/v1/health` + endpoints GeoJSON para mapa |
 | Astro | 4321 | ✅ | Frontend en desarrollo (FASE II) |
+| Jupyter | 8888 | ✅ | Notebooks FASE VII (acceso por SSH tunnel) |
 | Spark | — | ❌ | Procesamiento distribuido (opcional) |
 
 ### Estructura de carpetas
@@ -344,7 +345,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 | FASE IV — Dashboards + UI/UX | ✅ Completada (2026-08-15) — ver sección "Dashboards y analítica" |
 | FASE V — Frontend (Astro) | ✅ (unificado con FASE II) |
 | FASE VI — Despliegue real | ✅ Completada — VPS en producción |
-| FASE VII — Modelos + data science | 🚧 Diseño acordado; pendiente notebook de experimentos (ver "Simulación") |
+| FASE VII — Modelos + data science | 🚧 Notebooks de experimentos creados y ejecutados (2026-08-30); pendiente UI `/simulacion` |
 
 ---
 
@@ -429,15 +430,45 @@ Cadena de oro: `gold.lluvia_masa_subterranea` → `gold.agua_infiltrada_masa_sub
 - **Encadenamiento por Assets (Airflow 3.3)**: los outlets se declaran **devolviendo `Asset(uri)` desde el task** (el kwarg `outlets` del DAG ya no existe). `agua_infiltrada` se dispara con `schedule=[Asset("pladi://gold/lluvia_masa_subterranea")]` y el balance con `schedule=[Asset("pladi://gold/agua_infiltrada_masa_subterranea")]`. `lluvia_masa_subterranea` produce su Asset.
 - DDL en `sql/gold_balance.sql`; documentado en `docs/schema.dbml`.
 
-## Simulación (FASE VII — diseño, sin implementar)
+## Simulación (FASE VII — 🚧 en desarrollo — notebooks creados 2026-08-30)
 
-**Decisión (2026-08)**: antes de implementar nada, el equipo hará un notebook de experimentos de data science para validar si un modelo propio mejora los básicos usando las tablas extra del proyecto. Solo queda aquí el diseño acordado:
+**Decisión (2026-08)**: antes de implementar nada en la UI, el equipo valida con notebooks de experimentos si un modelo propio mejora los baselines usando las tablas gold. La UI de `/simulacion` queda pendiente de esta validación.
 
-- **Objetivo**: predecir el consumo urbano **anual** por municipio (hm³). Target: `gold.abastecimiento_urbano_baleares` (2000-2024).
-- **Features candidatas** (municipio·año): IPH anual por isla (media y máx), ocupación turística anual (media plazas), precipitación anual del municipio (media de sus masas), temperatura media anual (AEMET), tendencia temporal.
-- **Ventana de entrenamiento**: 2015-2024 (el censo solo cubre 2021-2025, así que la población no entra en esta primera versión).
-- **Modelo**: regresión regularizada o gradient boosting, modelos por municipio o panel; validación temporal.
-- **UI futura** (`/simulacion`): sliders de escenario (variación % IPH/ocupación, lluvia, temperatura) → consumo proyectado por municipio + sensibilidad.
+### Estructura `notebooks/`
+
+```
+notebooks/
+├── 00_export_datasets.py       # exporta gold.* + dimensiones de PostGIS → data/*.csv (host: python3 notebooks/00_export_datasets.py)
+├── data/                       # CSVs exportados (gitignored)
+├── results/                    # métricas por modelo (modelo, cod_municipio, mae, mape, rmse, r2)
+├── 01_abastecimiento.ipynb     # EDA target (consumo_hm3, municipio x año 2000-2024, 67 series completas)
+├── 02_presion_humana.ipynb     # EDA IPH (3 series NUTS; Eivissa+Formentera juntas)
+├── 03_ocupacion_turistica.ipynb# EDA ocupación (26/67 municipios; imputar 0 + flag al resto)
+├── 04_lluvia_masa_subterranea.ipynb  # EDA lluvia (feature: lluvia anual media de las masas del municipio)
+├── 05_agua_infiltrada.ipynb    # EDA recarga (colineal con lluvia → no entra en v1)
+├── 06_balance_hidrico.ipynb    # EDA balance DMA (contexto: masas en déficit)
+├── 07_censo.ipynb              # EDA censo 2021-2025 (NO entra como feature en v1)
+├── 10_baseline.ipynb           # 5 baselines TS: naive, media, ETS/Holt, GB temporal, auto-ARIMA
+├── 11_modelo_municipio.ipynb   # GB por municipio (67 modelos)
+├── 12_modelo_panel_gbm.ipynb   # GB global con one-hot de municipio
+├── 13_modelo_panel_regularizado.ipynb  # Ridge/Lasso panel (alpha por CV)
+└── 20_comparativa.ipynb        # une results/*.csv y compara
+```
+
+### Entorno Jupyter (Docker)
+
+- Servicio `jupyter` en `docker/jupyter/` (base `jupyter/base-notebook` + polars, sklearn, statsmodels, pmdarima, seaborn). Puerto `127.0.0.1:8888`, volumen `../../notebooks:/home/jovyan/work`, `restart: unless-stopped`.
+- **Acceso** (mismo patrón que Airflow/MinIO): `ssh -L 8888:localhost:8888 root@169.58.169.55` → `http://localhost:8888?token=<JUPYTER_TOKEN de docker/.env>`.
+- Notebooks se editan/ejecutan directamente en el repo (mounted). `notebooks/data/` y `.venv` gitignored; `results/` se commitea (métricas pequeñas).
+
+### Diseño del experimento (actualizado)
+
+- **Objetivo**: predecir el consumo urbano **anual** por municipio (hm³). Target: `gold.abastecimiento_urbano_baleares` (2000-2024, 67 series completas).
+- **Features (v1)**: IPH anual por isla (media y máx), ocupación turística anual por municipio (media, 0 si sin datos), precipitación anual municipal (media de sus masas), tendencia temporal, lag1. ~~Temperatura media anual (AEMET)~~ → **fuera**: el gold solo tiene precipitación (2026-08-30).
+- **Ventana**: 2015-2024 para modelos con features (limitada por lluvia); baselines usan historia completa. Split temporal: train ≤ 2021, test 2022-2024 (predicción recursiva, lag actualizado con la predicción).
+- **Resultados baseline (MAPE medio test 2022-2024)**: `gb_municipio` **8,7%** (ganador) > naive 11,6% ≈ ets 11,7% ≈ gb_temporal 11,7% > arima 12,2% > ridge 13,6% > media 17,8% > gb_panel 25,9% > lasso 29,8%.
+  - Los modelos por municipio (GB) sí mejoran el baseline → las features aportan señal. Los modelos panel con one-hot (gb_panel, lasso) empeoran: los efectos por municipio no se capturan linealmente.
+- **UI futura** (`/simulacion`): sliders de escenario (variación % IPH/ocupación, lluvia) → consumo proyectado por municipio + sensibilidad.
 
 ---
 
