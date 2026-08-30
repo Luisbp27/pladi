@@ -419,7 +419,7 @@ export interface SimulacionParams {
   escenarios: SimulacionEscenario[];
 }
 
-export const SIMULACION_MOCK = import.meta.env.PUBLIC_SIMULACION_MOCK !== 'false';
+export const SIMULACION_MOCK = import.meta.env.PUBLIC_SIMULACION_MOCK === 'true';
 
 export async function fetchSimulacion(p: SimulacionParams): Promise<SimulacionResp> {
   if (SIMULACION_MOCK) {

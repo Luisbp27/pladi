@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     postgres_password: str = "pladi"
     postgres_db: str = "pladi"
     minio_endpoint: str = "http://minio:9000"
+    models_dir: str = "/opt/models"
 
     @property
     def database_url(self) -> str:

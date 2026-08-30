@@ -472,8 +472,9 @@ notebooks/
 
 ### Modelos serializados (`models/` en raíz, gitignored)
 
-- `models/municipio/{cod_municipio}.joblib` — 67 GB entrenados (notebook 11) + `models/metadata.json` (features, params, base_anio, MAPE por municipio) + `models/elasticidades.json`.
-- Patrón de despliegue: `models/` montado en jupyter (rw) y, cuando exista el endpoint real, en fastapi (ro) — igual que `data/` con postgis/airflow. Reentrenamiento manual desde 11; versionado futuro vía MinIO/MLflow.
+- `models/municipio/{cod_municipio}.joblib` — 67 GB (notebook 11) + `models/metadata.json` (features, params, base_anio 2024, MAPE por municipio) + `models/elasticidades.json`.
+- **Produccion**: el notebook 11 reentrena con datos 2016-2024 antes de serializar (los arboles no extrapolan `anio` mas alla del rango); las metricas de evaluacion siguen siendo las del holdout 2022-2024.
+- Patrón de despliegue: `models/` montado en jupyter (rw) y en fastapi (ro, `/opt/models`) — igual que `data/` con postgis/airflow. Reentrenamiento manual desde 11; versionado futuro vía MinIO/MLflow.
 
 ### Diseño del experimento (actualizado 2026-08-30 v2)
 
@@ -500,8 +501,12 @@ notebooks/
 - **Layout 2 paneles**: izquierda "PanelEscenarios" (340px), derecha resultados. Header con punto violeta (`#a855f7`) y pills de isla (patrón dashboards). Responsive: panel encima en móvil.
 - **Panel de escenarios** (`web/src/components/simulacion/`): ámbito (isla + SearchSelect municipio), horizonte (2026-2035), sliders % (−30..+30) de IPH / ocupación turística / lluvia (con presets Año seco −30 / Normal / Año húmedo +30). **2 escenarios fijos** (rediseño 2026-08-30): **Tendencial** (inercia + tendencia, sin cambios) y **Mayor presión humana** (editable, defaults IPH +20 · ocupación +10). Sin nombres editables. Los sliders muestran el efecto medido del modelo (IPH 0,13 · ocupación ≈0 · lluvia ≈−0,02) — por eso no hay escenario de sequía (la lluvia apenas mueve el consumo urbano; su dominio es el balance hídrico). Chip ámbar si |Δ| > 25 (fuera del rango de entrenamiento). Tooltips: IPH NUTS (Eivissa+Formentera juntas), ocupación sin efecto en municipios sin turismo.
 - **Resultados** (`ResultadosSimulacion.tsx`): 4 KpiCards (consumo proyectado + Δ% vs base, consumo base, variación media anual, sensibilidad IPH), ComposedChart Recharts (histórico sólido + proyecciones dashed por escenario + area de incertidumbre; lo/hi en tooltip), ranking top/bottom 5 municipios por Δ%, tabla municipal completa con pills de escenario.
-- **Mock**: `PUBLIC_SIMULACION_MOCK=true` (`.env` y `.env.production`) → `web/src/lib/simulacionMock.ts`. Histórico **real** vía `fetchAbastecimiento` (fallback sintético si la API cae); proyecciones deterministas (seed por municipio·escenario) con **elasticidades reales del modelo** (IPH 0,128 · ocupación ≈0 · lluvia −0,019, medidas en `14_interpretabilidad`), banda ±MAPE que se ensancha con el horizonte; tabla municipal con nombres reales de `fetchMunicipios`.
-- **Contrato API real (pendiente)**: `GET /api/v1/simulacion/consumo?isla=&municipio=&hasta=&escenarios=[{id,nombre,iph_pct,ocupacion_pct,lluvia_pct}]` → `{ambito, base_anio, serie_historica, escenarios:[{id,nombre,color,proyeccion[{anio,consumo_hm3,lo,hi}],kpis}], municipios:{escenarioId:[{cod,nombre,isla,base_hm3,proy_hm3,delta_pct}]}}`. Cuando exista: quitar el flag mock y conectar. El backend cargará los 67 modelos joblib de `models/municipio/` (volumen compartido, montar ro en fastapi; reentrenamiento manual desde el notebook 11).
+- **Mock**: `PUBLIC_SIMULACION_MOCK=true` → `web/src/lib/simulacionMock.ts` (opt-in para desarrollo sin API; el historico es real vía `fetchAbastecimiento`). Elasticidades reales cableadas.
+- **API real (implementada 2026-08-30)**: `GET /api/v1/simulacion/consumo?isla=&municipio=&hasta=&escenarios=<json>` en `api/routers/simulacion.py` + `api/simulacion_service.py`.
+  - Carga en startup (lifespan, `asyncio.to_thread`) los 67 modelos joblib de `models/municipio/` + `metadata.json` + `elasticidades.json` (volumen `../../models:/opt/models:ro` en fastapi). Sin modelos → 503 claro.
+  - **Metodo hibrido honesto**: (1) baseline = prediccion recursiva del modelo con features congeladas en el ultimo ano y `anio` limitado al ultimo ano de entrenamiento (los arboles GB no extrapolan tendencia: se congelan en la hoja limite); (2) escenario = ajuste multiplicativo con las elasticidades medidas in-range (delta = e_iph·ΔIPH + e_ocup·Δocup + e_lluvia·Δlluvia), con lag recursivo compuesto. Motivo: a niveles de IPH de 2024 (fuera del rango 2016-2021) la sensibilidad de los arboles es exactamente 0 → sin este ajuste los sliders no moverian nada.
+  - Banda lo/hi = ±MAPE por municipio, ensanchada con el horizonte. Respuesta = contrato `SimulacionResp`. Verificado: la prediccion del endpoint coincide exactamente con el modelo del notebook 11.
+  - **Modelos de produccion**: reentrenados con datos 2016-2024 (el notebook 11 serializa estos; el MAPE documentado 8,7% proviene del holdout 2022-2024).
 - **Pendientes v2**: cruzar la simulación con el balance hídrico (consumo → extracción → masas en déficit); bandas de incertidumbre reales del modelo (no ±MAPE fijo).
 
 ---

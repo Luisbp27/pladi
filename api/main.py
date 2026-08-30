@@ -6,10 +6,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import close_pool
 from routers.analytics import router as analytics_router
 from routers.mapa import router as mapa_router
+from routers.simulacion import router as simulacion_router
+from simulacion_service import ModelosError, load as load_modelos
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    try:
+        await load_modelos()
+    except ModelosError as e:
+        print(f"[pladi] simulacion: modelos no disponibles ({e}) — /simulacion/consumo respondera 503")
     yield
     await close_pool()
 
@@ -25,6 +31,7 @@ app.add_middleware(
 
 app.include_router(mapa_router)
 app.include_router(analytics_router)
+app.include_router(simulacion_router)
 
 
 @app.get("/api/v1/health")
