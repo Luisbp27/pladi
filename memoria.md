@@ -439,8 +439,8 @@ Cadena de oro: `gold.lluvia_masa_subterranea` → `gold.agua_infiltrada_masa_sub
 ```
 notebooks/
 ├── 00_export_datasets.py       # exporta gold.* + dimensiones de PostGIS → data/*.csv (host: python3 notebooks/00_export_datasets.py)
-├── data/                       # CSVs exportados (gitignored)
-├── results/                    # métricas por modelo (modelo, cod_municipio, mae, mape, rmse, r2)
+├── data/                       # CSVs + panel.parquet + panel_train/test.parquet + panel_metadata.json (gitignored)
+├── results/                    # métricas por modelo (modelo, cod_municipio, mae, mape, rmse, r2) + elasticidades.csv
 ├── 01_abastecimiento.ipynb     # EDA target (consumo_hm3, municipio x año 2000-2024, 67 series completas)
 ├── 02_presion_humana.ipynb     # EDA IPH (3 series NUTS; Eivissa+Formentera juntas)
 ├── 03_ocupacion_turistica.ipynb# EDA ocupación (26/67 municipios; imputar 0 + flag al resto)
@@ -448,34 +448,52 @@ notebooks/
 ├── 05_agua_infiltrada.ipynb    # EDA recarga (colineal con lluvia → no entra en v1)
 ├── 06_balance_hidrico.ipynb    # EDA balance DMA (contexto: masas en déficit)
 ├── 07_censo.ipynb              # EDA censo 2021-2025 (NO entra como feature en v1)
-├── 10_baseline.ipynb           # 5 baselines TS: naive, media, ETS/Holt, GB temporal, auto-ARIMA
-├── 11_modelo_municipio.ipynb   # GB por municipio (67 modelos)
+├── 08_panel_features.ipynb     # TABLÓN ANALÍTICO: panel único + outliers (MAD) + correlaciones + preprocessing documentado
+├── 10_baseline.ipynb           # 6 baselines TS: naive, media, ETS/Holt, GB temporal, auto-ARIMA, regla_negocio DGRH
+├── 11_modelo_municipio.ipynb   # GB por municipio (67 modelos) → serializa models/municipio/*.joblib + metadata.json
 ├── 12_modelo_panel_gbm.ipynb   # GB global con one-hot de municipio
 ├── 13_modelo_panel_regularizado.ipynb  # Ridge/Lasso panel (alpha por CV)
-└── 20_comparativa.ipynb        # une results/*.csv y compara
+├── 14_interpretabilidad.ipynb  # SHAP global+por municipio + elasticidades reales → results/elasticidades.csv + models/elasticidades.json
+└── 20_comparativa.ipynb        # une results/*.csv + walk-forward de estabilidad
 ```
+
+### Tablón analítico (`08_panel_features`) — patrón "feature store" del protocolo
+
+- **Punto único** de construcción del panel municipio x año (2015+); 11/12/13/20 lo **leen** de `data/panel_features.parquet` + `panel_metadata.json` (features finales, decisiones documentadas).
+- **Outliers**: detección por MAD (>3) — se mantienen (eventos reales: sequías, restricciones).
+- **Correlaciones**: `iph_max` eliminada (|r| > 0.85 con `iph_media`). Features finales: `anio, iph_media, ocupacion_media, lluvia_anual_mm, lag1` (lag1 = consumo del año anterior, serie completa 2000-2024).
+- Diccionario de features y "recommended preprocessing" documentados en el propio notebook.
 
 ### Entorno Jupyter (Docker)
 
-- Servicio `jupyter` en `docker/jupyter/` (base `jupyter/base-notebook` + polars, sklearn, statsmodels, pmdarima, seaborn). Puerto `127.0.0.1:8888`, volumen `../../notebooks:/home/jovyan/work`, `restart: unless-stopped`.
+- Servicio `jupyter` en `docker/jupyter/` (base `jupyter/base-notebook` + polars, sklearn, statsmodels, pmdarima, seaborn, shap, joblib). Puerto `127.0.0.1:8888`, volúmenes `../../notebooks:/home/jovyan/work` y `../../models:/home/jovyan/models`, `restart: unless-stopped`.
 - **Acceso** (mismo patrón que Airflow/MinIO): `ssh -L 8888:localhost:8888 root@169.58.169.55` → `http://localhost:8888?token=<JUPYTER_TOKEN de docker/.env>`.
-- Notebooks se editan/ejecutan directamente en el repo (mounted). `notebooks/data/` y `.venv` gitignored; `results/` se commitea (métricas pequeñas).
+- `notebooks/data/`, `.venv` y `models/` gitignored; `results/` se commitea (métricas pequeñas).
 
-### Diseño del experimento (actualizado)
+### Modelos serializados (`models/` en raíz, gitignored)
+
+- `models/municipio/{cod_municipio}.joblib` — 67 GB entrenados (notebook 11) + `models/metadata.json` (features, params, base_anio, MAPE por municipio) + `models/elasticidades.json`.
+- Patrón de despliegue: `models/` montado en jupyter (rw) y, cuando exista el endpoint real, en fastapi (ro) — igual que `data/` con postgis/airflow. Reentrenamiento manual desde 11; versionado futuro vía MinIO/MLflow.
+
+### Diseño del experimento (actualizado 2026-08-30 v2)
 
 - **Objetivo**: predecir el consumo urbano **anual** por municipio (hm³). Target: `gold.abastecimiento_urbano_baleares` (2000-2024, 67 series completas).
-- **Features (v1)**: IPH anual por isla (media y máx), ocupación turística anual por municipio (media, 0 si sin datos), precipitación anual municipal (media de sus masas), tendencia temporal, lag1. ~~Temperatura media anual (AEMET)~~ → **fuera**: el gold solo tiene precipitación (2026-08-30).
-- **Ventana**: 2015-2024 para modelos con features (limitada por lluvia); baselines usan historia completa. Split temporal: train ≤ 2021, test 2022-2024 (predicción recursiva, lag actualizado con la predicción).
-- **Resultados baseline (MAPE medio test 2022-2024)**: `gb_municipio` **8,7%** (ganador) > naive 11,6% ≈ ets 11,7% ≈ gb_temporal 11,7% > arima 12,2% > ridge 13,6% > media 17,8% > gb_panel 25,9% > lasso 29,8%.
-  - Los modelos por municipio (GB) sí mejoran el baseline → las features aportan señal. Los modelos panel con one-hot (gb_panel, lasso) empeoran: los efectos por municipio no se capturan linealmente.
+- **Features (v2)**: `anio`, `iph_media`, `ocupacion_media`, `lluvia_anual_mm`, `lag1`. ~~Temperatura media anual (AEMET)~~ → **fuera**: el gold solo tiene precipitación. `iph_max` fuera por correlación.
+- **Ventana**: 2015-2024 para modelos con features (limitada por lluvia); baselines usan historia completa. Split temporal: train < 2022, test 2022-2024 (predicción recursiva, lag actualizado con la predicción).
+- **Resultados (MAPE medio test 2022-2024)**:
+  - `gb_municipio` **9,3%** (ganador) > `regla_negocio` 10,2% > naive 11,6% ≈ ets 11,7% ≈ gb_temporal 11,7% > arima 12,2% > ridge 15,6% > media 17,8% > gb_panel 28,9% > lasso 33,4%.
+  - **Regla de negocio** (heurística DGRH: Δconsumo = 0,3 × ΔIPH isla) queda **segunda** — muy cerca del modelo; justifica el ML solo con el delta de 0,9 pp + interpretabilidad.
+  - **Walk-forward** (1 año, ventanas 2021-2024): gb_municipio estable (MAPE 6,2-7,5%) pero naive gana 2 de 4 ventanas — la ventaja del modelo es modesta y honesta.
+  - **Elasticidades reales** (14_interpretabilidad, perturbación ±10%): IPH **0,128**, ocupación **≈0**, lluvia **−0,019** — el consumo es muy inercial (lag1 domina el SHAP). Estas cifras están cableadas al mock de /simulacion.
+- **Interpretabilidad**: SHAP global + por municipio representativo (Palma 07040, Calvià 07011, Sineu 07060) en 14_interpretabilidad.
 
 ### UI `/simulacion` (diseñada 2026-08-30 — frontend con API mock)
 
 - **Layout 2 paneles**: izquierda "PanelEscenarios" (340px), derecha resultados. Header con punto violeta (`#a855f7`) y pills de isla (patrón dashboards). Responsive: panel encima en móvil.
 - **Panel de escenarios** (`web/src/components/simulacion/`): ámbito (isla + SearchSelect municipio), horizonte (2026-2035), sliders % (−30..+30) de IPH / ocupación turística / lluvia (con presets Año seco −30 / Normal / Año húmedo +30), 3 escenarios: **Base** (fijo) + 2 personalizables (nombre, visibilidad en el gráfico). Chip ámbar si |Δ| > 25 (fuera del rango de entrenamiento). Tooltips: IPH NUTS (Eivissa+Formentera juntas), ocupación sin efecto en municipios sin turismo.
 - **Resultados** (`ResultadosSimulacion.tsx`): 4 KpiCards (consumo proyectado + Δ% vs base, consumo base, variación media anual, sensibilidad IPH), ComposedChart Recharts (histórico sólido + proyecciones dashed por escenario + area de incertidumbre; lo/hi en tooltip), ranking top/bottom 5 municipios por Δ%, tabla municipal completa con pills de escenario.
-- **Mock**: `PUBLIC_SIMULACION_MOCK=true` (`.env` y `.env.production`) → `web/src/lib/simulacionMock.ts`. Histórico **real** vía `fetchAbastecimiento` (fallback sintético si la API cae); proyecciones deterministas (seed por municipio·escenario) con elasticidades plausibles (IPH 0,2 · ocupación 0,15 · lluvia −0,04), banda ±MAPE que se ensancha con el horizonte; tabla municipal con nombres reales de `fetchMunicipios`.
-- **Contrato API real (pendiente)**: `GET /api/v1/simulacion/consumo?isla=&municipio=&hasta=&escenarios=[{id,nombre,iph_pct,ocupacion_pct,lluvia_pct}]` → `{ambito, base_anio, serie_historica, escenarios:[{id,nombre,color,proyeccion[{anio,consumo_hm3,lo,hi}],kpis}], municipios:{escenarioId:[{cod,nombre,isla,base_hm3,proy_hm3,delta_pct}]}}`. Cuando exista: quitar el flag mock y conectar. El backend cargará los 67 modelos joblib guardados desde el notebook 11 (artefactos en volumen compartido; reentrenamiento manual).
+- **Mock**: `PUBLIC_SIMULACION_MOCK=true` (`.env` y `.env.production`) → `web/src/lib/simulacionMock.ts`. Histórico **real** vía `fetchAbastecimiento` (fallback sintético si la API cae); proyecciones deterministas (seed por municipio·escenario) con **elasticidades reales del modelo** (IPH 0,128 · ocupación ≈0 · lluvia −0,019, medidas en `14_interpretabilidad`), banda ±MAPE que se ensancha con el horizonte; tabla municipal con nombres reales de `fetchMunicipios`.
+- **Contrato API real (pendiente)**: `GET /api/v1/simulacion/consumo?isla=&municipio=&hasta=&escenarios=[{id,nombre,iph_pct,ocupacion_pct,lluvia_pct}]` → `{ambito, base_anio, serie_historica, escenarios:[{id,nombre,color,proyeccion[{anio,consumo_hm3,lo,hi}],kpis}], municipios:{escenarioId:[{cod,nombre,isla,base_hm3,proy_hm3,delta_pct}]}}`. Cuando exista: quitar el flag mock y conectar. El backend cargará los 67 modelos joblib de `models/municipio/` (volumen compartido, montar ro en fastapi; reentrenamiento manual desde el notebook 11).
 - **Pendientes v2**: cruzar la simulación con el balance hídrico (consumo → extracción → masas en déficit); bandas de incertidumbre reales del modelo (no ±MAPE fijo).
 
 ---

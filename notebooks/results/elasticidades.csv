@@ -1,0 +1,4 @@
+feature,mean,median,p25,p75
+iph_media,0.128,0.029,0.0,0.18
+lluvia_anual_mm,-0.019,0.0,-0.002,0.0
+ocupacion_media,-0.003,0.0,0.0,0.0

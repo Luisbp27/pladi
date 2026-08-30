@@ -5,3 +5,5 @@ seaborn>=0.13
 scikit-learn>=1.5
 statsmodels>=0.14
 pmdarima>=2.0
+shap>=0.46
+joblib>=1.4

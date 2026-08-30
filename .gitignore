@@ -19,6 +19,7 @@ web/.env.*.local
 notebooks/data/
 notebooks/.venv/
 **/.ipynb_checkpoints/
+models/
 
 # === Docker secrets ===
 docker/.env
