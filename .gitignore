@@ -11,6 +11,9 @@ pyvenv.cfg
 web/node_modules/
 web/dist/
 web/.astro/
+web/.env
+web/.env.production
+web/.env.*.local
 
 # === Docker secrets ===
 docker/.env

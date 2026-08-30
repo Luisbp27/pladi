@@ -473,6 +473,7 @@ Cadena de oro: `gold.lluvia_masa_subterranea` → `gold.agua_infiltrada_masa_sub
 - **Tema**: Tailwind `darkMode: "class"` con **light mode por defecto**. Botón ☀️/🌙 en el navbar.
 - **Estado**: Nanostores atoms (`theme`, `activeLayers`, `geojsonData`, `drawerOpen`, etc.) compartidos entre islas.
 - **Mapa**: Leaflet 1.9.4 vía CDN (nunca como módulo npm). Sin zoom nativo ni control de capas (se gestionan vía UI propia).
+- **Tiles CARTO (2026-08-30)**: los basemaps de CARTO requieren API key desde 2026. URL: `https://{s}.basemaps.cartocdn.com/rastertiles/{light_all|dark_all}/{z}/{x}/{y}{r}.png?key=...`. La key se inyecta vía `PUBLIC_CARTO_API_KEY` (`.env` en dev, `.env.production` en build) y se lee con `import.meta.env.PUBLIC_CARTO_API_KEY` en `MapView.tsx`. Es visible en el navegador (inherente a tiles raster); opcionalmente restringirla por dominio en el panel de CARTO. Los ficheros `web/.env*` están **gitignored** — clonar `web/.env.production.example` y poner la key real (en el VPS: crear `web/.env.production` antes del build).
 - **Capas**: orden en panel: Municipios → Pozos → Masas Subterráneas → Unidades de Demanda.
 - Build: `cd web && npm run build` → `web/dist/` (servido por Caddy en producción).
 

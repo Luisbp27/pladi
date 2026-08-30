@@ -199,13 +199,16 @@ export default function MapView() {
       jsLoaded.current = true;
       const L = (window as any).L;
 
+      const cartoKey = import.meta.env.PUBLIC_CARTO_API_KEY ?? '';
+      const keyParam = cartoKey ? `?key=${cartoKey}` : '';
+
       const lightTile = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        `https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png${keyParam}`,
         { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | &copy; <a href="https://carto.com/">CARTO</a>' }
       );
 
       const darkTile = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png${keyParam}`,
         { attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> | &copy; <a href="https://carto.com/">CARTO</a>' }
       );
 
