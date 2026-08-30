@@ -431,5 +431,8 @@ export async function fetchSimulacion(p: SimulacionParams): Promise<SimulacionRe
   else if (p.isla) q.set('isla', p.isla);
   q.set('hasta', String(p.hasta));
   q.set('escenarios', JSON.stringify(p.escenarios));
-  return getJson<SimulacionResp>(`simulacion/consumo?${q.toString()}`);
+  const path = `simulacion/consumo?${q.toString()}`;
+  const res = await fetch(`${API_BASE}/${path}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  return res.json();
 }
