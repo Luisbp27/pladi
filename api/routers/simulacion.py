@@ -48,9 +48,9 @@ def _parse_escenarios(raw: str) -> list[dict]:
             raise HTTPException(400, "cada escenario necesita id")
         for k in ("iph_pct", "ocupacion_pct", "lluvia_pct"):
             v = float(e.get(k, 0.0))
-            if not -0.5 <= v <= 0.5:
+            if not -50.0 <= v <= 50.0:
                 raise HTTPException(400, f"{k} fuera de rango [-50%, +50%]")
-            e[k] = v
+            e[k] = v / 100.0  # el front envia puntos porcentuales; el servicio trabaja en fraccion
         e["nombre"] = str(e.get("nombre") or e["id"])
     return escenarios
 
