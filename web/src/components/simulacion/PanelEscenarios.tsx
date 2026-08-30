@@ -22,8 +22,6 @@ export default function PanelEscenarios({
   onEscenarios,
   visible,
   onToggleVisible,
-  activo,
-  onActivo,
 }: {
   isla: string;
   municipio: string;
@@ -35,15 +33,11 @@ export default function PanelEscenarios({
   onEscenarios: (e: SimulacionEscenario[]) => void;
   visible: Record<string, boolean>;
   onToggleVisible: (id: string) => void;
-  activo: string;
-  onActivo: (id: string) => void;
 }) {
-  const base = escenarios.find((e) => e.id === 'base');
-  const editables = escenarios.filter((e) => e.id !== 'base');
-  const activoEsc = escenarios.find((e) => e.id === activo) ?? editables[0];
+  const editable = escenarios.find((e) => e.id !== 'tendencial') ?? escenarios[0];
 
-  const updateActivo = (patch: Partial<SimulacionEscenario>) =>
-    onEscenarios(escenarios.map((e) => (e.id === activoEsc.id ? { ...e, ...patch } : e)));
+  const updateEditable = (patch: Partial<SimulacionEscenario>) =>
+    onEscenarios(escenarios.map((e) => (e.id === editable.id ? { ...e, ...patch } : e)));
 
   return (
     <aside className="w-full lg:w-[340px] lg:shrink-0 flex flex-col gap-4">
@@ -86,61 +80,34 @@ export default function PanelEscenarios({
 
       <section className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-4">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">Inputs del modelo</h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">
+            Inputs del escenario «{editable?.nombre}»
+          </h3>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-            Variación % sobre el último año observado
+            Variación % sobre el último año observado · efecto medido del modelo entre paréntesis
           </p>
         </div>
 
-        <div className="flex gap-1.5 flex-wrap">
-          {escenarios.map((e, i) => (
-            <button
-              key={e.id}
-              onClick={() => onActivo(e.id)}
-              disabled={e.id === 'base'}
-              className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
-                e.id === 'base'
-                  ? 'opacity-50 border-zinc-300/60 dark:border-zinc-700/60 text-zinc-400 dark:text-zinc-600 cursor-not-allowed'
-                  : activo === e.id
-                    ? 'bg-blue-500/10 text-blue-500 border-blue-500/30 cursor-pointer'
-                    : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer'
-              }`}
-              title={e.id === 'base' ? 'El escenario Base no se edita' : undefined}
-            >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ background: ESCENARIO_COLORS[i % ESCENARIO_COLORS.length] }}
-              />
-              {e.nombre}
-            </button>
-          ))}
-        </div>
-
-        {activoEsc && activoEsc.id !== 'base' && (
+        {editable && (
           <>
             <SliderInput
               label="Presión humana (IPH)"
-              hint="Eivissa y Formentera comparten serie (NUTS)"
-              value={activoEsc.iph_pct}
-              onChange={(v) => updateActivo({ iph_pct: v })}
+              hint="Eivissa y Formentera comparten serie (NUTS) · efecto medido: +1,3% consumo por +10%"
+              value={editable.iph_pct}
+              onChange={(v) => updateEditable({ iph_pct: v })}
             />
             <SliderInput
               label="Ocupación turística"
-              hint="En municipios sin datos turísticos no tiene efecto (vale 0 en el modelo)"
-              value={activoEsc.ocupacion_pct}
-              onChange={(v) => updateActivo({ ocupacion_pct: v })}
+              hint="En municipios sin datos turísticos no tiene efecto · efecto medido: ≈ 0"
+              value={editable.ocupacion_pct}
+              onChange={(v) => updateEditable({ ocupacion_pct: v })}
             />
             <SliderInput
               label="Lluvia"
-              value={activoEsc.lluvia_pct}
-              onChange={(v) => updateActivo({ lluvia_pct: v })}
+              hint="Apenas mueve el consumo urbano (su efecto real es el balance hídrico) · efecto medido: ≈ −0,2% por +10%"
+              value={editable.lluvia_pct}
+              onChange={(v) => updateEditable({ lluvia_pct: v })}
               presets={PRESETS_LLUVIA}
-            />
-            <input
-              value={activoEsc.nombre}
-              onChange={(e) => updateActivo({ nombre: e.target.value })}
-              placeholder="Nombre del escenario"
-              className="w-full text-[12px] bg-white dark:bg-zinc-800 border border-zinc-300/60 dark:border-zinc-700/60 rounded-lg px-2.5 py-2 text-zinc-700 dark:text-zinc-200 outline-none placeholder:text-zinc-400"
             />
           </>
         )}
@@ -165,7 +132,9 @@ export default function PanelEscenarios({
                     {e.nombre}
                   </span>
                   <span className="block text-[10px] text-zinc-400 dark:text-zinc-600 tabular-nums">
-                    {e.id === 'base' ? 'Sin cambios' : `IPH ${fmt(e.iph_pct)} · Ocup ${fmt(e.ocupacion_pct)} · Lluvia ${fmt(e.lluvia_pct)}`}
+                    {e.id === 'tendencial'
+                      ? 'Inercia y tendencia histórica, sin cambios'
+                      : `IPH ${fmt(e.iph_pct)} · Ocup ${fmt(e.ocupacion_pct)} · Lluvia ${fmt(e.lluvia_pct)}`}
                   </span>
                 </div>
                 <button

@@ -13,9 +13,8 @@ import PanelEscenarios from './PanelEscenarios';
 import ResultadosSimulacion from './ResultadosSimulacion';
 
 const ESCENARIOS_INICIALES: SimulacionEscenario[] = [
-  { id: 'base', nombre: 'Base', iph_pct: 0, ocupacion_pct: 0, lluvia_pct: 0 },
-  { id: 'sequia', nombre: 'Sequía', iph_pct: 0, ocupacion_pct: 0, lluvia_pct: -30 },
-  { id: 'turismo', nombre: 'Crecimiento turístico', iph_pct: 20, ocupacion_pct: 20, lluvia_pct: 0 },
+  { id: 'tendencial', nombre: 'Tendencial', iph_pct: 0, ocupacion_pct: 0, lluvia_pct: 0 },
+  { id: 'presion', nombre: 'Mayor presión humana', iph_pct: 20, ocupacion_pct: 10, lluvia_pct: 0 },
 ];
 
 export default function SimulacionShell() {
@@ -24,8 +23,8 @@ export default function SimulacionShell() {
   const [municipios, setMunicipios] = useState<SelectOption[]>([]);
   const [hasta, setHasta] = useState(2030);
   const [escenarios, setEscenarios] = useState<SimulacionEscenario[]>(ESCENARIOS_INICIALES);
-  const [visible, setVisible] = useState<Record<string, boolean>>({ base: true, sequia: true, turismo: true });
-  const [activo, setActivo] = useState('sequia');
+  const [visible, setVisible] = useState<Record<string, boolean>>({ tendencial: true, presion: true });
+  const [activo, setActivo] = useState('presion');
   const [data, setData] = useState<SimulacionResp | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -123,8 +122,6 @@ export default function SimulacionShell() {
             onEscenarios={setEscenarios}
             visible={visible}
             onToggleVisible={(id) => setVisible((v) => ({ ...v, [id]: !(v[id] ?? true) }))}
-            activo={activo}
-            onActivo={setActivo}
           />
           <div className="flex-1 min-w-0">
             {err && <ErrorBox msg={err} />}

@@ -79,9 +79,9 @@ export default function ResultadosSimulacion({
         />
         <KpiCard
           label="Sensibilidad IPH"
-          value="+1,3"
+          value={`+${(kpisEsc.kpis.sensibilidad.iph * 10).toFixed(1).replace('.', ',')}`}
           unit="%"
-          sub="consumo por cada +10% de IPH (elasticidad real 0,13)"
+          sub={`consumo por cada +10% de IPH (elasticidad medida ${kpisEsc.kpis.sensibilidad.iph.toFixed(3).replace('.', ',')})`}
         />
       </div>
 
