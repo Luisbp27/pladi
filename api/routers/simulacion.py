@@ -1,10 +1,11 @@
-"""Endpoint de simulacion de consumo urbano (modelos joblib entrenados en notebook 11)."""
+"""Endpoints de simulacion: consumo urbano proyectado + cruce con el balance hidrico."""
 from __future__ import annotations
 
 import json
 
 from fastapi import APIRouter, HTTPException, Query
 
+from balance_service import proyectar_balance
 from database import get_pool
 from simulacion_service import ModelosError, elasticidades, predecir_recursivo, tiene_modelos
 
@@ -15,9 +16,14 @@ router = APIRouter(
 
 ISLAS = {"Mallorca", "Menorca", "Eivissa", "Formentera"}
 NUTS_ISLA = {"Eivissa": "Eivissa i Formentera", "Formentera": "Eivissa i Formentera"}
-COLORES = ["#3b82f6", "#f59e0b", "#a855f7"]
+COLORES = ["#3b82f6", "#f59e0b", "#a855f7", "#22c55e", "#0ea5e9"]
 MAX_HORIZONTE = 10
 MAX_ESCENARIOS = 5
+
+MASA_ISLA_JOIN = """
+    JOIN public.unidad_demanda ud ON ud.id_unidad_demanda = m.id_unidad_demanda
+    JOIN public.provincia p ON p.cod_provincia = ud.cod_provincia
+"""
 
 
 async def _q(query: str, *params) -> list[dict]:
@@ -55,22 +61,7 @@ def _parse_escenarios(raw: str) -> list[dict]:
     return escenarios
 
 
-@router.get("/consumo")
-async def consumo(
-    isla: str | None = Query(default=None),
-    municipio: str | None = Query(default=None),
-    hasta: int = Query(default=2030),
-    escenarios: str = Query(
-        default='[{"id":"tendencial","nombre":"Tendencial","iph_pct":0,"ocupacion_pct":0,"lluvia_pct":0}]'
-    ),
-):
-    if not tiene_modelos():
-        raise HTTPException(503, "modelos no disponibles: ejecuta el notebook 11 (models/municipio/*.joblib)")
-
-    escs = _parse_escenarios(escenarios)
-    elasts = elasticidades()
-
-    # ── Ambito y municipios
+async def _resolver_ambito(isla: str | None, municipio: str | None) -> tuple[list[dict], str]:
     if municipio:
         m = await _qrow(
             "SELECT cod_municipio, nombre_municipio, cod_provincia FROM public.municipio WHERE cod_municipio = $1",
@@ -78,9 +69,14 @@ async def consumo(
         )
         if m is None:
             raise HTTPException(404, f"municipio no encontrado: {municipio}")
-        municipios = [m]
-        ambito = m["nombre_municipio"]
-    elif isla:
+        return [m], m["nombre_municipio"]
+    if isla:
+        if isla == "Baleares":
+            municipios = await _q(
+                "SELECT cod_municipio, nombre_municipio, cod_provincia FROM public.municipio "
+                "ORDER BY cod_provincia, nombre_municipio"
+            )
+            return municipios, "Baleares"
         if isla not in ISLAS:
             raise HTTPException(400, f"isla no valida: {isla}")
         prov = await _qrow(
@@ -93,16 +89,21 @@ async def consumo(
             "WHERE cod_provincia = $1 ORDER BY nombre_municipio",
             prov["cod_provincia"],
         )
-        ambito = isla
-    else:
-        raise HTTPException(400, "indica isla o municipio")
+        return municipios, isla
+    raise HTTPException(400, "indica isla o municipio")
 
-    # ── Historico de consumo
+
+async def _serie_historica(isla: str | None, municipio: str | None) -> tuple[list[dict], int]:
     if municipio:
         serie = await _q(
             "SELECT anio, ROUND(consumo_hm3::numeric, 3) AS consumo_hm3 "
             "FROM gold.abastecimiento_urbano_baleares WHERE cod_municipio = $1 ORDER BY anio",
             municipio,
+        )
+    elif isla == "Baleares":
+        serie = await _q(
+            "SELECT anio, ROUND(SUM(consumo_hm3)::numeric, 3) AS consumo_hm3 "
+            "FROM gold.abastecimiento_urbano_baleares GROUP BY anio ORDER BY anio"
         )
     else:
         serie = await _q(
@@ -114,11 +115,11 @@ async def consumo(
         raise HTTPException(404, "sin serie historica de consumo para el ambito")
     base_anio = int(serie[-1]["anio"])
     serie_historica = [{"anio": int(r["anio"]), "consumo_hm3": float(r["consumo_hm3"])} for r in serie]
+    return serie_historica, base_anio
 
-    if not base_anio + 1 <= hasta <= base_anio + MAX_HORIZONTE:
-        raise HTTPException(400, f"hasta debe estar entre {base_anio + 1} y {base_anio + MAX_HORIZONTE}")
 
-    # ── Features base (ultimo anio completo)
+async def _features_base(base_anio: int) -> dict:
+    """Features congeladas en el ultimo anio observado + consumo base por municipio."""
     iph = {
         r["nombre_isla"]: r
         for r in await _q(
@@ -177,25 +178,65 @@ async def consumo(
             "lluvia_anual_mm": lluvia.get(cod, lluvia_media),
         }
 
-    # ── Predicciones por escenario
+    return {
+        "consumo_base": consumo_base,
+        "prov_map": prov_map,
+        "base_row": base_row,
+    }
+
+
+def _proyectar(
+    municipios: list[dict], base_anio: int, hasta: int, escs: list[dict], feats: dict
+) -> dict[str, dict[str, list[dict]]]:
+    """Prediccion recursiva por municipio y escenario: {esc_id: {cod_municipio: [puntos]}}."""
+    out: dict[str, dict[str, list[dict]]] = {}
+    for e in escs:
+        pct = {"iph": e["iph_pct"], "ocupacion": e["ocupacion_pct"], "lluvia": e["lluvia_pct"]}
+        proy_por_mun: dict[str, list[dict]] = {}
+        for m in municipios:
+            cod = str(m["cod_municipio"])
+            try:
+                proy_por_mun[cod] = predecir_recursivo(cod, feats["base_row"](m), hasta, pct)
+            except ModelosError:
+                continue
+        out[e["id"]] = proy_por_mun
+    return out
+
+
+@router.get("/consumo")
+async def consumo(
+    isla: str | None = Query(default=None),
+    municipio: str | None = Query(default=None),
+    hasta: int = Query(default=2030),
+    escenarios: str = Query(
+        default='[{"id":"tendencial","nombre":"Tendencial","iph_pct":0,"ocupacion_pct":0,"lluvia_pct":0}]'
+    ),
+):
+    if not tiene_modelos():
+        raise HTTPException(503, "modelos no disponibles: ejecuta el notebook 11 (models/municipio/*.joblib)")
+
+    escs = _parse_escenarios(escenarios)
+    elasts = elasticidades()
+
+    municipios, ambito = await _resolver_ambito(isla, municipio)
+    serie_historica, base_anio = await _serie_historica(isla, municipio)
+
+    if not base_anio + 1 <= hasta <= base_anio + MAX_HORIZONTE:
+        raise HTTPException(400, f"hasta debe estar entre {base_anio + 1} y {base_anio + MAX_HORIZONTE}")
+
+    feats = await _features_base(base_anio)
+    consumo_base = feats["consumo_base"]
+    prov_map = feats["prov_map"]
+    proy_por_esc = _proyectar(municipios, base_anio, hasta, escs, feats)
+
     n_anios = hasta - base_anio
     escenarios_out = []
     municipios_out: dict[str, list[dict]] = {}
     for i, e in enumerate(escs):
-        pct = {"iph": e["iph_pct"], "ocupacion": e["ocupacion_pct"], "lluvia": e["lluvia_pct"]}
-        proy_por_mun: dict[str, list[dict]] = {}
-        final_por_mun: dict[str, float] = {}
-        for m in municipios:
-            cod = str(m["cod_municipio"])
-            try:
-                proy = predecir_recursivo(cod, base_row(m), hasta, pct)
-            except ModelosError:
-                continue
-            proy_por_mun[cod] = proy
-            final_por_mun[cod] = proy[-1]["consumo_hm3"] if proy else consumo_base.get(cod, 0.0)
-
+        proy_por_mun = proy_por_esc.get(e["id"], {})
         if not proy_por_mun:
             continue
+        final_por_mun = {cod: proy[-1]["consumo_hm3"] for cod, proy in proy_por_mun.items() if proy}
 
         proyeccion = []
         for t in range(n_anios):
@@ -256,4 +297,132 @@ async def consumo(
         "serie_historica": serie_historica,
         "escenarios": escenarios_out,
         "municipios": municipios_out,
+    }
+
+
+@router.get("/balance")
+async def balance(
+    isla: str | None = Query(default=None),
+    municipio: str | None = Query(default=None),
+    hasta: int = Query(default=2030),
+    escenarios: str = Query(
+        default='[{"id":"tendencial","nombre":"Tendencial","iph_pct":0,"ocupacion_pct":0,"lluvia_pct":0}]'
+    ),
+):
+    """Cruce de la simulacion de consumo con el balance hidrico (modelo DMA del gold)."""
+    if not tiene_modelos():
+        raise HTTPException(503, "modelos no disponibles: ejecuta el notebook 11 (models/municipio/*.joblib)")
+
+    escs = _parse_escenarios(escenarios)
+
+    municipios, ambito = await _resolver_ambito(isla, municipio)
+    serie_historica, base_anio = await _serie_historica(isla, municipio)
+
+    if not base_anio + 1 <= hasta <= base_anio + MAX_HORIZONTE:
+        raise HTTPException(400, f"hasta debe estar entre {base_anio + 1} y {base_anio + MAX_HORIZONTE}")
+
+    feats = await _features_base(base_anio)
+    proy_por_esc = _proyectar(municipios, base_anio, hasta, escs, feats)
+
+    # ── Masas del ambito con su ultima fila de balance (anio <= base)
+    if municipio:
+        masas = await _q(
+            f"""
+            WITH last_anio AS (
+                SELECT cod_masa, MAX(anio) AS anio FROM gold.balance_hidrico_baleares
+                WHERE anio <= $1 GROUP BY cod_masa
+            )
+            SELECT m.cod_masa, m.nombre_masa, p.nombre_provincia AS isla, b.*
+            FROM public.municipio_masa_subterranea mms
+            JOIN public.masa_subterranea m ON m.cod_masa = mms.cod_masa
+            {MASA_ISLA_JOIN}
+            JOIN last_anio l ON l.cod_masa = m.cod_masa
+            JOIN gold.balance_hidrico_baleares b ON b.cod_masa = l.cod_masa AND b.anio = l.anio
+            WHERE mms.cod_municipio = $2
+            """,
+            base_anio,
+            municipio,
+        )
+    elif isla and isla != "Baleares":
+        masas = await _q(
+            f"""
+            WITH last_anio AS (
+                SELECT cod_masa, MAX(anio) AS anio FROM gold.balance_hidrico_baleares
+                WHERE anio <= $1 GROUP BY cod_masa
+            )
+            SELECT m.cod_masa, m.nombre_masa, p.nombre_provincia AS isla, b.*
+            FROM public.masa_subterranea m
+            {MASA_ISLA_JOIN}
+            JOIN last_anio l ON l.cod_masa = m.cod_masa
+            JOIN gold.balance_hidrico_baleares b ON b.cod_masa = l.cod_masa AND b.anio = l.anio
+            WHERE p.nombre_provincia = $2
+            """,
+            base_anio,
+            isla,
+        )
+    else:
+        masas = await _q(
+            """
+            WITH last_anio AS (
+                SELECT cod_masa, MAX(anio) AS anio FROM gold.balance_hidrico_baleares
+                WHERE anio <= $1 GROUP BY cod_masa
+            )
+            SELECT m.cod_masa, m.nombre_masa, p.nombre_provincia AS isla, b.*
+            FROM public.masa_subterranea m
+            JOIN public.unidad_demanda ud ON ud.id_unidad_demanda = m.id_unidad_demanda
+            JOIN public.provincia p ON p.cod_provincia = ud.cod_provincia
+            JOIN last_anio l ON l.cod_masa = m.cod_masa
+            JOIN gold.balance_hidrico_baleares b ON b.cod_masa = l.cod_masa AND b.anio = l.anio
+            """,
+            base_anio,
+        )
+
+    # ── Pesos municipio→masa (misma normalizacion que el DAG del balance)
+    pesos_rows = await _q(
+        """
+        SELECT cod_municipio, cod_masa,
+               abastecimiento_agua_media_ponderada_anual_hm3
+               / NULLIF(SUM(abastecimiento_agua_media_ponderada_anual_hm3)
+                        OVER (PARTITION BY cod_municipio), 0) AS peso
+        FROM public.municipio_masa_subterranea
+        WHERE abastecimiento_agua_media_ponderada_anual_hm3 > 0
+        """
+    )
+    pesos: dict[str, dict[str, float]] = {}
+    for r in pesos_rows:
+        pesos.setdefault(str(r["cod_municipio"]), {})[r["cod_masa"]] = float(r["peso"])
+
+    notas = []
+    if isla == "Formentera" or (isla == "Baleares" and not municipio):
+        notas.append(
+            "Formentera no tiene relacion municipio→masa (abastecimiento sin masas subterraneas mapeadas): "
+            "su consumo no se distribuye al balance."
+        )
+    if municipio and not masas:
+        notas.append("Este municipio no tiene masas subterraneas asociadas: no hay cruce con el balance.")
+
+    escenarios_out = []
+    for i, e in enumerate(escs):
+        esc = proyectar_balance(
+            masas=masas,
+            pesos=pesos,
+            proy_por_mun=proy_por_esc.get(e["id"], {}),
+            consumo_base=feats["consumo_base"],
+            base_anio=base_anio,
+            hasta=hasta,
+            lluvia_pct=e["lluvia_pct"],
+        )
+        esc["id"] = e["id"]
+        esc["nombre"] = e["nombre"]
+        esc["color"] = COLORES[i % len(COLORES)]
+        escenarios_out.append(esc)
+
+    return {
+        "ambito": ambito,
+        "municipio": municipio,
+        "base_anio": base_anio,
+        "hasta": hasta,
+        "n_masas": len(masas),
+        "nota": " ".join(notas) if notas else None,
+        "escenarios": escenarios_out,
     }

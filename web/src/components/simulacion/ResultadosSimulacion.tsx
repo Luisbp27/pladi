@@ -1,31 +1,38 @@
-import { useEffect, useState } from 'react';
 import {
-  Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import type { EscenarioResultado, SimulacionResp } from '../../lib/api';
+import {
+  ESTADO_COLORS,
+  ESTADO_LABELS,
+  type EscenarioResultado,
+  type SimulacionBalanceResp,
+  type SimulacionResp,
+} from '../../lib/api';
 import { KpiCard, useIsDark } from '../dashboards/ui';
 
 export default function ResultadosSimulacion({
   data,
+  balance,
   visible,
   activo,
+  setActivo,
 }: {
   data: SimulacionResp;
+  balance: SimulacionBalanceResp | null;
   visible: Record<string, boolean>;
   activo: string;
+  setActivo: (id: string) => void;
 }) {
   const dark = useIsDark();
-  const [escTabla, setEscTabla] = useState<string>(activo);
-
-  useEffect(() => {
-    setEscTabla(activo);
-  }, [activo]);
 
   const base_val = data.serie_historica.length
     ? data.serie_historica[data.serie_historica.length - 1].consumo_hm3
     : 0;
   const visibles = data.escenarios.filter((e) => visible[e.id] ?? true);
-  const kpisEsc = data.escenarios.find((e) => e.id === activo) ?? data.escenarios[0];
+  const kpisEsc =
+    data.escenarios.find((e) => e.id === activo) ??
+    data.escenarios.find((e) => visible[e.id] ?? true) ??
+    data.escenarios[0];
 
   const byAnio = new Map<number, Record<string, number>>();
   for (const h of data.serie_historica) byAnio.set(h.anio, { anio: h.anio, historico: h.consumo_hm3 });
@@ -47,7 +54,7 @@ export default function ResultadosSimulacion({
   }
   const chartData = [...byAnio.values()].sort((a, b) => a.anio - b.anio);
 
-  const muns = data.municipios[escTabla] ?? [];
+  const muns = [...(data.municipios[activo] ?? [])].sort((a, b) => b.delta_pct - a.delta_pct);
   const top = muns.slice(0, 5);
   const bottom = muns.slice(-5).reverse();
 
@@ -56,6 +63,12 @@ export default function ResultadosSimulacion({
 
   return (
     <div className="flex-1 min-w-0 flex flex-col gap-4">
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-600 mb-1.5">
+          Escenario para los indicadores
+        </p>
+        <EscenarioPills data={data} activo={activo} setActivo={setActivo} />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label={`Consumo proyectado ${data.hasta}`}
@@ -81,7 +94,7 @@ export default function ResultadosSimulacion({
           label="Sensibilidad IPH"
           value={`+${(kpisEsc.kpis.sensibilidad.iph * 10).toFixed(1).replace('.', ',')}`}
           unit="%"
-          sub={`consumo por cada +10% de IPH (elasticidad medida ${kpisEsc.kpis.sensibilidad.iph.toFixed(3).replace('.', ',')})`}
+          sub="consumo por cada +10% de IPH"
         />
       </div>
 
@@ -92,7 +105,7 @@ export default function ResultadosSimulacion({
               Proyección de consumo
             </h3>
             <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-              {data.ambito} · línea sólida = histórico, discontinua = proyección · banda ±MAPE (en tooltip)
+              {data.ambito} · línea sólida = histórico, discontinua = proyección · banda de incertidumbre del modelo
             </p>
           </div>
         </div>
@@ -152,17 +165,17 @@ export default function ResultadosSimulacion({
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Mayor incremento</h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Mayor incremento previsto</h3>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-3">
-            Municipios con mayor Δ% de consumo proyectado
+            Municipios con mayor Δ% de consumo proyectado · escenario «{kpisEsc.nombre}»
           </p>
-          <EscenarioPills data={data} escTabla={escTabla} setEscTabla={setEscTabla} />
+          <EscenarioPills data={data} activo={activo} setActivo={setActivo} />
           <MunicipioLista rows={top} />
         </div>
         <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Menor incremento</h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Menor incremento previsto</h3>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-3">
-            Municipios con menor Δ% de consumo proyectado
+            Municipios con menor Δ% de consumo proyectado · escenario «{kpisEsc.nombre}»
           </p>
           <MunicipioLista rows={bottom} />
         </div>
@@ -176,11 +189,11 @@ export default function ResultadosSimulacion({
               Consumo base {data.base_anio} vs proyectado {data.hasta}
             </p>
           </div>
-          <EscenarioPills data={data} escTabla={escTabla} setEscTabla={setEscTabla} />
+          <EscenarioPills data={data} activo={activo} setActivo={setActivo} />
         </div>
         {muns.length === 0 ? (
           <p className="text-[11px] text-zinc-400 dark:text-zinc-600 py-4">
-            Selecciona una isla (sin municipio concreto) para ver el detalle municipal.
+            Selecciona un ámbito (sin municipio concreto) para ver el detalle municipal.
           </p>
         ) : (
           <div className="max-h-80 overflow-y-auto">
@@ -188,6 +201,7 @@ export default function ResultadosSimulacion({
               <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur">
                 <tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
                   <th className="py-2 pr-3 font-medium">Municipio</th>
+                  {data.ambito === 'Baleares' && <th className="py-2 pr-3 font-medium">Isla</th>}
                   <th className="py-2 pr-3 font-medium text-right">Base ({data.base_anio})</th>
                   <th className="py-2 pr-3 font-medium text-right">Proy. ({data.hasta})</th>
                   <th className="py-2 font-medium text-right">Δ%</th>
@@ -197,6 +211,9 @@ export default function ResultadosSimulacion({
                 {muns.map((m) => (
                   <tr key={m.cod_municipio} className="border-t border-zinc-200/50 dark:border-zinc-800/50">
                     <td className="py-2 pr-3 text-zinc-700 dark:text-zinc-300">{m.nombre_municipio}</td>
+                    {data.ambito === 'Baleares' && (
+                      <td className="py-2 pr-3 text-zinc-500 dark:text-zinc-400">{m.isla}</td>
+                    )}
                     <td className="py-2 pr-3 text-right text-zinc-500 dark:text-zinc-400 tabular-nums">
                       {m.base_hm3.toFixed(3)} hm³
                     </td>
@@ -218,27 +235,214 @@ export default function ResultadosSimulacion({
           </div>
         )}
       </div>
+
+      <BalanceSection balance={balance} activo={activo} />
+    </div>
+  );
+}
+
+const SEVERIDAD: Record<string, number> = { buen_estado: 0, en_riesgo: 1, mal_estado: 2 };
+
+function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | null; activo: string }) {
+  const dark = useIsDark();
+  if (!balance) return null;
+
+  const esc = balance.escenarios.find((e) => e.id === activo) ?? balance.escenarios[0];
+  if (!esc) return null;
+
+  if (balance.n_masas === 0) {
+    return (
+      <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
+        <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">
+          Impacto en el balance hídrico
+        </h3>
+        <div className="rounded-xl border border-dashed border-zinc-300/60 dark:border-zinc-700/60 p-6 text-center">
+          <p className="text-[12px] text-zinc-400 dark:text-zinc-500 max-w-md mx-auto">
+            {balance.nota ??
+              'Este ámbito no tiene masas subterráneas con balance hídrico: no hay cruce que mostrar.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const serie = esc.serie;
+  const base = serie[0];
+  const fin = serie[serie.length - 1];
+  const dMal = base ? fin.n_mal_estado - base.n_mal_estado : 0;
+  const empeoran = esc.masas_cambio.filter(
+    (m) => (SEVERIDAD[m.estado_proy] ?? 0) > (SEVERIDAD[m.estado_base] ?? 0)
+  ).length;
+  const mejoran = esc.masas_cambio.length - empeoran;
+  const dExt =
+    base && base.extraccion_total_hm3 > 0
+      ? ((fin.extraccion_total_hm3 - base.extraccion_total_hm3) / base.extraccion_total_hm3) * 100
+      : 0;
+  const dDisp =
+    base && base.disponibilidad_total_hm3 > 0
+      ? ((fin.disponibilidad_total_hm3 - base.disponibilidad_total_hm3) / base.disponibilidad_total_hm3) * 100
+      : 0;
+
+  const grid = dark ? '#3f3f46' : '#e4e4e7';
+  const tick = { fill: dark ? '#71717a' : '#a1a1aa', fontSize: 10 };
+
+  return (
+    <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5 flex flex-col gap-4">
+      <div>
+        <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">
+          Impacto en el balance hídrico
+        </h3>
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+          {balance.ambito} · escenario «{esc.nombre}» · Δ de consumo distribuido a las masas con los pesos
+          municipio→masa; la lluvia del escenario escala la infiltración
+        </p>
+        {balance.nota && (
+          <p className="text-[10px] text-amber-500 mt-1.5">{balance.nota}</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 xl:grid-cols-4 gap-3">
+        <KpiCard
+          label={`Masas en mal estado ${balance.hasta}`}
+          value={String(fin.n_mal_estado)}
+          chip={dMal > 0 ? `+${dMal}` : dMal < 0 ? `${dMal}` : '0'}
+          chipTone={dMal > 0 ? 'rose' : 'emerald'}
+          sub={`vs ${base.n_mal_estado} en ${balance.base_anio} · de ${balance.n_masas} masas`}
+        />
+        <KpiCard
+          label="Masas con cambio de estado"
+          value={String(esc.masas_cambio.length)}
+          chip={empeoran > 0 ? `${empeoran} empeoran` : undefined}
+          chipTone="rose"
+          sub={esc.masas_cambio.length > 0 ? `${mejoran} mejoran` : 'sin cambios con este escenario'}
+        />
+        <KpiCard
+          label={`Extracción total ${balance.hasta}`}
+          value={fin.extraccion_total_hm3.toFixed(1)}
+          unit="hm³"
+          delta={Math.round(dExt * 10) / 10}
+          positiveGood={false}
+          sub={`vs ${base.extraccion_total_hm3.toFixed(1)} hm³ (${balance.base_anio})`}
+        />
+        <KpiCard
+          label={`Disponibilidad total ${balance.hasta}`}
+          value={fin.disponibilidad_total_hm3.toFixed(1)}
+          unit="hm³"
+          delta={Math.round(dDisp * 10) / 10}
+          positiveGood={true}
+          sub={`vs ${base.disponibilidad_total_hm3.toFixed(1)} hm³ (${balance.base_anio})`}
+        />
+      </div>
+
+      <div>
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2">
+          Estado cuantitativo de las masas por año (DMA)
+        </p>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={serie} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+            <XAxis dataKey="anio" tick={tick} />
+            <YAxis tick={tick} width={28} />
+            <Tooltip
+              contentStyle={{
+                background: dark ? '#18181b' : '#fff',
+                border: `1px solid ${grid}`,
+                borderRadius: 12,
+                fontSize: 12,
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar dataKey="n_buen_estado" name="Buen estado" stackId="a" fill={ESTADO_COLORS.buen_estado} radius={[0, 0, 0, 0]} />
+            <Bar dataKey="n_en_riesgo" name="En riesgo" stackId="a" fill={ESTADO_COLORS.en_riesgo} />
+            <Bar dataKey="n_mal_estado" name="Mal estado" stackId="a" fill={ESTADO_COLORS.mal_estado} radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div>
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2">
+          Masas que cambian de estado en {balance.hasta}
+        </p>
+        {esc.masas_cambio.length === 0 ? (
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-600">
+            Ninguna masa cambia de estado cuantitativo con este escenario.
+          </p>
+        ) : (
+          <div className="max-h-64 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur">
+                <tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
+                  <th className="py-2 pr-3 font-medium">Masa</th>
+                  <th className="py-2 pr-3 font-medium">Estado</th>
+                  <th className="py-2 pr-3 font-medium text-right">Explotación</th>
+                  <th className="py-2 font-medium text-right">Extracción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {esc.masas_cambio.map((m) => {
+                  const empeora = (SEVERIDAD[m.estado_proy] ?? 0) > (SEVERIDAD[m.estado_base] ?? 0);
+                  return (
+                    <tr key={m.cod_masa} className="border-t border-zinc-200/50 dark:border-zinc-800/50">
+                      <td className="py-2 pr-3">
+                        <span className="block text-zinc-700 dark:text-zinc-300">{m.nombre_masa}</span>
+                        <span className="block text-[10px] text-zinc-400 dark:text-zinc-600">{m.isla}</span>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <span className="inline-flex items-center gap-1 text-[10px]">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: ESTADO_COLORS[m.estado_base] ?? '#71717a' }}
+                          />
+                          <span className="text-zinc-400 dark:text-zinc-500">
+                            {ESTADO_LABELS[m.estado_base] ?? m.estado_base}
+                          </span>
+                          <span className="text-zinc-300 dark:text-zinc-600">→</span>
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ background: ESTADO_COLORS[m.estado_proy] ?? '#71717a' }}
+                          />
+                          <span className={empeora ? 'font-semibold text-rose-500' : 'font-semibold text-emerald-500'}>
+                            {ESTADO_LABELS[m.estado_proy] ?? m.estado_proy}
+                          </span>
+                        </span>
+                      </td>
+                      <td className="py-2 pr-3 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                        {m.explotacion_base !== null ? `${(m.explotacion_base * 100).toFixed(0)}%` : '—'}
+                        {' → '}
+                        {m.explotacion_proy !== null ? `${(m.explotacion_proy * 100).toFixed(0)}%` : '—'}
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                        {m.extraccion_base_hm3.toFixed(2)} → {m.extraccion_proy_hm3.toFixed(2)} hm³
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 function EscenarioPills({
   data,
-  escTabla,
-  setEscTabla,
+  activo,
+  setActivo,
 }: {
   data: SimulacionResp;
-  escTabla: string;
-  setEscTabla: (id: string) => void;
+  activo: string;
+  setActivo: (id: string) => void;
 }) {
   return (
     <div className="flex gap-1.5 flex-wrap mb-3">
       {data.escenarios.map((e) => (
         <button
           key={e.id}
-          onClick={() => setEscTabla(e.id)}
+          onClick={() => setActivo(e.id)}
           className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
-            escTabla === e.id
+            activo === e.id
               ? 'bg-blue-500/10 text-blue-500 border-blue-500/30'
               : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
           }`}
@@ -302,6 +506,13 @@ function SimulacionTooltip({
 }) {
   if (!active || !payload || payload.length === 0) return null;
   const fila = payload[0]?.payload as Record<string, number> | undefined;
+  // El Area y la Line comparten dataKey → Recharts incluye ambas entradas en el payload
+  const vistos = new Set<string>();
+  const unicos = payload.filter((p) => {
+    if (vistos.has(p.dataKey)) return false;
+    vistos.add(p.dataKey);
+    return true;
+  });
   return (
     <div
       className="rounded-xl border px-3 py-2 text-xs shadow-lg"
@@ -311,7 +522,7 @@ function SimulacionTooltip({
       }}
     >
       <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-1">{label}</p>
-      {payload.map((p) => {
+      {unicos.map((p) => {
         if (p.dataKey === 'historico') {
           return (
             <p key={p.dataKey} className="text-zinc-600 dark:text-zinc-400">

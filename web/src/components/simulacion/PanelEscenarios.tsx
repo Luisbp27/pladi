@@ -1,7 +1,7 @@
 import { ESCENARIO_COLORS } from '../../lib/simulacionMock';
 import type { SelectOption } from '../dashboards/ui';
 import { SearchSelect } from '../dashboards/ui';
-import type { SimulacionEscenario } from '../../lib/api';
+import { MAX_ESCENARIOS, type SimulacionEscenario } from '../../lib/api';
 
 const RANGO_MAX = 30;
 
@@ -19,7 +19,9 @@ export default function PanelEscenarios({
   hasta,
   onHasta,
   escenarios,
-  onEscenarios,
+  onUpdate,
+  onAdd,
+  onRemove,
   visible,
   onToggleVisible,
 }: {
@@ -30,14 +32,13 @@ export default function PanelEscenarios({
   hasta: number;
   onHasta: (anio: number) => void;
   escenarios: SimulacionEscenario[];
-  onEscenarios: (e: SimulacionEscenario[]) => void;
+  onUpdate: (id: string, patch: Partial<SimulacionEscenario>) => void;
+  onAdd: () => void;
+  onRemove: (id: string) => void;
   visible: Record<string, boolean>;
   onToggleVisible: (id: string) => void;
 }) {
-  const editable = escenarios.find((e) => e.id !== 'tendencial') ?? escenarios[0];
-
-  const updateEditable = (patch: Partial<SimulacionEscenario>) =>
-    onEscenarios(escenarios.map((e) => (e.id === editable.id ? { ...e, ...patch } : e)));
+  const puedeAnadir = escenarios.length < MAX_ESCENARIOS;
 
   return (
     <aside className="w-full lg:w-[340px] lg:shrink-0 flex flex-col gap-4">
@@ -45,25 +46,19 @@ export default function PanelEscenarios({
         <div>
           <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">Ámbito</h3>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2">
-            Sin municipio se simula el conjunto de la isla
+            Sin municipio se simula el conjunto del ámbito
           </p>
-          {isla === 'Baleares' ? (
-            <p className="text-[11px] text-zinc-400 dark:text-zinc-600 bg-zinc-500/10 border border-zinc-500/20 rounded-lg px-2.5 py-1.5">
-              Selecciona una isla para poder filtrar por municipio
-            </p>
-          ) : (
-            <SearchSelect
-              placeholder="Toda la isla"
-              value={municipio}
-              options={municipios}
-              onChange={onMunicipio}
-              className="w-full"
-            />
-          )}
+          <SearchSelect
+            placeholder={isla === 'Baleares' ? 'Todo Baleares' : 'Toda la isla'}
+            value={municipio}
+            options={municipios}
+            onChange={onMunicipio}
+            className="w-full"
+          />
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-2">Horizonte</h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-2">Horizonte de proyección</h3>
           <select
             value={hasta}
             onChange={(e) => onHasta(Number(e.target.value))}
@@ -78,80 +73,120 @@ export default function PanelEscenarios({
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-4">
+      <section className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">
-            Inputs del escenario «{editable?.nombre}»
-          </h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">Escenarios</h3>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-            Variación % sobre el último año observado · efecto medido del modelo entre paréntesis
+            Cada escenario es una combinación de variaciones de IPH, ocupación y lluvia; se comparan en el gráfico.
+            Máximo {MAX_ESCENARIOS}.
           </p>
         </div>
 
-        {editable && (
-          <>
-            <SliderInput
-              label="Presión humana (IPH)"
-              hint="Eivissa y Formentera comparten serie (NUTS) · efecto medido: +0,9% consumo por +10%"
-              value={editable.iph_pct}
-              onChange={(v) => updateEditable({ iph_pct: v })}
-            />
-            <SliderInput
-              label="Ocupación turística"
-              hint="En municipios sin datos turísticos no tiene efecto · efecto medido: ≈ 0"
-              value={editable.ocupacion_pct}
-              onChange={(v) => updateEditable({ ocupacion_pct: v })}
-            />
-            <SliderInput
-              label="Lluvia"
-              hint="Apenas mueve el consumo urbano (su efecto real es el balance hídrico) · efecto medido: ≈ −0,2% por +10%"
-              value={editable.lluvia_pct}
-              onChange={(v) => updateEditable({ lluvia_pct: v })}
-              presets={PRESETS_LLUVIA}
-            />
-          </>
+        {escenarios.length === 0 && (
+          <div className="rounded-xl border border-dashed border-zinc-300/60 dark:border-zinc-700/60 p-4 text-center">
+            <p className="text-[12px] text-zinc-500 dark:text-zinc-400">
+              Aún no hay escenarios. Añade uno para empezar a proyectar.
+            </p>
+          </div>
         )}
-      </section>
 
-      <section className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4">
-        <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-2">Escenarios</h3>
-        <div className="flex flex-col gap-1">
-          {escenarios.map((e, i) => {
-            const vis = visible[e.id] ?? true;
-            return (
-              <div
-                key={e.id}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
-              >
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ background: ESCENARIO_COLORS[i % ESCENARIO_COLORS.length] }}
-                />
-                <div className="flex-1 min-w-0">
-                  <span className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
-                    {e.nombre}
-                  </span>
-                  <span className="block text-[10px] text-zinc-400 dark:text-zinc-600 tabular-nums">
-                    {e.id === 'tendencial'
-                      ? 'Inercia y tendencia histórica, sin cambios'
-                      : `IPH ${fmt(e.iph_pct)} · Ocup ${fmt(e.ocupacion_pct)} · Lluvia ${fmt(e.lluvia_pct)}`}
-                  </span>
-                </div>
+        {escenarios.map((e, i) => {
+          const vis = visible[e.id] ?? true;
+          const color = ESCENARIO_COLORS[i % ESCENARIO_COLORS.length];
+          return (
+            <div
+              key={e.id}
+              className={`rounded-xl border p-3 transition-opacity ${
+                vis
+                  ? 'border-zinc-300/40 dark:border-zinc-700/40'
+                  : 'border-zinc-200/40 dark:border-zinc-800/60 opacity-60'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+                <span className="flex-1 min-w-0 text-xs font-medium text-zinc-700 dark:text-zinc-300 truncate">
+                  {e.nombre}
+                </span>
                 <button
                   onClick={() => onToggleVisible(e.id)}
-                  className={`text-[10px] px-1.5 py-1 rounded-md border transition-colors cursor-pointer ${
+                  className={`shrink-0 p-1.5 rounded-md border transition-colors cursor-pointer ${
                     vis
-                      ? 'text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60'
-                      : 'text-zinc-400 dark:text-zinc-600 border-transparent line-through'
+                      ? 'text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
+                      : 'text-zinc-400 dark:text-zinc-600 border-transparent hover:text-zinc-500'
                   }`}
                   title={vis ? 'Ocultar del gráfico' : 'Mostrar en el gráfico'}
+                  aria-label={vis ? `Ocultar ${e.nombre}` : `Mostrar ${e.nombre}`}
                 >
-                  {vis ? '👁' : '—'}
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {vis ? (
+                      <>
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </>
+                    ) : (
+                      <>
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </>
+                    )}
+                  </svg>
+                </button>
+                <button
+                  onClick={() => onRemove(e.id)}
+                  className="shrink-0 p-1.5 rounded-md text-zinc-400 dark:text-zinc-600 hover:text-rose-500 border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
+                  title={`Borrar ${e.nombre}`}
+                  aria-label={`Borrar ${e.nombre}`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
                 </button>
               </div>
-            );
-          })}
-        </div>
+
+              <div className="flex flex-col gap-3 pt-3 mt-3 border-t border-zinc-200/60 dark:border-zinc-800/60">
+                <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                  Variación % sobre el último año observado · efecto medido del modelo entre paréntesis
+                </p>
+                <SliderInput
+                  label="Presión humana (IPH)"
+                  hint="Eivissa y Formentera comparten serie (NUTS) · efecto medido: +0,9% consumo por +10%"
+                  value={e.iph_pct}
+                  onChange={(v) => onUpdate(e.id, { iph_pct: v })}
+                />
+                <SliderInput
+                  label="Ocupación turística"
+                  hint="En municipios sin datos turísticos no tiene efecto · efecto medido: ≈ 0"
+                  value={e.ocupacion_pct}
+                  onChange={(v) => onUpdate(e.id, { ocupacion_pct: v })}
+                />
+                <SliderInput
+                  label="Lluvia"
+                  hint="Apenas mueve el consumo urbano (su efecto real es el balance hídrico) · efecto medido: ≈ −0,2% por +10%"
+                  value={e.lluvia_pct}
+                  onChange={(v) => onUpdate(e.id, { lluvia_pct: v })}
+                  presets={PRESETS_LLUVIA}
+                />
+              </div>
+            </div>
+          );
+        })}
+
+        <button
+          onClick={onAdd}
+          disabled={!puedeAnadir}
+          className={`w-full flex items-center justify-center gap-1.5 text-[12px] font-medium px-3 py-2 rounded-lg border transition-colors cursor-pointer ${
+            puedeAnadir
+              ? 'border-dashed border-blue-500/40 text-blue-500 hover:bg-blue-500/5'
+              : 'opacity-40 pointer-events-none border border-zinc-300/60 dark:border-zinc-700/60 text-zinc-400'
+          }`}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {puedeAnadir ? 'Añadir escenario' : `Máximo ${MAX_ESCENARIOS} escenarios`}
+        </button>
       </section>
     </aside>
   );
@@ -216,7 +251,7 @@ function SliderInput({
       )}
       {extrapolado && (
         <p className="text-[10px] text-amber-500 mt-1">
-          ⚠ Fuera del rango observado en el entrenamiento — la extrapolación es menos fiable
+          Fuera del rango observado en el entrenamiento — la extrapolación es menos fiable
         </p>
       )}
     </div>

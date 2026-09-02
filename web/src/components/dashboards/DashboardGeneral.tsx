@@ -99,9 +99,15 @@ export default function DashboardGeneral({ municipioInicial }: { municipioInicia
               sub={kpis ? `media ${fmt(kpis.infiltracion_ah_media_hm3, 1)} hm³ (2016-25)` : undefined}
             />
             <KpiCard
-              label="IPH pico del año"
+              label={kpis?.iph_pico?.mes === null ? 'IPH pico del año (media islas)' : 'IPH pico del año'}
               value={kpis?.iph_pico ? nf.format(kpis.iph_pico.iph) : '—'}
-              sub={kpis?.iph_pico ? `${kpis.iph_pico.nombre_isla} · ${MESES[(kpis.iph_pico.mes ?? 1) - 1]} ${kpis.iph_pico.anio}` : undefined}
+              sub={
+                kpis?.iph_pico
+                  ? kpis.iph_pico.mes !== null
+                    ? `${kpis.iph_pico.nombre_isla} · ${MESES[(kpis.iph_pico.mes ?? 1) - 1]} ${kpis.iph_pico.anio}`
+                    : `media de picos por isla · ${kpis.iph_pico.anio}`
+                  : undefined
+              }
             />
             <KpiCard
               label="Ocupación turística"

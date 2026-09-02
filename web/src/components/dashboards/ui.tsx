@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
 import { theme } from '../../lib/store';
 
@@ -222,19 +223,53 @@ export function SearchSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const selected = options.find((o) => o.cod === value);
   const filtered = options.filter((o) =>
     o.nombre.toLowerCase().includes(query.trim().toLowerCase())
   );
 
+  const toggle = () => {
+    if (!open) {
+      const r = wrapRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 200) });
+      setQuery('');
+    }
+    setOpen((v) => !v);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const onResize = () => setOpen(false);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [open]);
+
+  const menuStyle: CSSProperties = (() => {
+    if (!rect) return { top: 0, left: 0 };
+    const margin = 8;
+    const width = Math.min(Math.max(rect.width, 240), window.innerWidth - margin * 2);
+    const left = Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin));
+    const altura = Math.min(options.length * 36 + 56, 320);
+    if (rect.top + altura > window.innerHeight) {
+      return { bottom: window.innerHeight - rect.top + 4, left, width };
+    }
+    return { top: rect.top, left, width };
+  })();
+
   return (
-    <div className={`relative ${className}`}>
+    <div ref={wrapRef} className={`relative ${className}`}>
       <div className="flex items-center gap-1">
         <button
-          onClick={() => {
-            setOpen((v) => !v);
-            setQuery('');
-          }}
+          onClick={toggle}
           className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer truncate max-w-[220px] ${
             value
               ? 'bg-blue-500/10 text-blue-500 border-blue-500/30'
@@ -261,43 +296,48 @@ export function SearchSelect({
         )}
       </div>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-1 w-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl overflow-hidden">
-            <div className="p-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar…"
-                className="w-full text-[12px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60 rounded-lg px-2.5 py-1.5 text-zinc-800 dark:text-zinc-200 outline-none placeholder:text-zinc-400"
-              />
+      {open &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[9990]" onClick={() => setOpen(false)} />
+            <div
+              className="fixed z-[9991] rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl overflow-hidden"
+              style={menuStyle}
+            >
+              <div className="p-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar…"
+                  className="w-full text-[12px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60 rounded-lg px-2.5 py-1.5 text-zinc-800 dark:text-zinc-200 outline-none placeholder:text-zinc-400"
+                />
+              </div>
+              <div className="max-h-56 overflow-y-auto">
+                {filtered.length === 0 && (
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-600 p-3">Sin resultados</p>
+                )}
+                {filtered.map((o) => (
+                  <button
+                    key={o.cod}
+                    onClick={() => {
+                      onChange(o.cod);
+                      setOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[12px] transition-colors cursor-pointer ${
+                      o.cod === value
+                        ? 'bg-blue-500/10 text-blue-500'
+                        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    {o.nombre}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="max-h-56 overflow-y-auto">
-              {filtered.length === 0 && (
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-600 p-3">Sin resultados</p>
-              )}
-              {filtered.map((o) => (
-                <button
-                  key={o.cod}
-                  onClick={() => {
-                    onChange(o.cod);
-                    setOpen(false);
-                  }}
-                  className={`w-full text-left px-3 py-2 text-[12px] transition-colors cursor-pointer ${
-                    o.cod === value
-                      ? 'bg-blue-500/10 text-blue-500'
-                      : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                  }`}
-                >
-                  {o.nombre}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+          </>,
+          document.body
+        )}
     </div>
   );
 }

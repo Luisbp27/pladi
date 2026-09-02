@@ -105,7 +105,7 @@ export interface ResumenKpis {
   desviacion_pct: number | null;
   masas_en_deficit: number | null;
   masas_total: number | null;
-  iph_pico: { nombre_isla: string; anio: number; mes: number; iph: number } | null;
+  iph_pico: { nombre_isla: string; anio: number; mes: number | null; iph: number } | null;
   ocupacion_media_pct: number | null;
   ocupacion_mes_cerrado?: string;
   poblacion: number | null;
@@ -373,6 +373,9 @@ export interface SimulacionEscenario {
   lluvia_pct: number;
 }
 
+export const MAX_ESCENARIOS = 5;
+export const RANGO_SLIDER_PCT = 50;
+
 export interface ProyeccionPunto {
   anio: number;
   consumo_hm3: number;
@@ -432,6 +435,64 @@ export async function fetchSimulacion(p: SimulacionParams): Promise<SimulacionRe
   q.set('hasta', String(p.hasta));
   q.set('escenarios', JSON.stringify(p.escenarios));
   const path = `simulacion/consumo?${q.toString()}`;
+  const res = await fetch(`${API_BASE}/${path}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  return res.json();
+}
+
+// ── Simulación × balance hídrico ───────────────────────────────────────────
+
+export interface BalanceSeriePunto {
+  anio: number;
+  n_buen_estado: number;
+  n_en_riesgo: number;
+  n_mal_estado: number;
+  extraccion_total_hm3: number;
+  disponibilidad_total_hm3: number;
+  explotacion_media_pct: number | null;
+}
+
+export interface MasaCambio {
+  cod_masa: string;
+  nombre_masa: string;
+  isla: string;
+  extraccion_base_hm3: number;
+  extraccion_proy_hm3: number;
+  explotacion_base: number | null;
+  explotacion_proy: number | null;
+  estado_base: string;
+  estado_proy: string;
+}
+
+export interface BalanceEscenario {
+  id: string;
+  nombre: string;
+  color: string;
+  serie: BalanceSeriePunto[];
+  masas_cambio: MasaCambio[];
+}
+
+export interface SimulacionBalanceResp {
+  ambito: string;
+  municipio?: string;
+  base_anio: number;
+  hasta: number;
+  n_masas: number;
+  nota: string | null;
+  escenarios: BalanceEscenario[];
+}
+
+export async function fetchSimulacionBalance(p: SimulacionParams): Promise<SimulacionBalanceResp> {
+  if (SIMULACION_MOCK) {
+    const { getSimulacionBalanceMock } = await import('./simulacionMock');
+    return getSimulacionBalanceMock(p);
+  }
+  const q = new URLSearchParams();
+  if (p.municipio) q.set('municipio', p.municipio);
+  else if (p.isla) q.set('isla', p.isla);
+  q.set('hasta', String(p.hasta));
+  q.set('escenarios', JSON.stringify(p.escenarios));
+  const path = `simulacion/balance?${q.toString()}`;
   const res = await fetch(`${API_BASE}/${path}`);
   if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
   return res.json();

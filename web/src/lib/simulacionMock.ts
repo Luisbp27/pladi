@@ -2,12 +2,13 @@ import {
   fetchAbastecimiento,
   fetchMunicipios,
   type MunicipioSim,
+  type SimulacionBalanceResp,
   type SimulacionEscenario,
   type SimulacionParams,
   type SimulacionResp,
 } from './api';
 
-export const ESCENARIO_COLORS = ['#3b82f6', '#f59e0b', '#a855f7'];
+export const ESCENARIO_COLORS = ['#3b82f6', '#f59e0b', '#a855f7', '#22c55e', '#0ea5e9'];
 
 // Elasticidades reales medidas en 14_interpretabilidad (models/elasticidades.json)
 const ELASTICIDADES = { iph: 0.093, ocupacion: 0.008, lluvia: -0.017 };
@@ -47,7 +48,7 @@ export async function getSimulacionMock(p: SimulacionParams): Promise<Simulacion
   let ambito = p.municipio ?? p.isla ?? 'Baleares';
   try {
     const real = await fetchAbastecimiento(
-      p.municipio ? { municipio: p.municipio } : { isla: p.isla }
+      p.municipio ? { municipio: p.municipio } : p.isla && p.isla !== 'Baleares' ? { isla: p.isla } : {}
     );
     historico = real.serie
       .map((r) => ({ anio: Number(r.anio), consumo_hm3: Number(r.consumo_hm3) }))
@@ -92,9 +93,9 @@ export async function getSimulacionMock(p: SimulacionParams): Promise<Simulacion
   });
 
   let municipios: Record<string, MunicipioSim[]> = {};
-  if (!p.municipio && p.isla) {
+  if (!p.municipio) {
     try {
-      const { municipios: muns } = await fetchMunicipios(p.isla);
+      const { municipios: muns } = await fetchMunicipios(p.isla && p.isla !== 'Baleares' ? p.isla : undefined);
       for (const e of p.escenarios) {
         const growth = growthEscenario(e);
         municipios[e.id] = muns
@@ -125,5 +126,43 @@ export async function getSimulacionMock(p: SimulacionParams): Promise<Simulacion
     serie_historica: historico,
     escenarios,
     municipios,
+  };
+}
+
+export async function getSimulacionBalanceMock(p: SimulacionParams): Promise<SimulacionBalanceResp> {
+  const base = { bueno: 52, riesgo: 4, malo: 16, ext: 110, disp: 155 };
+  const escenarios = p.escenarios.map((e, i) => {
+    const growth = growthEscenario(e);
+    const serie = [];
+    for (let a = 2024; a <= p.hasta; a++) {
+      const t = a - 2024;
+      const malo = Math.max(0, base.malo + Math.round(t * growth * 40));
+      const riesgo = Math.max(0, base.riesgo + Math.round(t * growth * 20));
+      serie.push({
+        anio: a,
+        n_buen_estado: Math.max(0, 72 - malo - riesgo),
+        n_en_riesgo: riesgo,
+        n_mal_estado: malo,
+        extraccion_total_hm3: +(base.ext * (1 + growth * t)).toFixed(2),
+        disponibilidad_total_hm3: +(base.disp * (1 - growth * t * 0.3)).toFixed(2),
+        explotacion_media_pct: null,
+      });
+    }
+    return {
+      id: e.id,
+      nombre: e.nombre,
+      color: ESCENARIO_COLORS[i % ESCENARIO_COLORS.length],
+      serie,
+      masas_cambio: [],
+    };
+  });
+  return {
+    ambito: p.municipio ?? p.isla ?? 'Baleares',
+    municipio: p.municipio,
+    base_anio: 2024,
+    hasta: p.hasta,
+    n_masas: 72,
+    nota: 'Modo mock: valores de ejemplo, sin cruce real con el balance.',
+    escenarios,
   };
 }
