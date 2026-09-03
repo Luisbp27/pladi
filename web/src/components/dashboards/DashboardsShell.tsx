@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { dashIsla, dashVista } from '../../lib/store';
 import { ISLAS } from '../../lib/api';
+import { islaLabel, useT } from '../../lib/i18n';
+import type { ClaveI18n } from '../../lib/i18n/es';
 import DashboardGeneral from './DashboardGeneral';
 import DashboardInfiltrada from './DashboardInfiltrada';
 import DashboardBalance from './DashboardBalance';
@@ -9,31 +11,31 @@ import DashboardAbastecimiento from './DashboardAbastecimiento';
 import DashboardPresion from './DashboardPresion';
 import DashboardOcupacion from './DashboardOcupacion';
 
-const GRUPOS = [
+const GRUPOS: { id: string; clave: ClaveI18n; icon: string; items: { id: string; clave: ClaveI18n; icon: string }[] }[] = [
   {
     id: 'rh',
-    label: 'Recursos Hídricos',
+    clave: 'dash.shell.recursos',
     icon: 'M12 2l6 6h-4v6h4l-6 6-6-6h4V8H6l6-6z',
     items: [
-      { id: 'infiltrada', label: 'Agua infiltrada', icon: 'M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17h-8v-2.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z' },
-      { id: 'balance', label: 'Balance hídrico', icon: 'M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6V11h-6v9zm0-16v5h6V4h-6z' },
-      { id: 'abastecimiento', label: 'Abastecimiento', icon: 'M4 6h16M5 6v3a7 7 0 0 0 14 0V6M12 13v4m-2.5 0a2.5 2.5 0 0 0 5 0c0-1.8-1.6-2.6-2.5-4-.9 1.4-2.5 2.2-2.5 4z' },
+      { id: 'infiltrada', clave: 'dash.shell.infiltrada', icon: 'M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17h-8v-2.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z' },
+      { id: 'balance', clave: 'dash.shell.balance', icon: 'M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6V11h-6v9zm0-16v5h6V4h-6z' },
+      { id: 'abastecimiento', clave: 'dash.shell.abastecimiento', icon: 'M4 6h16M5 6v3a7 7 0 0 0 14 0V6M12 13v4m-2.5 0a2.5 2.5 0 0 0 5 0c0-1.8-1.6-2.6-2.5-4-.9 1.4-2.5 2.2-2.5 4z' },
     ],
   },
   {
     id: 'turismo',
-    label: 'Turismo',
+    clave: 'dash.shell.turismo',
     icon: 'M16 8a4 4 0 1 0-8 0c0 2 1 3 2 4v2h4v-2c1-1 2-2 2-4zM9 18h6',
     items: [
-      { id: 'presion', label: 'Presión humana', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
-      { id: 'ocupacion', label: 'Ocupación turística', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01' },
+      { id: 'presion', clave: 'dash.shell.presion', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+      { id: 'ocupacion', clave: 'dash.shell.ocupacion', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01' },
     ],
   },
 ];
 
 const GENERAL_ITEM = {
   id: 'general',
-  label: 'Visión general',
+  clave: 'dash.shell.vision' as ClaveI18n,
   icon: 'M4 13h6V4H4v9zm0 7h6v-5H4v5zm10 0h6V11h-6v9zm0-16v5h6V4h-6z',
 };
 
@@ -48,6 +50,7 @@ const VISTA_ACCENT: Record<string, string> = {
 };
 
 export default function DashboardsShell() {
+  const t = useT();
   const isla = useStore(dashIsla);
   const vista = useStore(dashVista);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -107,10 +110,14 @@ export default function DashboardsShell() {
         } md:translate-x-0 fixed md:relative z-30 h-[calc(100vh-44px-36px)] w-60 shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-r border-zinc-300/40 dark:border-zinc-800/50 p-3 transition-transform duration-300`}
       >
         <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-          Dashboards
+          {t('dash.shell.titulo')}
         </p>
         <nav className="flex flex-col gap-1">
-          <SidebarItem item={GENERAL_ITEM} active={vista === GENERAL_ITEM.id} onClick={() => goVista(GENERAL_ITEM.id)} />
+          <SidebarItem
+            item={{ id: GENERAL_ITEM.id, label: t(GENERAL_ITEM.clave), icon: GENERAL_ITEM.icon }}
+            active={vista === GENERAL_ITEM.id}
+            onClick={() => goVista(GENERAL_ITEM.id)}
+          />
 
           {GRUPOS.map((g) => {
             const open = openGroups[g.id] ?? true;
@@ -126,7 +133,7 @@ export default function DashboardsShell() {
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d={g.icon} />
                   </svg>
-                  {g.label}
+                  {t(g.clave)}
                   <svg
                     width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                     className={`ml-auto transition-transform ${open ? '' : '-rotate-90'}`}
@@ -137,7 +144,12 @@ export default function DashboardsShell() {
                 {open && (
                   <div className="flex flex-col gap-1 mt-1 ml-3 border-l border-zinc-200/60 dark:border-zinc-800/60 pl-2">
                     {g.items.map((item) => (
-                      <SidebarItem key={item.id} item={item} active={vista === item.id} onClick={() => goVista(item.id)} />
+                      <SidebarItem
+                        key={item.id}
+                        item={{ id: item.id, label: t(item.clave), icon: item.icon }}
+                        active={vista === item.id}
+                        onClick={() => goVista(item.id)}
+                      />
                     ))}
                   </div>
                 )}
@@ -153,7 +165,7 @@ export default function DashboardsShell() {
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             className="md:hidden text-zinc-500 cursor-pointer"
-            aria-label="Abrir menú"
+            aria-label={t('dash.shell.abrir_menu')}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="4" y1="7" x2="20" y2="7" />
@@ -168,8 +180,11 @@ export default function DashboardsShell() {
               style={{ background: VISTA_ACCENT[vista] ?? '#3b82f6' }}
             />
             {vista === GENERAL_ITEM.id
-              ? GENERAL_ITEM.label
-              : GRUPOS.flatMap((g) => g.items).find((i) => i.id === vista)?.label ?? ''}
+              ? t(GENERAL_ITEM.clave)
+              : (() => {
+                  const item = GRUPOS.flatMap((g) => g.items).find((i) => i.id === vista);
+                  return item ? t(item.clave) : '';
+                })()}
           </h1>
 
           <div className="ml-auto flex gap-1 overflow-x-auto no-scrollbar max-w-[62vw] sm:max-w-none">
@@ -183,7 +198,7 @@ export default function DashboardsShell() {
                     : 'bg-white dark:bg-zinc-900 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
                 }`}
               >
-                {i}
+                {islaLabel(i)}
               </button>
             ))}
           </div>

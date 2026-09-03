@@ -3,7 +3,8 @@ import { useStore } from '@nanostores/react';
 import {
   CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { fetchPresion, MESES } from '../../lib/api';
+import { fetchPresion } from '../../lib/api';
+import { meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
 import { Card, ErrorBox, RangoTemporal, Spinner, useIsDark, type Rango } from './ui';
 
@@ -23,6 +24,7 @@ const LINE_COLORS: Record<string, string> = {
 };
 
 export default function DashboardPresion() {
+  const t = useT();
   const isla = useStore(dashIsla);
   const islaParam = isla === 'Baleares' ? undefined : isla;
   const dark = useIsDark();
@@ -39,6 +41,7 @@ export default function DashboardPresion() {
       .then((r) => {
         if (!alive) return;
         const ref = r.referencia;
+        const m = meses();
 
         // Población anual por serie NUTS (suma de provincias censales)
         const porAnio = new Map<number, Record<string, number>>();
@@ -57,7 +60,7 @@ export default function DashboardPresion() {
           for (const x of r.serie) {
             const key = `${x.anio}-${x.mes}`;
             const entry = byMes.get(key) ?? {
-              label: `${MESES[x.mes - 1]} ${String(x.anio).slice(2)}`,
+              label: `${m[x.mes - 1]} ${String(x.anio).slice(2)}`,
               anio: x.anio,
               mes: x.mes,
             };
@@ -79,7 +82,7 @@ export default function DashboardPresion() {
           setSerie(rows);
         } else {
           const rows: Array<Record<string, string | number>> = r.serie.map((x) => ({
-            label: `${MESES[x.mes - 1]} ${String(x.anio).slice(2)}`,
+            label: `${m[x.mes - 1]} ${String(x.anio).slice(2)}`,
             anio: x.anio,
             mes: x.mes,
             iph: x.iph,
@@ -134,7 +137,7 @@ export default function DashboardPresion() {
       {ratio && (
         <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-1.5 max-w-sm">
           <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-            IPH pico vs población
+            {t('dash.presion.ratio')}
           </span>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold tabular-nums" style={{ color: LINE_COLORS[ratio.isla] ?? '#3b82f6' }}>
@@ -143,21 +146,17 @@ export default function DashboardPresion() {
             <span className="text-xs text-zinc-400 dark:text-zinc-500">{ratio.isla}</span>
           </div>
           <span className="text-[10px] text-zinc-400 dark:text-zinc-600 tabular-nums">
-            IPH {nf.format(ratio.iph)} · población {nf.format(ratio.pob)}
+            {t('dash.presion.ratio_sub', { iph: nf.format(ratio.iph), pob: nf.format(ratio.pob) })}
           </span>
         </div>
       )}
 
       <Card
-        title="Índice de Presión Humana"
-        subtitle={
-          isla === 'Baleares'
-            ? 'Series mensuales por isla + población censal anual (líneas discontinuas)'
-            : 'Línea: media del mes 2015-25 · población censal anual (discontinua)'
-        }
+        title={t('dash.presion.titulo')}
+        subtitle={isla === 'Baleares' ? t('dash.presion.sub_baleares') : t('dash.presion.sub_isla')}
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className="text-[11px] text-zinc-400 dark:text-zinc-600">Rango:</span>
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{t('ui.rango')}</span>
           <RangoTemporal min={minAnio} max={maxAnio} value={rangoEf} onChange={setRango} />
         </div>
         {serie.length === 0 ? (
@@ -183,15 +182,15 @@ export default function DashboardPresion() {
                   <Line type="monotone" dataKey="Mallorca" name="Mallorca" stroke={LINE_COLORS.Mallorca} dot={false} connectNulls />
                   <Line type="monotone" dataKey="Menorca" name="Menorca" stroke={LINE_COLORS.Menorca} dot={false} connectNulls />
                   <Line type="monotone" dataKey="Eivissa i Formentera" name="Eivissa i Formentera" stroke={LINE_COLORS['Eivissa i Formentera']} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="pob_Mallorca" name="Población Mallorca" stroke={LINE_COLORS.Mallorca} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="pob_Menorca" name="Población Menorca" stroke={LINE_COLORS.Menorca} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="pob_Eivissa i Formentera" name="Población Eivissa i Formentera" stroke={LINE_COLORS['Eivissa i Formentera']} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="pob_Mallorca" name={t('dash.presion.series.pob', { isla: 'Mallorca' })} stroke={LINE_COLORS.Mallorca} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="pob_Menorca" name={t('dash.presion.series.pob', { isla: 'Menorca' })} stroke={LINE_COLORS.Menorca} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="pob_Eivissa i Formentera" name={t('dash.presion.series.pob', { isla: 'Eivissa i Formentera' })} stroke={LINE_COLORS['Eivissa i Formentera']} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
                 </>
               ) : (
                 <>
-                  <Line type="monotone" dataKey="iph" name="IPH" stroke={LINE_COLORS[isla] ?? '#f59e0b'} strokeWidth={2} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="media" name="Media" stroke={dark ? '#f4f4f5' : '#52525b'} strokeWidth={1.5} dot={false} />
-                  <Line type="monotone" dataKey="pob" name="Población censal" stroke={LINE_COLORS[isla] ?? '#f59e0b'} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="iph" name={t('dash.presion.series.iph')} stroke={LINE_COLORS[isla] ?? '#f59e0b'} strokeWidth={2} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="media" name={t('dash.presion.series.media')} stroke={dark ? '#f4f4f5' : '#52525b'} strokeWidth={1.5} dot={false} />
+                  <Line type="monotone" dataKey="pob" name={t('dash.presion.series.pob_censal')} stroke={LINE_COLORS[isla] ?? '#f59e0b'} strokeOpacity={0.4} strokeDasharray="5 5" strokeWidth={1} dot={false} connectNulls />
                 </>
               )}
             </LineChart>

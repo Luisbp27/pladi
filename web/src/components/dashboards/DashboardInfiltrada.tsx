@@ -3,16 +3,18 @@ import { useStore } from '@nanostores/react';
 import {
   Bar, BarChart, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { fetchInfiltrada, fetchInfiltradaRanking, fetchMasas, MESES, type InfiltradaRanking } from '../../lib/api';
+import { fetchInfiltrada, fetchInfiltradaRanking, fetchMasas, type InfiltradaRanking } from '../../lib/api';
+import { islaLabel, meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
 import { Card, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
-function ahLabel(anio: number, mes: number): string {
+function ahLabel(m: string[], anio: number, mes: number): string {
   const ah = mes >= 9 ? anio + 1 : anio;
-  return `${MESES[mes - 1]} ${String(ah).slice(2)}`;
+  return `${m[mes - 1]} ${String(ah).slice(2)}`;
 }
 
 export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: string }) {
+  const t = useT();
   const isla = useStore(dashIsla);
   const islaParam = isla === 'Baleares' ? undefined : isla;
   const dark = useIsDark();
@@ -54,23 +56,24 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
       .then(([l, r]) => {
         if (!alive) return;
         const ref = l.referencia;
+        const m = meses();
         if (ah && l.serie.length > 0) {
           const last = l.serie[l.serie.length - 1];
           const ahActual = last.mes >= 9 ? last.anio + 1 : last.anio;
           const rows = l.serie
             .filter((x) => (x.mes >= 9 ? x.anio + 1 : x.anio) === ahActual)
             .map((x) => ({
-              label: ahLabel(x.anio, x.mes),
+              label: ahLabel(m, x.anio, x.mes),
               hm3: x.agua_infiltrada_hm3,
-              media: ref.find((m) => m.mes === x.mes)?.media_hm3 ?? 0,
+              media: ref.find((mm) => mm.mes === x.mes)?.media_hm3 ?? 0,
               anio: x.anio,
             }));
           setSerie(rows);
         } else {
           const rows = l.serie.map((x) => ({
-            label: `${MESES[x.mes - 1]} ${String(x.anio).slice(2)}`,
+            label: `${m[x.mes - 1]} ${String(x.anio).slice(2)}`,
             hm3: x.agua_infiltrada_hm3,
-            media: ref.find((m) => m.mes === x.mes)?.media_hm3 ?? 0,
+            media: ref.find((mm) => mm.mes === x.mes)?.media_hm3 ?? 0,
             anio: x.anio,
           }));
           setSerie(rows);
@@ -108,16 +111,16 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
       {err && <ErrorBox msg={err} />}
 
       <Card
-        title={ah ? 'Agua infiltrada — año hidrológico en curso' : 'Agua infiltrada mensual'}
+        title={ah ? t('dash.infiltrada.titulo_ah') : t('dash.infiltrada.titulo')}
         subtitle={
           masa
-            ? `Masa ${masa} · línea: media del mes 2015-25`
-            : `${isla} · línea: media del mes 2015-25`
+            ? t('dash.infiltrada.sub_masa', { m: masa })
+            : t('dash.infiltrada.sub_isla', { isla: islaLabel(isla) })
         }
         right={
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <SearchSelect
-              placeholder="Toda la isla"
+              placeholder={t('ui.toda_isla')}
               value={masa}
               options={masas}
               onChange={setMasa}
@@ -130,13 +133,13 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
                   : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60'
               }`}
             >
-              Año hidrológico
+              {t('dash.infiltrada.anio_hidrologico')}
             </button>
           </div>
         }
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-          <span className="text-[11px] text-zinc-400 dark:text-zinc-600">Rango:</span>
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{t('ui.rango')}</span>
           <RangoTemporal
             min={minAnio}
             max={maxAnio}
@@ -162,18 +165,18 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="hm3" name="Agua infiltrada (hm³)" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-              <Line type="monotone" dataKey="media" name="Media (hm³)" stroke={dark ? '#f4f4f5' : '#52525b'} strokeWidth={1.5} dot={false} />
+              <Bar dataKey="hm3" name={t('dash.infiltrada.series.agua')} fill="#3b82f6" radius={[3, 3, 0, 0]} />
+              <Line type="monotone" dataKey="media" name={t('dash.infiltrada.series.media')} stroke={dark ? '#f4f4f5' : '#52525b'} strokeWidth={1.5} dot={false} />
             </BarChart>
           </ResponsiveContainer>
         )}
       </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <Card title="Masas con más infiltración" subtitle="Acumulado AH vs media histórica">
+        <Card title={t('dash.infiltrada.mas')} subtitle={t('dash.infiltrada.acumulado')}>
           <RankingTable rows={top} />
         </Card>
-        <Card title="Masas con menos infiltración" subtitle="Acumulado AH vs media histórica">
+        <Card title={t('dash.infiltrada.menos')} subtitle={t('dash.infiltrada.acumulado')}>
           <RankingTable rows={bottom} />
         </Card>
       </div>

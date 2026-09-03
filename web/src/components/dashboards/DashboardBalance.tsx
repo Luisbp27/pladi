@@ -4,10 +4,12 @@ import {
   Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
-  ESTADO_COLORS, ESTADO_LABELS,
+  ESTADO_COLORS,
   fetchBalance, fetchBalanceRanking, fetchMasas, fetchUds,
   type BalanceFila, type BalanceRankingMasa, type BalanceRankingUd,
 } from '../../lib/api';
+import { estadoLabel, useT } from '../../lib/i18n';
+import type { ClaveI18n } from '../../lib/i18n/es';
 import { dashIsla } from '../../lib/store';
 import { Card, ErrorBox, KpiCard, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
@@ -39,27 +41,28 @@ function EstadoChip({ estado }: { estado: string | null | undefined }) {
       style={{ color, backgroundColor: `${color}18`, borderColor: `${color}40` }}
     >
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-      {ESTADO_LABELS[estado] ?? estado}
+      {estadoLabel(estado)}
     </span>
   );
 }
 
 function CountChips({ fila }: { fila: BalanceFila }) {
+  const t = useT();
   const items = [
-    { n: fila.n_buen_estado, color: ESTADO_COLORS.buen_estado, label: 'buenas' },
-    { n: fila.n_en_riesgo, color: ESTADO_COLORS.en_riesgo, label: 'riesgo' },
-    { n: fila.n_mal_estado, color: ESTADO_COLORS.mal_estado, label: 'malas' },
+    { n: fila.n_buen_estado, color: ESTADO_COLORS.buen_estado, clave: 'dma.buenas' as ClaveI18n },
+    { n: fila.n_en_riesgo, color: ESTADO_COLORS.en_riesgo, clave: 'dma.riesgo' as ClaveI18n },
+    { n: fila.n_mal_estado, color: ESTADO_COLORS.mal_estado, clave: 'dma.malas' as ClaveI18n },
   ];
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {items.map((i) => (
         <span
-          key={i.label}
+          key={i.clave}
           className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border"
           style={{ color: i.color, backgroundColor: `${i.color}18`, borderColor: `${i.color}40` }}
         >
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: i.color }} />
-          {i.n ?? 0} {i.label}
+          {i.n ?? 0} {t(i.clave)}
         </span>
       ))}
     </div>
@@ -67,12 +70,13 @@ function CountChips({ fila }: { fila: BalanceFila }) {
 }
 
 function InfoTooltip({ text }: { text: string }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   return (
     <span className="relative inline-flex" onClick={(e) => e.stopPropagation()}>
       <button
         type="button"
-        aria-label="Información sobre disponibilidad"
+        aria-label={t('dash.balance.info_disp')}
         onClick={() => setOpen((v) => !v)}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
@@ -95,22 +99,22 @@ function InfoTooltip({ text }: { text: string }) {
   );
 }
 
-const COMPONENTES_ENTRADAS = [
-  { key: 'infiltracion_lluvia_hm3', label: 'Infiltración lluvia', color: '#3b82f6' },
-  { key: 'infiltracion_torrentes_hm3', label: 'Infiltración torrentes', color: '#0ea5e9' },
-  { key: 'retorno_riegos_hm3', label: 'Retorno riegos', color: '#22c55e' },
-  { key: 'perdida_redes_abastecimiento_hm3', label: 'Pérdidas redes abastecimiento', color: '#a855f7' },
-  { key: 'perdida_redes_alcantarillado_hm3', label: 'Pérdidas redes alcantarillado', color: '#8b5cf6' },
-  { key: 'intrusion_salina_hm3', label: 'Intrusión salina', color: '#64748b' },
+const COMPONENTES_ENTRADAS: { key: string; clave: ClaveI18n; color: string }[] = [
+  { key: 'infiltracion_lluvia_hm3', clave: 'dash.balance.comp.infiltracion_lluvia', color: '#3b82f6' },
+  { key: 'infiltracion_torrentes_hm3', clave: 'dash.balance.comp.infiltracion_torrentes', color: '#0ea5e9' },
+  { key: 'retorno_riegos_hm3', clave: 'dash.balance.comp.retorno_riegos', color: '#22c55e' },
+  { key: 'perdida_redes_abastecimiento_hm3', clave: 'dash.balance.comp.perdidas_abast', color: '#a855f7' },
+  { key: 'perdida_redes_alcantarillado_hm3', clave: 'dash.balance.comp.perdidas_alcant', color: '#8b5cf6' },
+  { key: 'intrusion_salina_hm3', clave: 'dash.balance.comp.intrusion', color: '#64748b' },
 ];
 
-const COMPONENTES_SALIDAS = [
-  { key: 'abastecimiento_urbano_hm3', label: 'Abastecimiento urbano', color: '#f43f5e' },
-  { key: 'torrentes_hm3', label: 'Torrentes', color: '#0ea5e9' },
-  { key: 'manantiales_hm3', label: 'Manantiales', color: '#06b6d4' },
-  { key: 'humedales_hm3', label: 'Humedales', color: '#22c55e' },
-  { key: 'salida_mar_hm3', label: 'Salida mar', color: '#64748b' },
-  { key: 'salida_zzhh_hm3', label: 'Salida ZZHH', color: '#94a3b8' },
+const COMPONENTES_SALIDAS: { key: string; clave: ClaveI18n; color: string }[] = [
+  { key: 'abastecimiento_urbano_hm3', clave: 'dash.balance.comp.abastecimiento', color: '#f43f5e' },
+  { key: 'torrentes_hm3', clave: 'dash.balance.comp.torrentes', color: '#0ea5e9' },
+  { key: 'manantiales_hm3', clave: 'dash.balance.comp.manantiales', color: '#06b6d4' },
+  { key: 'humedales_hm3', clave: 'dash.balance.comp.humedales', color: '#22c55e' },
+  { key: 'salida_mar_hm3', clave: 'dash.balance.comp.salida_mar', color: '#64748b' },
+  { key: 'salida_zzhh_hm3', clave: 'dash.balance.comp.salida_zzhh', color: '#94a3b8' },
 ];
 
 function GrupoDesglose({
@@ -122,6 +126,7 @@ function GrupoDesglose({
   comps: typeof COMPONENTES_ENTRADAS;
   fila: BalanceFila;
 }) {
+  const t = useT();
   const dark = useIsDark();
   const grid = dark ? '#3f3f46' : '#e4e4e7';
 
@@ -156,7 +161,7 @@ function GrupoDesglose({
             formatter={(value) => [`${fmt(Number(value))} hm³`, '']}
           />
           {comps.map((c) => (
-            <Bar key={c.key} dataKey={c.key} name={c.label} stackId="g" fill={c.color} />
+            <Bar key={c.key} dataKey={c.key} name={t(c.clave)} stackId="g" fill={c.color} />
           ))}
         </BarChart>
       </ResponsiveContainer>
@@ -170,7 +175,7 @@ function GrupoDesglose({
               className="flex items-center gap-2 py-1.5 border-b border-zinc-200/50 dark:border-zinc-800/50 last:border-0"
             >
               <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: c.color }} />
-              <span className="text-[11px] text-zinc-600 dark:text-zinc-400 flex-1 truncate">{c.label}</span>
+              <span className="text-[11px] text-zinc-600 dark:text-zinc-400 flex-1 truncate">{t(c.clave)}</span>
               <span className="hidden sm:inline text-[10px] text-zinc-400 dark:text-zinc-600 tabular-nums">{pct.toFixed(1)}%</span>
               <span className="text-[11px] text-zinc-800 dark:text-zinc-200 font-medium tabular-nums w-16 text-right">
                 {fmt(val)}
@@ -192,6 +197,7 @@ export default function DashboardBalance({
   masaInicial?: string;
   udInicial?: string;
 }) {
+  const t = useT();
   const isla = useStore(dashIsla);
   const islaParam = isla === 'Baleares' ? undefined : isla;
   const dark = useIsDark();
@@ -306,23 +312,23 @@ export default function DashboardBalance({
                   : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
             >
-              {n === 'masa' ? 'Masa' : 'Unidad de demanda'}
+              {n === 'masa' ? t('dash.balance.masa') : t('dash.balance.ud')}
             </button>
           ))}
         </div>
 
         {nivel === 'masa' ? (
-          <SearchSelect placeholder="Toda la isla" value={masa} options={masas} onChange={setMasa} />
+          <SearchSelect placeholder={t('ui.toda_isla')} value={masa} options={masas} onChange={setMasa} />
         ) : (
-          <SearchSelect placeholder="Toda la isla" value={ud} options={uds} onChange={setUd} />
+          <SearchSelect placeholder={t('ui.toda_isla')} value={ud} options={uds} onChange={setUd} />
         )}
       </div>
 
       {/* ── Sección A: Situación actual (último año disponible) ─────────── */}
       <section className="flex flex-col gap-3">
         <SectionHeader
-          title="Situación actual"
-          subtitle={snapshot ? `Año ${snapshot.anio} — último disponible` : '—'}
+          title={t('dash.balance.situacion')}
+          subtitle={snapshot ? t('dash.balance.anio_ultimo', { a: snapshot.anio }) : '—'}
         />
 
         {loading && !snapshot ? (
@@ -332,8 +338,8 @@ export default function DashboardBalance({
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-1.5">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                  Disponibilidad
-                  <InfoTooltip text="Disponibilidad = entradas aprovechables (sin intrusión salina) − descargas permanentes (salida mar + salida ZZHH). Por eso una masa con mucha infiltración puede tener poca disponibilidad." />
+                  {t('dash.balance.disponibilidad')}
+                  <InfoTooltip text={t('dash.balance.tooltip_disp')} />
                 </span>
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50 tabular-nums">
@@ -344,7 +350,7 @@ export default function DashboardBalance({
               </div>
               <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-1.5">
                 <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                  Explotación
+                  {t('dash.balance.explotacion')}
                 </span>
                 <div className="flex items-baseline gap-1.5">
                   <span
@@ -370,13 +376,13 @@ export default function DashboardBalance({
                   <span className="text-xs text-zinc-400 dark:text-zinc-500">%</span>
                 </div>
                 <span className="text-[10px] text-zinc-400 dark:text-zinc-600">
-                  extracción / disponibilidad
+                  {t('dash.balance.extraccion_disp')}
                 </span>
               </div>
-              <KpiCard label="Diferencia vs RP" value={fmt(snapshot.diferencia_vs_rp_hm3)} unit="hm³" />
+              <KpiCard label={t('dash.balance.diferencia_rp')} value={fmt(snapshot.diferencia_vs_rp_hm3)} unit="hm³" />
               <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-2">
                 <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-                  Estado DMA
+                  {t('dash.balance.estado_dma')}
                 </span>
                 {esMasaDetalle ? (
                   <EstadoChip estado={snapshot.estado_cuantitativo} />
@@ -386,10 +392,10 @@ export default function DashboardBalance({
               </div>
             </div>
 
-            <Card title={`Desglose del balance · ${snapshot.anio}`} subtitle="Composición de entradas y salidas (hm³)">
+            <Card title={t('dash.balance.desglose', { a: snapshot.anio })} subtitle={t('dash.balance.composicion')}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <GrupoDesglose titulo="Entradas" comps={COMPONENTES_ENTRADAS} fila={snapshot} />
-                <GrupoDesglose titulo="Salidas" comps={COMPONENTES_SALIDAS} fila={snapshot} />
+                <GrupoDesglose titulo={t('dash.balance.entradas')} comps={COMPONENTES_ENTRADAS} fila={snapshot} />
+                <GrupoDesglose titulo={t('dash.balance.salidas')} comps={COMPONENTES_SALIDAS} fila={snapshot} />
               </div>
             </Card>
           </>
@@ -399,18 +405,18 @@ export default function DashboardBalance({
       {/* ── Sección B: Evolución temporal ──────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <SectionHeader
-          title="Evolución temporal"
-          subtitle="El rango afecta a las gráficas y al ranking"
+          title={t('dash.balance.evolucion')}
+          subtitle={t('dash.balance.rango_afecta')}
           right={
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-zinc-400 dark:text-zinc-600">Rango:</span>
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{t('ui.rango')}</span>
               <RangoTemporal min={minAnio} max={maxAnio} value={rangoEf} onChange={setRango} />
             </div>
           }
         />
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card title="Disponibilidad vs extracción" subtitle="Anual (hm³)">
+          <Card title={t('dash.balance.disp_vs_extr')} subtitle={t('dash.balance.anual')}>
             {loading ? (
               <Spinner />
             ) : (
@@ -428,14 +434,14 @@ export default function DashboardBalance({
                     }}
                   />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="disponibilidad_hm3" name="Disponibilidad" stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="extraccion_hm3" name="Extracción" stroke="#f43f5e" strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="disponibilidad_hm3" name={t('dash.balance.disponibilidad')} stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="extraccion_hm3" name={t('dash.balance.extraccion')} stroke="#f43f5e" strokeWidth={2} dot={false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             )}
           </Card>
 
-          <Card title="Índice de explotación" subtitle="Extracción / disponibilidad · umbrales DMA 0.8 y 1.0">
+          <Card title={t('dash.balance.indice')} subtitle={t('dash.balance.umbrales')}>
             {loading ? (
               <Spinner />
             ) : (
@@ -451,11 +457,11 @@ export default function DashboardBalance({
                       borderRadius: 12,
                       fontSize: 12,
                     }}
-                    formatter={(v) => [fmt(Number(v), 2), 'explotación']}
+                    formatter={(v) => [fmt(Number(v), 2), t('dash.balance.explotacion')]}
                   />
                   <ReferenceLine y={0.8} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: '0.8', fontSize: 10, fill: '#f59e0b', position: 'insideTopRight' }} />
                   <ReferenceLine y={1.0} stroke="#f43f5e" strokeDasharray="4 4" label={{ value: '1.0', fontSize: 10, fill: '#f43f5e', position: 'insideTopRight' }} />
-                  <Line type="monotone" dataKey="explotacion_porcentaje" name="Explotación" stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="explotacion_porcentaje" name={t('dash.balance.explotacion')} stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -464,15 +470,15 @@ export default function DashboardBalance({
 
         {nivel === 'masa' ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <Card title="Masas más explotadas" subtitle={`Año ${rangoEf.hasta}`}>
+            <Card title={t('dash.balance.explotadas')} subtitle={t('dash.balance.anio', { a: rangoEf.hasta })}>
               <RankingMasaTable rows={top} />
             </Card>
-            <Card title="Masas con mejor estado" subtitle={`Año ${rangoEf.hasta}`}>
+            <Card title={t('dash.balance.mejor_estado')} subtitle={t('dash.balance.anio', { a: rangoEf.hasta })}>
               <RankingMasaTable rows={bottom} />
             </Card>
           </div>
         ) : (
-          <Card title="Unidades de demanda" subtitle={`Año ${rangoEf.hasta} · indicadores agregados de sus masas`}>
+          <Card title={t('dash.balance.uds')} subtitle={t('dash.balance.uds_sub', { a: rangoEf.hasta })}>
             <div className="flex flex-col">
               {rankingUd.map((u) => (
                 <div
@@ -495,10 +501,10 @@ export default function DashboardBalance({
                   </div>
                   <div className="text-right min-w-[110px]">
                     <span className="text-xs text-zinc-600 dark:text-zinc-300 tabular-nums">
-                      expl. {fmt(u.explotacion_porcentaje, 2)}
+                      {t('dash.balance.expl')} {fmt(u.explotacion_porcentaje, 2)}
                     </span>
                     <span className="block text-[10px] text-zinc-400 dark:text-zinc-600 tabular-nums">
-                      disp. {fmt(u.disponibilidad_hm3)} hm³
+                      {t('dash.balance.disp')} {fmt(u.disponibilidad_hm3)} hm³
                     </span>
                   </div>
                 </div>

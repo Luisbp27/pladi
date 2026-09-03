@@ -3,7 +3,8 @@ import { useStore } from '@nanostores/react';
 import {
   Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { fetchOcupacion, fetchMunicipios, fetchOcupacionRanking, MESES } from '../../lib/api';
+import { fetchOcupacion, fetchMunicipios, fetchOcupacionRanking } from '../../lib/api';
+import { meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
 import { Card, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
@@ -16,6 +17,7 @@ interface OcupRow {
 }
 
 export default function DashboardOcupacion() {
+  const t = useT();
   const isla = useStore(dashIsla);
   const islaParam = isla === 'Baleares' ? undefined : isla;
   const dark = useIsDark();
@@ -54,13 +56,14 @@ export default function DashboardOcupacion() {
     })
       .then((r) => {
         if (!alive) return;
+        const m = meses();
         const byKey = new Map<string, OcupRow>();
         for (const x of r.serie) {
           const key = `${x.anio}-${x.mes}`;
           const entry = byKey.get(key) ?? {
             anio: x.anio,
             mes: x.mes,
-            label: `${MESES[x.mes - 1]} ${String(x.anio).slice(2)}`,
+            label: `${m[x.mes - 1]} ${String(x.anio).slice(2)}`,
             hotelera: null,
             apartamentos: null,
           };
@@ -114,7 +117,8 @@ export default function DashboardOcupacion() {
   const aniosComparativa = [...new Set(rowsFiltrados.map((r) => r.anio))]
     .sort((a, b) => a - b)
     .slice(-5);
-  const datosComparativa: Array<Record<string, string | number | null>> = MESES.map((m, i) => {
+  const ms = meses();
+  const datosComparativa: Array<Record<string, string | number | null>> = ms.map((m, i) => {
     const row: Record<string, string | number | null> = { mes: m };
     for (const anio of aniosComparativa) {
       const r = rowsFiltrados.find((x) => x.anio === anio && x.mes === i + 1);
@@ -129,41 +133,41 @@ export default function DashboardOcupacion() {
       {err && <ErrorBox msg={err} />}
 
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[11px] text-zinc-400 dark:text-zinc-600">Filtrar por municipio:</span>
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{t('ui.filtrar_municipio')}</span>
         <SearchSelect
-          placeholder="Todos"
+          placeholder={t('ui.todos')}
           value={municipio}
           options={municipios}
           onChange={setMunicipio}
         />
-        <span className="text-[11px] text-zinc-400 dark:text-zinc-600 ml-1">Rango:</span>
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-600 ml-1">{t('ui.rango')}</span>
         <RangoTemporal min={minAnio} max={maxAnio} value={rangoEf} onChange={setRango} />
       </div>
 
       <Card
         title={
           municipio
-            ? `Ocupación de ${municipios.find((m) => m.cod === municipio)?.nombre ?? municipio}`
-            : 'Ocupación turística mensual'
+            ? t('dash.ocup.titulo_muni', { m: municipios.find((m) => m.cod === municipio)?.nombre ?? municipio })
+            : t('dash.ocup.titulo')
         }
         subtitle={
           comparativa
-            ? `Comparativa interanual · % de plazas ocupadas (${rangoEf.desde}-${rangoEf.hasta})`
-            : `% de plazas ocupadas · ${rangoEf.desde}-${rangoEf.hasta}`
+            ? t('dash.ocup.sub_comp', { d: rangoEf.desde, h: rangoEf.hasta })
+            : t('dash.ocup.sub', { d: rangoEf.desde, h: rangoEf.hasta })
         }
         right={
           <div className="flex gap-1 flex-wrap">
-            {(['ambos', 'hotelera', 'apartamentos'] as const).map((t) => (
+            {(['ambos', 'hotelera', 'apartamentos'] as const).map((tip) => (
               <button
-                key={t}
-                onClick={() => setTipo(t)}
+                key={tip}
+                onClick={() => setTipo(tip)}
                 className={`text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
-                  tipo === t
+                  tipo === tip
                     ? 'bg-blue-500/10 text-blue-500 border-blue-500/30'
                     : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60'
                 }`}
               >
-                {t === 'ambos' ? 'Ambos' : t === 'hotelera' ? 'Hotelera' : 'Apartamentos'}
+                {tip === 'ambos' ? t('dash.ocup.ambos') : tip === 'hotelera' ? t('dash.ocup.hotelera') : t('dash.ocup.apartamentos')}
               </button>
             ))}
             <button
@@ -174,7 +178,7 @@ export default function DashboardOcupacion() {
                   : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60'
               }`}
             >
-              Comparativa interanual
+              {t('dash.ocup.comparativa')}
             </button>
           </div>
         }
@@ -226,10 +230,10 @@ export default function DashboardOcupacion() {
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               {(tipo === 'ambos' || tipo === 'hotelera') && (
-                <Bar dataKey="hotelera" name="Hotelera" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="hotelera" name={t('dash.ocup.hotelera')} fill="#3b82f6" radius={[3, 3, 0, 0]} />
               )}
               {(tipo === 'ambos' || tipo === 'apartamentos') && (
-                <Bar dataKey="apartamentos" name="Apartamentos" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="apartamentos" name={t('dash.ocup.apartamentos')} fill="#f59e0b" radius={[3, 3, 0, 0]} />
               )}
             </BarChart>
           </ResponsiveContainer>
@@ -238,14 +242,14 @@ export default function DashboardOcupacion() {
 
       {!municipio && ranking.length > 0 && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <Card title="Top municipios turísticos" subtitle={`Año ${rangoEf.hasta} · ocupación media`}>
+          <Card title={t('dash.ocup.top')} subtitle={t('dash.ocup.ranking_sub', { a: rangoEf.hasta })}>
             <RankingTable rows={topRanking} />
           </Card>
-          <Card title="Menor ocupación" subtitle={`Año ${rangoEf.hasta} · ocupación media`}>
+          <Card title={t('dash.ocup.menor')} subtitle={t('dash.ocup.ranking_sub', { a: rangoEf.hasta })}>
             <RankingTable rows={bottomRanking} />
           </Card>
           <p className="text-[10px] text-zinc-400 dark:text-zinc-600 -mt-2 xl:col-span-2">
-            Solo se muestran municipios con datos de ocupación turística.
+            {t('dash.ocup.solo_munis')}
           </p>
         </div>
       )}
@@ -258,6 +262,7 @@ function RankingTable({
 }: {
   rows: { nombre_municipio: string; isla: string; ocupacion_media_pct: number | null; meses_con_datos: number }[];
 }) {
+  const t = useT();
   return (
     <div className="flex flex-col">
       {rows.map((m) => (
@@ -268,7 +273,7 @@ function RankingTable({
           <div className="flex flex-col">
             <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">{m.nombre_municipio}</span>
             <span className="text-[10px] text-zinc-400 dark:text-zinc-600">
-              {m.isla} · {m.meses_con_datos} meses
+              {m.isla} · {t('dash.ocup.n_meses', { n: m.meses_con_datos })}
             </span>
           </div>
           <span className="text-xs text-zinc-600 dark:text-zinc-300 tabular-nums">
