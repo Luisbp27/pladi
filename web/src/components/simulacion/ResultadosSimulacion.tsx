@@ -101,7 +101,7 @@ export default function ResultadosSimulacion({
         <KpiCard
           label={t('simul.variacion')}
           value={`${kpisEsc.kpis.variacion_media_anual_pct > 0 ? '+' : ''}${kpisEsc.kpis.variacion_media_anual_pct.toFixed(1)}`}
-          unit="%/año"
+          unit={t('simul.var_unidad')}
           sub={t('simul.hasta', { h: data.hasta })}
         />
         <KpiCard

@@ -124,6 +124,7 @@ export const dict: Record<ClaveI18n, string> = {
   'dash.general.series.consumo': 'Consum',
   'dash.general.series.media': 'Mitjana (hm³)',
   'dash.general.series.historico': 'Històric',
+  'dash.general.series.agua': 'Aigua infiltrada (hm³)',
 
   'dash.shell.recursos': 'Recursos Hídrics',
   'dash.shell.turismo': 'Turisme',
@@ -148,6 +149,7 @@ export const dict: Record<ClaveI18n, string> = {
   'dash.infiltrada.series.media': 'Mitjana (hm³)',
 
   'dash.balance.situacion': 'Situació actual',
+  'dash.balance.anio': 'Any {a}',
   'dash.balance.anio_ultimo': 'Any {a} — darrer disponible',
   'dash.balance.evolucion': 'Evolució temporal',
   'dash.balance.rango_afecta': 'El rang afecta els gràfics i el rànquing',
@@ -256,6 +258,7 @@ export const dict: Record<ClaveI18n, string> = {
   'simul.consumo_base': 'Consum {a} (base)',
   'simul.ultimo_obs': 'darrer any observat',
   'simul.variacion': 'Variació mitjana anual',
+  'simul.var_unidad': '%/any',
   'simul.hasta': 'fins a {h}',
   'simul.sensibilidad': 'Sensibilitat IPH',
   'simul.sens_sub': "consum per cada +10% d'IPH",

@@ -557,6 +557,26 @@ notebooks/
 
 ---
 
+## Internacionalización ca/es (✅ 2026-09-03)
+
+**Decisión**: ofrecer toda la web en **catalán (principal) y español** con enfoque **custom nanostore** (sin librerías i18n): coherente con el patrón del theme, switch instantáneo sin recarga y 0 dependencias. Se descartaron Paraglide (tooling nuevo) y el routing i18n de Astro (la recarga por URL pierde el estado de la UI; las páginas son shells de islas y el SEO no es prioritario).
+
+### Mecánica
+
+- **`web/src/lib/i18n.ts`**: atom `locale` (default **ca**), `t(clave, params)` con interpolación `{x}`, `useT()`/`useLocale()` (nanostores → re-render de todas las islas), `meses()`, `estadoLabel()`, `islaLabel()` (label localizado, valor fijo para la API — `Baleares`→«Illes Balears»), `plural()` (es/ca: singular solo n=1), `collator()` (localeCompare ca/es), `setLocale()` (persistencia + `<html lang>` + `document.title`).
+- **Diccionarios** `web/src/lib/i18n/{es.ts,ca.ts}` (~290 claves, `ca` tipado contra las claves de `es` → paridad forzada por TS). Namespaces: nav, footer, page, common, mapa, dma, islas, ui, drawer, dash.*, simul.*.
+- **Persistencia**: `localStorage['pladi-locale']`; script `is:inline` en `MainLayout.astro` aplica `lang`/`__pladiLocale` antes del primer paint (patrón theme).
+- **Switch**: `LocaleSwitcher.tsx` (pills CA|ES) en el navbar. **Navbar y Footer son ahora islands React** (`Navbar.tsx`, `Footer.tsx`, `client:load`) para retraducirse al instante; títulos de página estáticos en ca (default) y `document.title` se actualiza al cambiar.
+- **Números**: `Intl.NumberFormat('es-ES')` se mantiene tal cual — **es-ES y ca-ES formatean idéntico** (1.234,56); si algún día se añade un locale con otro formato habrá que hacerlo reactivo.
+- **Nombres de escenario** persistidos en localStorage se generan en el idioma activo («Escenario N»/«Escenari N»); los ya guardados no se retraducen.
+
+### Fuera de alcance (backend)
+
+- Strings del backend mostradas tal cual: `nota`, `ambito` (excepto `Baleares`, localizado vía `islaLabel`), `uso_principal`, nombres de masas/municipios/pozos/UDs (datos), errores de red en inglés de `fetch` («Failed to fetch…»). Si se quisiera traducirlas: la API debería devolver claves i18n en vez de texto.
+- Marcas (DGRH, AEMET, IDEIB, IBESTAT, Open-Meteo) sin traducir.
+
+---
+
 ## Convenciones del proyecto
 
 ### Entornos y despliegue
@@ -587,7 +607,8 @@ notebooks/
 
 - **Framework**: Astro 5 con React islands (`client:load`).
 - **Tema**: Tailwind `darkMode: "class"` con **light mode por defecto**. Botón ☀️/🌙 en el navbar.
-- **Estado**: Nanostores atoms (`theme`, `activeLayers`, `geojsonData`, `drawerOpen`, etc.) compartidos entre islas.
+- **Estado**: Nanostores atoms (`theme`, `locale`, `activeLayers`, `geojsonData`, `drawerOpen`, etc.) compartidos entre islas.
+- **i18n**: ca (default) + es vía diccionarios propios en `web/src/lib/i18n/` (ver "Internacionalización ca/es"). TODO texto de UI pasa por `t()`/`useT()`; nada de strings es hardcodeadas en componentes.
 - **Mapa**: Leaflet 1.9.4 vía CDN (nunca como módulo npm). Sin zoom nativo ni control de capas (se gestionan vía UI propia).
 - **Tiles CARTO (2026-08-30)**: los basemaps de CARTO requieren API key desde 2026. URL: `https://{s}.basemaps.cartocdn.com/rastertiles/{light_all|dark_all}/{z}/{x}/{y}{r}.png?key=...`. La key se inyecta vía `PUBLIC_CARTO_API_KEY` (`.env` en dev, `.env.production` en build) y se lee con `import.meta.env.PUBLIC_CARTO_API_KEY` en `MapView.tsx`. Es visible en el navegador (inherente a tiles raster); opcionalmente restringirla por dominio en el panel de CARTO. Los ficheros `web/.env*` están **gitignored** — clonar `web/.env.production.example` y poner la key real (en el VPS: crear `web/.env.production` antes del build).
 - **Capas**: orden en panel: Municipios → Pozos → Masas Subterráneas → Unidades de Demanda.

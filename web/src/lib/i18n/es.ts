@@ -122,6 +122,7 @@ export const dict = {
   'dash.general.series.consumo': 'Consumo',
   'dash.general.series.media': 'Media (hm³)',
   'dash.general.series.historico': 'Histórico',
+  'dash.general.series.agua': 'Agua infiltrada (hm³)',
 
   'dash.shell.recursos': 'Recursos Hídricos',
   'dash.shell.turismo': 'Turismo',
@@ -146,6 +147,7 @@ export const dict = {
   'dash.infiltrada.series.media': 'Media (hm³)',
 
   'dash.balance.situacion': 'Situación actual',
+  'dash.balance.anio': 'Año {a}',
   'dash.balance.anio_ultimo': 'Año {a} — último disponible',
   'dash.balance.evolucion': 'Evolución temporal',
   'dash.balance.rango_afecta': 'El rango afecta a las gráficas y al ranking',
@@ -254,6 +256,7 @@ export const dict = {
   'simul.consumo_base': 'Consumo {a} (base)',
   'simul.ultimo_obs': 'último año observado',
   'simul.variacion': 'Variación media anual',
+  'simul.var_unidad': '%/año',
   'simul.hasta': 'hasta {h}',
   'simul.sensibilidad': 'Sensibilidad IPH',
   'simul.sens_sub': 'consumo por cada +10% de IPH',
