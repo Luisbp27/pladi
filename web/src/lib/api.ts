@@ -345,13 +345,7 @@ export const ESTADO_COLORS: Record<string, string> = {
   mal_estado: '#f43f5e',
 };
 
-export const ESTADO_LABELS: Record<string, string> = {
-  buen_estado: 'Buen estado',
-  en_riesgo: 'En riesgo',
-  mal_estado: 'Mal estado',
-};
-
-export const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+// ESTADO_LABELS y MESES viven en los diccionarios i18n (dma.* / meses())
 export const ISLAS = ['Mallorca', 'Menorca', 'Eivissa', 'Formentera'];
 
 // ── Simulación ─────────────────────────────────────────────────────────────

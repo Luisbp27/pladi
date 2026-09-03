@@ -13,6 +13,7 @@ import {
 } from '../../lib/api';
 import type { SelectOption } from '../dashboards/ui';
 import { ErrorBox, Spinner } from '../dashboards/ui';
+import { islaLabel, useT } from '../../lib/i18n';
 import PanelEscenarios from './PanelEscenarios';
 import ResultadosSimulacion from './ResultadosSimulacion';
 
@@ -56,6 +57,7 @@ function cargar(): Persistido {
 }
 
 export default function SimulacionShell() {
+  const t = useT();
   const [isla, setIsla] = useState('Baleares');
   const [municipio, setMunicipio] = useState('');
   const [municipios, setMunicipios] = useState<SelectOption[]>([]);
@@ -141,7 +143,7 @@ export default function SimulacionShell() {
   const addEscenario = () => {
     if (escenarios.length >= MAX_ESCENARIOS) return;
     const id = crypto.randomUUID();
-    const nombre = `Escenario ${counter}`;
+    const nombre = t('simul.escenario_n', { n: counter });
     setEst((s) => ({
       escenarios: [...s.escenarios, { id, nombre, iph_pct: 0, ocupacion_pct: 0, lluvia_pct: 0 }],
       counter: s.counter + 1,
@@ -173,7 +175,7 @@ export default function SimulacionShell() {
       <header className="sticky top-0 z-20 flex items-center gap-3 px-5 py-3 bg-zinc-50/80 dark:bg-[#09090b]/80 backdrop-blur-xl border-b border-zinc-200/60 dark:border-zinc-800/50">
         <h1 className="flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#a855f7' }} />
-          Simulación
+          {t('simul.titulo')}
         </h1>
         {SIMULACION_MOCK && (
           <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
@@ -191,7 +193,7 @@ export default function SimulacionShell() {
                   : 'bg-white dark:bg-zinc-900 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
             >
-              {i}
+              {islaLabel(i)}
             </button>
           ))}
         </div>
@@ -220,9 +222,9 @@ export default function SimulacionShell() {
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
-                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Sin escenarios</p>
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('simul.sin_esc')}</p>
                 <p className="text-[12px] text-zinc-400 dark:text-zinc-500 max-w-xs">
-                  Añade tu primer escenario en el panel «Escenarios» para proyectar el consumo urbano.
+                  {t('simul.sin_esc_sub')}
                 </p>
               </div>
             ) : (

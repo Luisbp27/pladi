@@ -4,11 +4,11 @@ import {
 } from 'recharts';
 import {
   ESTADO_COLORS,
-  ESTADO_LABELS,
   type EscenarioResultado,
   type SimulacionBalanceResp,
   type SimulacionResp,
 } from '../../lib/api';
+import { collator, estadoLabel, islaLabel, useT } from '../../lib/i18n';
 import { KpiCard, useIsDark } from '../dashboards/ui';
 
 export default function ResultadosSimulacion({
@@ -24,6 +24,7 @@ export default function ResultadosSimulacion({
   activo: string;
   setActivo: (id: string) => void;
 }) {
+  const t = useT();
   const dark = useIsDark();
 
   const base_val = data.serie_historica.length
@@ -58,14 +59,15 @@ export default function ResultadosSimulacion({
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'delta', dir: -1 });
   const muns = useMemo(() => {
     const rows = [...(data.municipios[activo] ?? [])];
+    const cmp = collator();
     rows.sort((a, b) => {
-      let cmp: number;
-      if (sort.key === 'nombre') cmp = a.nombre_municipio.localeCompare(b.nombre_municipio);
-      else if (sort.key === 'isla') cmp = a.isla.localeCompare(b.isla);
-      else if (sort.key === 'base') cmp = a.base_hm3 - b.base_hm3;
-      else if (sort.key === 'proy') cmp = a.proy_hm3 - b.proy_hm3;
-      else cmp = a.delta_pct - b.delta_pct;
-      return cmp * sort.dir;
+      let r: number;
+      if (sort.key === 'nombre') r = cmp.compare(a.nombre_municipio, b.nombre_municipio);
+      else if (sort.key === 'isla') r = cmp.compare(a.isla, b.isla);
+      else if (sort.key === 'base') r = a.base_hm3 - b.base_hm3;
+      else if (sort.key === 'proy') r = a.proy_hm3 - b.proy_hm3;
+      else r = a.delta_pct - b.delta_pct;
+      return r * sort.dir;
     });
     return rows;
   }, [data.municipios, activo, sort]);
@@ -77,36 +79,36 @@ export default function ResultadosSimulacion({
     <div className="flex-1 min-w-0 flex flex-col gap-4">
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-600 mb-1.5">
-          Escenario para los indicadores
+          {t('simul.indicadores')}
         </p>
         <EscenarioPills data={data} activo={activo} setActivo={setActivo} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
-          label={`Consumo proyectado ${data.hasta}`}
+          label={t('simul.consumo_proy', { h: data.hasta })}
           value={kpisEsc.kpis.consumo_final_hm3.toFixed(2)}
           unit="hm³"
           chip={`${kpisEsc.kpis.delta_vs_base_pct > 0 ? '+' : ''}${kpisEsc.kpis.delta_vs_base_pct}%`}
           chipTone={kpisEsc.kpis.delta_vs_base_pct > 0 ? 'rose' : 'emerald'}
-          sub={`escenario: ${kpisEsc.nombre}`}
+          sub={t('simul.esc_sub', { n: kpisEsc.nombre })}
         />
         <KpiCard
-          label={`Consumo ${data.base_anio} (base)`}
+          label={t('simul.consumo_base', { a: data.base_anio })}
           value={base_val.toFixed(2)}
           unit="hm³"
-          sub="último año observado"
+          sub={t('simul.ultimo_obs')}
         />
         <KpiCard
-          label="Variación media anual"
+          label={t('simul.variacion')}
           value={`${kpisEsc.kpis.variacion_media_anual_pct > 0 ? '+' : ''}${kpisEsc.kpis.variacion_media_anual_pct.toFixed(1)}`}
           unit="%/año"
-          sub={`hasta ${data.hasta}`}
+          sub={t('simul.hasta', { h: data.hasta })}
         />
         <KpiCard
-          label="Sensibilidad IPH"
+          label={t('simul.sensibilidad')}
           value={`+${(kpisEsc.kpis.sensibilidad.iph * 10).toFixed(1).replace('.', ',')}`}
           unit="%"
-          sub="consumo por cada +10% de IPH"
+          sub={t('simul.sens_sub')}
         />
       </div>
 
@@ -114,10 +116,10 @@ export default function ResultadosSimulacion({
         <div className="flex items-start justify-between mb-2 flex-wrap gap-2">
           <div>
             <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
-              Proyección de consumo
+              {t('simul.proyeccion')}
             </h3>
             <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-              {data.ambito} · línea sólida = histórico, discontinua = proyección · banda de incertidumbre del modelo
+              {t('simul.proy_sub', { ambito: data.ambito === 'Baleares' ? islaLabel('Baleares') : data.ambito })}
             </p>
           </div>
         </div>
@@ -130,7 +132,7 @@ export default function ResultadosSimulacion({
             <Line
               type="monotone"
               dataKey="historico"
-              name="Histórico"
+              name={t('simul.historico')}
               stroke={dark ? '#f4f4f5' : '#52525b'}
               strokeWidth={2}
               dot={false}
@@ -163,7 +165,7 @@ export default function ResultadosSimulacion({
         {visibles.length > 0 && (
           <div className="flex gap-3 flex-wrap mt-2">
             <span className="text-[10px] text-zinc-400 dark:text-zinc-600 flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-zinc-500 inline-block" /> Histórico
+              <span className="w-3 h-0.5 bg-zinc-500 inline-block" /> {t('simul.historico')}
             </span>
             {visibles.map((esc) => (
               <span key={esc.id} className="text-[10px] text-zinc-400 dark:text-zinc-600 flex items-center gap-1.5">
@@ -180,16 +182,16 @@ export default function ResultadosSimulacion({
       <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
         <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
           <div>
-            <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">Detalle por municipio</h3>
+            <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{t('simul.detalle')}</h3>
             <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-              Consumo base {data.base_anio} vs proyectado {data.hasta} · clic en una columna para ordenar
+              {t('simul.detalle_sub', { a: data.base_anio, h: data.hasta })}
             </p>
           </div>
           <EscenarioPills data={data} activo={activo} setActivo={setActivo} />
         </div>
         {muns.length === 0 ? (
           <p className="text-[11px] text-zinc-400 dark:text-zinc-600 py-4">
-            Selecciona un ámbito (sin municipio concreto) para ver el detalle municipal.
+            {t('simul.sin_ambito')}
           </p>
         ) : (
           <div className="max-h-80 overflow-y-auto">
@@ -198,23 +200,23 @@ export default function ResultadosSimulacion({
                 <tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
                   <SortableTh
                     col="nombre"
-                    label="Municipio"
+                    label={t('simul.th.municipio')}
                     sort={sort}
                     setSort={setSort}
                   />
                   {data.ambito === 'Baleares' && (
-                    <SortableTh col="isla" label="Isla" sort={sort} setSort={setSort} />
+                    <SortableTh col="isla" label={t('simul.th.isla')} sort={sort} setSort={setSort} />
                   )}
                   <SortableTh
                     col="base"
-                    label={`Base (${data.base_anio})`}
+                    label={t('simul.th.base', { a: data.base_anio })}
                     sort={sort}
                     setSort={setSort}
                     align="right"
                   />
                   <SortableTh
                     col="proy"
-                    label={`Proy. (${data.hasta})`}
+                    label={t('simul.th.proy', { h: data.hasta })}
                     sort={sort}
                     setSort={setSort}
                     align="right"
@@ -257,6 +259,7 @@ export default function ResultadosSimulacion({
 const SEVERIDAD: Record<string, number> = { buen_estado: 0, en_riesgo: 1, mal_estado: 2 };
 
 function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | null; activo: string }) {
+  const t = useT();
   const dark = useIsDark();
   if (!balance) return null;
 
@@ -267,12 +270,11 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
     return (
       <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
         <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">
-          Impacto en el balance hídrico
+          {t('simul.impacto')}
         </h3>
         <div className="rounded-xl border border-dashed border-zinc-300/60 dark:border-zinc-700/60 p-6 text-center">
           <p className="text-[12px] text-zinc-400 dark:text-zinc-500 max-w-md mx-auto">
-            {balance.nota ??
-              'Este ámbito no tiene masas subterráneas con balance hídrico: no hay cruce que mostrar.'}
+            {balance.nota ?? t('simul.sin_masas')}
           </p>
         </div>
       </div>
@@ -303,11 +305,13 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
     <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5 flex flex-col gap-4">
       <div>
         <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">
-          Impacto en el balance hídrico
+          {t('simul.impacto')}
         </h3>
         <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-          {balance.ambito} · escenario «{esc.nombre}» · Δ de consumo distribuido a las masas con los pesos
-          municipio→masa; la lluvia del escenario escala la infiltración
+          {t('simul.impacto_sub', {
+            ambito: balance.ambito === 'Baleares' ? islaLabel('Baleares') : balance.ambito,
+            n: esc.nombre,
+          })}
         </p>
         {balance.nota && (
           <p className="text-[10px] text-amber-500 mt-1.5">{balance.nota}</p>
@@ -316,40 +320,40 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
 
       <div className="grid grid-cols-1 min-[360px]:grid-cols-2 xl:grid-cols-4 gap-3">
         <KpiCard
-          label={`Masas en mal estado ${balance.hasta}`}
+          label={t('simul.mal_estado', { h: balance.hasta })}
           value={String(fin.n_mal_estado)}
           chip={dMal > 0 ? `+${dMal}` : dMal < 0 ? `${dMal}` : '0'}
           chipTone={dMal > 0 ? 'rose' : 'emerald'}
-          sub={`vs ${base.n_mal_estado} en ${balance.base_anio} · de ${balance.n_masas} masas`}
+          sub={t('simul.mal_estado_sub', { n: base.n_mal_estado, a: balance.base_anio, m: balance.n_masas })}
         />
         <KpiCard
-          label="Masas con cambio de estado"
+          label={t('simul.cambio')}
           value={String(esc.masas_cambio.length)}
-          chip={empeoran > 0 ? `${empeoran} empeoran` : undefined}
+          chip={empeoran > 0 ? t('simul.empeoran', { n: empeoran }) : undefined}
           chipTone="rose"
-          sub={esc.masas_cambio.length > 0 ? `${mejoran} mejoran` : 'sin cambios con este escenario'}
+          sub={esc.masas_cambio.length > 0 ? t('simul.mejoran', { n: mejoran }) : t('simul.sin_cambios')}
         />
         <KpiCard
-          label={`Extracción total ${balance.hasta}`}
+          label={t('simul.extraccion_total', { h: balance.hasta })}
           value={fin.extraccion_total_hm3.toFixed(1)}
           unit="hm³"
           delta={Math.round(dExt * 10) / 10}
           positiveGood={false}
-          sub={`vs ${base.extraccion_total_hm3.toFixed(1)} hm³ (${balance.base_anio})`}
+          sub={t('simul.vs_hm3', { n: base.extraccion_total_hm3.toFixed(1), a: balance.base_anio })}
         />
         <KpiCard
-          label={`Disponibilidad total ${balance.hasta}`}
+          label={t('simul.disp_total', { h: balance.hasta })}
           value={fin.disponibilidad_total_hm3.toFixed(1)}
           unit="hm³"
           delta={Math.round(dDisp * 10) / 10}
           positiveGood={true}
-          sub={`vs ${base.disponibilidad_total_hm3.toFixed(1)} hm³ (${balance.base_anio})`}
+          sub={t('simul.vs_hm3', { n: base.disponibilidad_total_hm3.toFixed(1), a: balance.base_anio })}
         />
       </div>
 
       <div>
         <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2">
-          Estado cuantitativo de las masas por año (DMA)
+          {t('simul.estado_anual')}
         </p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={serie} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
@@ -365,30 +369,30 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
               }}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="n_buen_estado" name="Buen estado" stackId="a" fill={ESTADO_COLORS.buen_estado} radius={[0, 0, 0, 0]} />
-            <Bar dataKey="n_en_riesgo" name="En riesgo" stackId="a" fill={ESTADO_COLORS.en_riesgo} />
-            <Bar dataKey="n_mal_estado" name="Mal estado" stackId="a" fill={ESTADO_COLORS.mal_estado} radius={[3, 3, 0, 0]} />
+            <Bar dataKey="n_buen_estado" name={estadoLabel('buen_estado')} stackId="a" fill={ESTADO_COLORS.buen_estado} radius={[0, 0, 0, 0]} />
+            <Bar dataKey="n_en_riesgo" name={estadoLabel('en_riesgo')} stackId="a" fill={ESTADO_COLORS.en_riesgo} />
+            <Bar dataKey="n_mal_estado" name={estadoLabel('mal_estado')} stackId="a" fill={ESTADO_COLORS.mal_estado} radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       <div>
         <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2">
-          Masas que cambian de estado en {balance.hasta}
+          {t('simul.masas_cambio', { h: balance.hasta })}
         </p>
         {esc.masas_cambio.length === 0 ? (
           <p className="text-[11px] text-zinc-400 dark:text-zinc-600">
-            Ninguna masa cambia de estado cuantitativo con este escenario.
+            {t('simul.ninguna')}
           </p>
         ) : (
           <div className="max-h-64 overflow-y-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur">
                 <tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
-                  <th className="py-2 pr-3 font-medium">Masa</th>
-                  <th className="py-2 pr-3 font-medium">Estado</th>
-                  <th className="py-2 pr-3 font-medium text-right">Explotación</th>
-                  <th className="py-2 font-medium text-right">Extracción</th>
+                  <th className="py-2 pr-3 font-medium">{t('simul.th.masa')}</th>
+                  <th className="py-2 pr-3 font-medium">{t('simul.th.estado')}</th>
+                  <th className="py-2 pr-3 font-medium text-right">{t('simul.th.explotacion')}</th>
+                  <th className="py-2 font-medium text-right">{t('simul.th.extraccion')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -407,7 +411,7 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
                             style={{ background: ESTADO_COLORS[m.estado_base] ?? '#71717a' }}
                           />
                           <span className="text-zinc-400 dark:text-zinc-500">
-                            {ESTADO_LABELS[m.estado_base] ?? m.estado_base}
+                            {estadoLabel(m.estado_base)}
                           </span>
                           <span className="text-zinc-300 dark:text-zinc-600">→</span>
                           <span
@@ -415,7 +419,7 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
                             style={{ background: ESTADO_COLORS[m.estado_proy] ?? '#71717a' }}
                           />
                           <span className={empeora ? 'font-semibold text-rose-500' : 'font-semibold text-emerald-500'}>
-                            {ESTADO_LABELS[m.estado_proy] ?? m.estado_proy}
+                            {estadoLabel(m.estado_proy)}
                           </span>
                         </span>
                       </td>

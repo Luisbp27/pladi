@@ -2,13 +2,15 @@ import { ESCENARIO_COLORS } from '../../lib/simulacionMock';
 import type { SelectOption } from '../dashboards/ui';
 import { SearchSelect } from '../dashboards/ui';
 import { MAX_ESCENARIOS, type SimulacionEscenario } from '../../lib/api';
+import { useT } from '../../lib/i18n';
+import type { ClaveI18n } from '../../lib/i18n/es';
 
 const RANGO_MAX = 30;
 
-const PRESETS_LLUVIA = [
-  { id: 'seco', label: 'Año seco', v: -30 },
-  { id: 'normal', label: 'Normal', v: 0 },
-  { id: 'humedo', label: 'Año húmedo', v: 30 },
+const PRESETS_LLUVIA: { id: string; clave: ClaveI18n; v: number }[] = [
+  { id: 'seco', clave: 'simul.preset.seco', v: -30 },
+  { id: 'normal', clave: 'simul.preset.normal', v: 0 },
+  { id: 'humedo', clave: 'simul.preset.humedo', v: 30 },
 ];
 
 export default function PanelEscenarios({
@@ -38,18 +40,19 @@ export default function PanelEscenarios({
   visible: Record<string, boolean>;
   onToggleVisible: (id: string) => void;
 }) {
+  const t = useT();
   const puedeAnadir = escenarios.length < MAX_ESCENARIOS;
 
   return (
     <aside className="w-full lg:w-[340px] lg:shrink-0 flex flex-col gap-4">
       <section className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-4">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">Ámbito</h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">{t('simul.ambito')}</h3>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-2">
-            Sin municipio se simula el conjunto del ámbito
+            {t('simul.ambito_sub')}
           </p>
           <SearchSelect
-            placeholder={isla === 'Baleares' ? 'Todo Baleares' : 'Toda la isla'}
+            placeholder={isla === 'Baleares' ? t('ui.todo_baleares') : t('ui.toda_isla')}
             value={municipio}
             options={municipios}
             onChange={onMunicipio}
@@ -58,7 +61,7 @@ export default function PanelEscenarios({
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-2">Horizonte de proyección</h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-2">{t('simul.horizonte')}</h3>
           <select
             value={hasta}
             onChange={(e) => onHasta(Number(e.target.value))}
@@ -66,7 +69,7 @@ export default function PanelEscenarios({
           >
             {Array.from({ length: 10 }, (_, i) => 2026 + i).map((a) => (
               <option key={a} value={a}>
-                Proyectar hasta {a}
+                {t('simul.proyectar', { a })}
               </option>
             ))}
           </select>
@@ -75,17 +78,16 @@ export default function PanelEscenarios({
 
       <section className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">Escenarios</h3>
+          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-0.5">{t('simul.escenarios')}</h3>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-            Cada escenario es una combinación de variaciones de IPH, ocupación y lluvia; se comparan en el gráfico.
-            Máximo {MAX_ESCENARIOS}.
+            {t('simul.escenarios_sub', { n: MAX_ESCENARIOS })}
           </p>
         </div>
 
         {escenarios.length === 0 && (
           <div className="rounded-xl border border-dashed border-zinc-300/60 dark:border-zinc-700/60 p-4 text-center">
             <p className="text-[12px] text-zinc-500 dark:text-zinc-400">
-              Aún no hay escenarios. Añade uno para empezar a proyectar.
+              {t('simul.sin_esc_panel')}
             </p>
           </div>
         )}
@@ -114,8 +116,8 @@ export default function PanelEscenarios({
                       ? 'text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
                       : 'text-zinc-400 dark:text-zinc-600 border-transparent hover:text-zinc-500'
                   }`}
-                  title={vis ? 'Ocultar del gráfico' : 'Mostrar en el gráfico'}
-                  aria-label={vis ? `Ocultar ${e.nombre}` : `Mostrar ${e.nombre}`}
+                  title={vis ? t('simul.ocultar') : t('simul.mostrar')}
+                  aria-label={vis ? t('simul.ocultar_aria', { n: e.nombre }) : t('simul.mostrar_aria', { n: e.nombre })}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     {vis ? (
@@ -134,8 +136,8 @@ export default function PanelEscenarios({
                 <button
                   onClick={() => onRemove(e.id)}
                   className="shrink-0 p-1.5 rounded-md text-zinc-400 dark:text-zinc-600 hover:text-rose-500 border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
-                  title={`Borrar ${e.nombre}`}
-                  aria-label={`Borrar ${e.nombre}`}
+                  title={t('simul.borrar', { n: e.nombre })}
+                  aria-label={t('simul.borrar', { n: e.nombre })}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -146,23 +148,23 @@ export default function PanelEscenarios({
 
               <div className="flex flex-col gap-3 pt-3 mt-3 border-t border-zinc-200/60 dark:border-zinc-800/60">
                 <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                  Variación % sobre el último año observado · efecto medido del modelo entre paréntesis
+                  {t('simul.variacion_hint')}
                 </p>
                 <SliderInput
-                  label="Presión humana (IPH)"
-                  hint="Eivissa y Formentera comparten serie (NUTS) · efecto medido: +0,9% consumo por +10%"
+                  label={t('simul.slider.iph')}
+                  hint={t('simul.slider.iph_hint')}
                   value={e.iph_pct}
                   onChange={(v) => onUpdate(e.id, { iph_pct: v })}
                 />
                 <SliderInput
-                  label="Ocupación turística"
-                  hint="En municipios sin datos turísticos no tiene efecto · efecto medido: ≈ 0"
+                  label={t('simul.slider.ocup')}
+                  hint={t('simul.slider.ocup_hint')}
                   value={e.ocupacion_pct}
                   onChange={(v) => onUpdate(e.id, { ocupacion_pct: v })}
                 />
                 <SliderInput
-                  label="Lluvia"
-                  hint="Apenas mueve el consumo urbano (su efecto real es el balance hídrico) · efecto medido: ≈ −0,2% por +10%"
+                  label={t('simul.slider.lluvia')}
+                  hint={t('simul.slider.lluvia_hint')}
                   value={e.lluvia_pct}
                   onChange={(v) => onUpdate(e.id, { lluvia_pct: v })}
                   presets={PRESETS_LLUVIA}
@@ -185,7 +187,7 @@ export default function PanelEscenarios({
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          {puedeAnadir ? 'Añadir escenario' : `Máximo ${MAX_ESCENARIOS} escenarios`}
+          {puedeAnadir ? t('simul.anadir') : t('simul.max', { n: MAX_ESCENARIOS })}
         </button>
       </section>
     </aside>
@@ -207,8 +209,9 @@ function SliderInput({
   hint?: string;
   value: number;
   onChange: (v: number) => void;
-  presets?: { id: string; label: string; v: number }[];
+  presets?: { id: string; clave: ClaveI18n; v: number }[];
 }) {
+  const t = useT();
   const extrapolado = Math.abs(value) > 25;
   return (
     <div>
@@ -244,14 +247,14 @@ function SliderInput({
                   : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
             >
-              {p.label}
+              {t(p.clave)}
             </button>
           ))}
         </div>
       )}
       {extrapolado && (
         <p className="text-[10px] text-amber-500 mt-1">
-          Fuera del rango observado en el entrenamiento — la extrapolación es menos fiable
+          {t('simul.fuera_rango')}
         </p>
       )}
     </div>

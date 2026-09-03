@@ -4,7 +4,7 @@ import {
   CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { fetchPresion } from '../../lib/api';
-import { meses, useT } from '../../lib/i18n';
+import { collator, meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
 import { Card, ErrorBox, RangoTemporal, Spinner, useIsDark, type Rango } from './ui';
 
@@ -67,9 +67,7 @@ export default function DashboardPresion() {
             entry[x.nombre_isla ?? ''] = x.iph;
             byMes.set(key, entry);
           }
-          const rows = [...byMes.values()].sort((a, b) =>
-            String(a.label).localeCompare(String(b.label))
-          );
+          const rows = [...byMes.values()].sort((a, b) => collator().compare(String(a.label), String(b.label)));
           // Merge población censal (constante dentro del año → escalón)
           for (const row of rows) {
             const p = porAnio.get(Number(row.anio));
