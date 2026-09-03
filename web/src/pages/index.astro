@@ -1,14 +1,14 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import Navbar from '../components/Navbar.astro';
-import Footer from '../components/Footer.astro';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import MapView from '../components/MapView';
 import LayerPanel from '../components/LayerPanel';
 import Drawer from '../components/Drawer';
 ---
 
-<MainLayout title="pladi · Inicio">
-  <Navbar />
+<MainLayout title="pladi · Inici">
+  <Navbar client:load />
 
   <div class="h-screen w-screen relative overflow-hidden bg-white dark:bg-[#09090b] pt-11 pb-9">
     <MapView client:load />
@@ -20,5 +20,5 @@ import Drawer from '../components/Drawer';
     <Drawer client:load />
   </div>
 
-  <Footer />
+  <Footer client:load />
 </MainLayout>

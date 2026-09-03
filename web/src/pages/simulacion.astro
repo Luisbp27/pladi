@@ -1,12 +1,12 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import Navbar from '../components/Navbar.astro';
-import Footer from '../components/Footer.astro';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import SimulacionShell from '../components/simulacion/SimulacionShell.tsx';
 ---
 
-<MainLayout title="pladi · Simulación">
-  <Navbar />
+<MainLayout title="pladi · Simulació">
+  <Navbar client:load />
   <SimulacionShell client:load />
-  <Footer />
+  <Footer client:load />
 </MainLayout>

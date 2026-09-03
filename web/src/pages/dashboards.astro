@@ -1,12 +1,12 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import Navbar from '../components/Navbar.astro';
-import Footer from '../components/Footer.astro';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import DashboardsShell from '../components/dashboards/DashboardsShell.tsx';
 ---
 
 <MainLayout title="pladi · Dashboards">
-  <Navbar />
+  <Navbar client:load />
   <DashboardsShell client:load />
-  <Footer />
+  <Footer client:load />
 </MainLayout>

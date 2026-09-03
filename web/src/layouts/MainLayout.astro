@@ -6,7 +6,7 @@ const { title } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang="ca">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,6 +20,10 @@ const { title } = Astro.props;
     <title>{title}</title>
     <script is:inline>
       (() => {
+        const l = localStorage.getItem('pladi-locale');
+        const loc = l === 'es' || l === 'ca' ? l : 'ca';
+        document.documentElement.lang = loc;
+        window.__pladiLocale = loc;
         const t = localStorage.getItem('pladi-theme') || 'light';
         if (t === 'dark') document.documentElement.classList.add('dark');
       })();
