@@ -11,33 +11,36 @@ import {
   entidadKpis,
   entidadLoading,
 } from '../lib/store';
-import { fetchEntidad, MESES, ESTADO_COLORS, ESTADO_LABELS } from '../lib/api';
+import { fetchEntidad, ESTADO_COLORS } from '../lib/api';
+import { estadoLabel, meses, useT } from '../lib/i18n';
+import type { ClaveI18n } from '../lib/i18n/es';
 import { useIsDark } from './dashboards/ui';
 
-const TIPO_META: Record<string, { label: string; color: string; icon: string }> = {
+// es-ES y ca-ES formatean igual (1.234,56) — se mantiene un único formatter
+const nf = new Intl.NumberFormat('es-ES');
+
+const TIPO_META: Record<string, { color: string; icon: string; clave: ClaveI18n }> = {
   masa: {
-    label: 'Masa subterránea',
+    clave: 'drawer.tipo.masa',
     color: 'text-blue-500 bg-blue-500/10 border-blue-500/30',
     icon: 'M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17h-8v-2.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z',
   },
   municipio: {
-    label: 'Municipio',
+    clave: 'drawer.tipo.municipio',
     color: 'text-violet-500 bg-violet-500/10 border-violet-500/30',
     icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M15 9h.01M15 13h.01',
   },
   pozo: {
-    label: 'Pozo',
+    clave: 'drawer.tipo.pozo',
     color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/30',
     icon: 'M12 2a7 7 0 0 0-4 12.7c.5 1.7 2 3.3 4 6.3 2-3 3.5-4.6 4-6.3A7 7 0 0 0 12 2z',
   },
   ud: {
-    label: 'Unidad de demanda',
+    clave: 'drawer.tipo.ud',
     color: 'text-amber-500 bg-amber-500/10 border-amber-500/30',
     icon: 'M4 19V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14H4zm4 0h8M12 7v2m-3 0h6',
   },
 };
-
-const nf = new Intl.NumberFormat('es-ES');
 
 function EmptyState({ text }: { text: string }) {
   return (
@@ -145,9 +148,10 @@ function Sparkline({
   unit?: string;
 }) {
   const dark = useIsDark();
+  const m = meses();
   const rows = data.map((d) => ({
     ...d,
-    label: `${MESES[(d.mes as number) - 1]}-${String(d.anio).slice(2)}`,
+    label: `${m[(d.mes as number) - 1]}-${String(d.anio).slice(2)}`,
   }));
   return (
     <div className="h-16">
@@ -184,6 +188,7 @@ function Sparkline({
 }
 
 export default function Drawer() {
+  const t = useT();
   const $drawerOpen = useStore(drawerOpen);
   const tipo = useStore(entidadTipo);
   const cod = useStore(entidadCod);
@@ -252,13 +257,13 @@ export default function Drawer() {
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d={meta.icon} />
                   </svg>
-                  {meta.label}
+                  {t(meta.clave)}
                 </span>
               )}
               <button
                 onClick={() => drawerOpen.set(false)}
                 className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors cursor-pointer"
-                aria-label="Cerrar"
+                aria-label={t('common.cerrar')}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -280,71 +285,71 @@ export default function Drawer() {
             )}
 
             {!loading && !kpis && (
-              <p className="text-[11px] text-zinc-400 dark:text-zinc-600 mt-4">Sin datos disponibles</p>
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-600 mt-4">{t('common.sin_datos')}</p>
             )}
 
             {!loading && kpis && kpis.tipo === 'masa' && (
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
                   <KpiBlock
-                    label="Infiltración AH"
+                    label={t('drawer.infiltracion_ah')}
                     value={kpis.infiltracion_ah_hm3 != null ? `${nf.format(Number(kpis.infiltracion_ah_hm3))} hm³` : '—'}
-                    sub={kpis.infiltracion_ah_media_hm3 != null ? `media ${nf.format(Number(kpis.infiltracion_ah_media_hm3))} hm³` : undefined}
+                    sub={kpis.infiltracion_ah_media_hm3 != null ? `${t('common.media')} ${nf.format(Number(kpis.infiltracion_ah_media_hm3))} hm³` : undefined}
                     delta={kpis.desviacion_pct as number | null}
                     accent="text-blue-500"
                   />
                   <KpiBlock
-                    label="Último mes"
+                    label={t('drawer.ultimo_mes')}
                     value={kpis.infiltracion_ultimo_mes_hm3 != null ? `${nf.format(Number(kpis.infiltracion_ultimo_mes_hm3))} hm³` : '—'}
-                    sub={kpis.infiltracion_media_ultimo_mes_hm3 != null ? `media ${nf.format(Number(kpis.infiltracion_media_ultimo_mes_hm3))} hm³` : undefined}
+                    sub={kpis.infiltracion_media_ultimo_mes_hm3 != null ? `${t('common.media')} ${nf.format(Number(kpis.infiltracion_media_ultimo_mes_hm3))} hm³` : undefined}
                     accent="text-sky-500"
                   />
                 </div>
-                <InfoCard title="Agua infiltrada · 24 meses">
+                <InfoCard title={t('drawer.agua_infiltrada_24')}>
                   <Sparkline data={(kpis.sparkline_infiltracion as Record<string, unknown>[]) ?? []} dataKey="agua_infiltrada_hm3" unit="hm³" />
                 </InfoCard>
                 {(() => {
                   const bal = kpis.balance as Record<string, unknown> | null;
                   if (!bal) {
-                    return <EmptyState text="Balance hídrico no calculable — sin recurso potencial definido." />;
+                    return <EmptyState text={t('drawer.balance_no_calculable')} />;
                   }
                   const estado = bal.estado_cuantitativo as string | null;
                   const color = estado ? ESTADO_COLORS[estado] ?? '#71717a' : '#71717a';
                   return (
-                    <InfoCard title={`Balance hídrico · ${bal.anio ?? '—'}`}>
+                    <InfoCard title={t('drawer.balance_titulo', { anio: String(bal.anio ?? '—') })}>
                       <div className="flex items-center gap-2 py-1.5">
-                        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">Estado DMA</span>
+                        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">{t('drawer.estado_dma')}</span>
                         <span
                           className="ml-auto inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border"
                           style={{ color, backgroundColor: `${color}18`, borderColor: `${color}40` }}
                         >
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
-                          {estado ? ESTADO_LABELS[estado] : '—'}
+                          {estado ? estadoLabel(estado) : '—'}
                         </span>
                       </div>
                       <InfoRow
                         icon={ICONS.water}
-                        k="Disponibilidad"
+                        k={t('drawer.disponibilidad')}
                         v={bal.disponibilidad_hm3 != null ? `${nf.format(Number(bal.disponibilidad_hm3))} hm³` : '—'}
                       />
                       <InfoRow
                         icon={ICONS.grifo}
-                        k="Explotación"
+                        k={t('drawer.explotacion')}
                         v={bal.explotacion_porcentaje != null ? nf.format(Number(bal.explotacion_porcentaje)) : '—'}
                       />
                       <InfoRow
                         icon={ICONS.grifo}
-                        k="Extracción"
+                        k={t('drawer.extraccion')}
                         v={bal.extraccion_hm3 != null ? `${nf.format(Number(bal.extraccion_hm3))} hm³` : '—'}
                       />
                     </InfoCard>
                   );
                 })()}
-                <InfoCard title="Abastecimiento">
-                  <InfoRow icon={ICONS.munis} k="Municipios" v={String(kpis.n_municipios ?? 0)} />
+                <InfoCard title={t('drawer.abastecimiento')}>
+                  <InfoRow icon={ICONS.munis} k={t('drawer.municipios')} v={String(kpis.n_municipios ?? 0)} />
                   <InfoRow
                     icon={ICONS.grifo}
-                    k="Demanda media anual"
+                    k={t('drawer.demanda_media')}
                     v={kpis.demanda_hm3 != null ? `${nf.format(Number(kpis.demanda_hm3))} hm³` : '—'}
                   />
                 </InfoCard>
@@ -355,14 +360,14 @@ export default function Drawer() {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
                   <KpiBlock
-                    label={`Población ${kpis.poblacion_anio ?? ''}`}
+                    label={t('drawer.poblacion', { anio: String(kpis.poblacion_anio ?? '') })}
                     value={kpis.poblacion != null ? nf.format(Number(kpis.poblacion)) : '—'}
                     delta={kpis.poblacion_var_pct as number | null}
                     deltaTone="zinc"
                     accent="text-violet-500"
                   />
                   <KpiBlock
-                    label="Consumo urbano 2024"
+                    label={t('drawer.consumo_2024')}
                     value={kpis.consumo_serie ? `${nf.format(Number((kpis.consumo_serie as Array<{ consumo_hm3: number }>).at(-1)?.consumo_hm3 ?? 0))} hm³` : '—'}
                     accent="text-blue-500"
                   />
@@ -371,27 +376,28 @@ export default function Drawer() {
                   <>
                     <div className="flex flex-wrap gap-2">
                       <KpiBlock
-                        label="Ocupación media (12 meses)"
+                        label={t('drawer.ocupacion_media_12')}
                         value={`${nf.format(Number(kpis.ocupacion_ultimo_mes_pct))}%`}
                         sub={(() => {
                           const spark = (kpis.sparkline_ocupacion as Array<{ ocupacion_pct: number; mes: number }>) ?? [];
                           if (spark.length === 0) return undefined;
                           const pico = spark.reduce((a, b) => (b.ocupacion_pct > a.ocupacion_pct ? b : a), spark[0]);
-                          return `pico ${MESES[pico.mes - 1]} ${nf.format(pico.ocupacion_pct)}%`;
+                          const m = meses();
+                          return t('drawer.pico', { mes: m[pico.mes - 1], pct: nf.format(pico.ocupacion_pct) });
                         })()}
                         accent="text-amber-500"
                       />
                     </div>
-                    <InfoCard title="Ocupación turística · 12 meses">
+                    <InfoCard title={t('drawer.ocupacion_12')}>
                       <Sparkline data={(kpis.sparkline_ocupacion as Record<string, unknown>[]) ?? []} dataKey="ocupacion_pct" color="#f59e0b" unit="%" />
                     </InfoCard>
                   </>
                 ) : (
-                  <EmptyState text="Sin datos de ocupación turística en este municipio." />
+                  <EmptyState text={t('drawer.ocupacion_sin_datos')} />
                 )}
-                <InfoCard title="Recursos hídricos">
-                  <InfoRow icon={ICONS.water} k="Masas que lo abastecen" v={String(kpis.n_masas ?? 0)} />
-                  <InfoRow icon={ICONS.well} k="Pozos en su término" v={String(kpis.n_pozos ?? 0)} />
+                <InfoCard title={t('drawer.recursos_hidricos')}>
+                  <InfoRow icon={ICONS.water} k={t('drawer.masas_abastecen')} v={String(kpis.n_masas ?? 0)} />
+                  <InfoRow icon={ICONS.well} k={t('drawer.pozos_termino')} v={String(kpis.n_pozos ?? 0)} />
                 </InfoCard>
               </div>
             )}
@@ -401,26 +407,26 @@ export default function Drawer() {
                 {(() => {
                   const f = kpis.ficha as Record<string, unknown>;
                   return (
-                    <InfoCard title="Ficha del pozo">
-                      <InfoRow icon={ICONS.well} k="Código" v={String(f.cod_pozo ?? '—')} />
+                    <InfoCard title={t('drawer.ficha_pozo')}>
+                      <InfoRow icon={ICONS.well} k={t('drawer.codigo')} v={String(f.cod_pozo ?? '—')} />
                       <InfoRow
                         icon={ICONS.area}
-                        k="Cota terreno"
+                        k={t('drawer.cota')}
                         v={f.cota_terreno_m != null ? `${nf.format(Number(f.cota_terreno_m))} m` : '—'}
                       />
                       <InfoRow
                         icon={ICONS.grifo}
-                        k="Uso principal"
+                        k={t('drawer.uso_principal')}
                         v={String(f.uso_principal || '—')}
                       />
-                      <InfoRow icon={ICONS.calendar} k="Red piezométrica" v={f.red_piezometrica ? 'Sí' : 'No'} />
-                      <InfoRow icon={ICONS.calendar} k="Red cualitativa" v={f.red_cualitativa ? 'Sí' : 'No'} />
+                      <InfoRow icon={ICONS.calendar} k={t('drawer.red_piezometrica')} v={f.red_piezometrica ? t('common.si') : t('common.no')} />
+                      <InfoRow icon={ICONS.calendar} k={t('drawer.red_cualitativa')} v={f.red_cualitativa ? t('common.si') : t('common.no')} />
                       {Boolean(f.cod_masa) && (
                         <button
                           onClick={() => verMasa(String(f.cod_masa), String(f.nombre_masa ?? f.cod_masa))}
                           className="mt-3 w-full py-2 px-3 text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-950/40 hover:bg-blue-200/60 dark:hover:bg-blue-900/40 border border-blue-300/40 dark:border-blue-800/40 rounded-lg transition-colors cursor-pointer"
                         >
-                          Ver masa {String(f.nombre_masa ?? '')} →
+                          {t('drawer.ver_masa', { nombre: String(f.nombre_masa ?? '') })}
                         </button>
                       )}
                     </InfoCard>
@@ -433,13 +439,13 @@ export default function Drawer() {
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
                   <KpiBlock
-                    label="Infiltración AH en sus masas"
+                    label={t('drawer.infiltracion_masas')}
                     value={kpis.infiltracion_ah_media_hm3 != null ? `${nf.format(Number(kpis.infiltracion_ah_media_hm3))} hm³` : '—'}
                     delta={kpis.desviacion_pct as number | null}
                     accent="text-sky-500"
                   />
                   <KpiBlock
-                    label="Consumo 2024"
+                    label={t('drawer.consumo_2024')}
                     value={kpis.consumo_2024_hm3 != null ? `${nf.format(Number(kpis.consumo_2024_hm3))} hm³` : '—'}
                     accent="text-blue-500"
                   />
@@ -447,54 +453,54 @@ export default function Drawer() {
                 {(() => {
                   const bal = kpis.balance as Record<string, unknown> | null;
                   if (!bal) {
-                    return <EmptyState text="Balance hídrico no calculable — sin recurso potencial definido." />;
+                    return <EmptyState text={t('drawer.balance_no_calculable')} />;
                   }
                   return (
-                    <InfoCard title={`Balance hídrico · ${bal.anio ?? '—'}`}>
+                    <InfoCard title={t('drawer.balance_titulo', { anio: String(bal.anio ?? '—') })}>
                       <InfoRow
                         icon={ICONS.water}
-                        k="Disponibilidad"
+                        k={t('drawer.disponibilidad')}
                         v={bal.disponibilidad_hm3 != null ? `${nf.format(Number(bal.disponibilidad_hm3))} hm³` : '—'}
                       />
                       <InfoRow
                         icon={ICONS.grifo}
-                        k="Explotación"
+                        k={t('drawer.explotacion')}
                         v={bal.explotacion_porcentaje != null ? nf.format(Number(bal.explotacion_porcentaje)) : '—'}
                       />
                       <div className="flex items-center gap-2 py-1.5 flex-wrap">
                         {[
-                          { n: bal.n_buen_estado, color: ESTADO_COLORS.buen_estado, label: 'buenas' },
-                          { n: bal.n_en_riesgo, color: ESTADO_COLORS.en_riesgo, label: 'riesgo' },
-                          { n: bal.n_mal_estado, color: ESTADO_COLORS.mal_estado, label: 'malas' },
+                          { n: bal.n_buen_estado, color: ESTADO_COLORS.buen_estado, clave: 'dma.buenas' as ClaveI18n },
+                          { n: bal.n_en_riesgo, color: ESTADO_COLORS.en_riesgo, clave: 'dma.riesgo' as ClaveI18n },
+                          { n: bal.n_mal_estado, color: ESTADO_COLORS.mal_estado, clave: 'dma.malas' as ClaveI18n },
                         ].map((i) => (
                           <span
-                            key={i.label}
+                            key={i.clave}
                             className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border"
                             style={{ color: i.color, backgroundColor: `${i.color}18`, borderColor: `${i.color}40` }}
                           >
                             <span className="w-1.5 h-1.5 rounded-full" style={{ background: i.color }} />
-                            {Number(i.n ?? 0)} {i.label}
+                            {Number(i.n ?? 0)} {t(i.clave)}
                           </span>
                         ))}
                       </div>
                     </InfoCard>
                   );
                 })()}
-                <InfoCard title="Territorio">
-                  <InfoRow icon={ICONS.island} k="Isla" v={String(kpis.isla ?? '—')} />
+                <InfoCard title={t('drawer.territorio')}>
+                  <InfoRow icon={ICONS.island} k={t('drawer.isla')} v={String(kpis.isla ?? '—')} />
                   <InfoRow
                     icon={ICONS.area}
-                    k="Área"
+                    k={t('drawer.area')}
                     v={kpis.area_km2 != null ? `${nf.format(Number(kpis.area_km2))} km²` : '—'}
                   />
-                  <InfoRow icon={ICONS.munis} k="Municipios" v={String(kpis.n_municipios ?? '—')} />
+                  <InfoRow icon={ICONS.munis} k={t('drawer.municipios')} v={String(kpis.n_municipios ?? '—')} />
                   <InfoRow
                     icon={ICONS.people}
-                    k="Población"
+                    k={t('drawer.poblacion_simple')}
                     v={kpis.poblacion != null ? nf.format(Number(kpis.poblacion)) : '—'}
                   />
                 </InfoCard>
-                <InfoCard title={`Masas subterráneas (${kpis.n_masas ?? 0})`}>
+                <InfoCard title={t('drawer.masas_subterraneas', { n: String(kpis.n_masas ?? 0) })}>
                   {((kpis.masas as Array<{ cod_masa: string; nombre_masa: string }>) ?? []).map((m) => (
                     <button
                       key={m.cod_masa}
@@ -524,7 +530,7 @@ export default function Drawer() {
               onClick={() => irADetalle(tipo, cod, nombre)}
               className="w-full py-2.5 px-3 text-[12px] font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors cursor-pointer"
             >
-              Más detalle →
+              {t('drawer.mas_detalle')}
             </button>
           )}
         </div>

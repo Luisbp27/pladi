@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { createPortal } from 'react-dom';
 import { useStore } from '@nanostores/react';
 import { theme } from '../../lib/store';
+import { useT } from '../../lib/i18n';
 
 export const CHART_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#0ea5e9', '#f43f5e'];
 
@@ -147,11 +148,12 @@ export function RangoTemporal({
   onChange: (r: Rango) => void;
   disabled?: boolean;
 }) {
+  const t = useT();
   const anios = Array.from({ length: max - min + 1 }, (_, i) => max - i);
   const presets: { id: string; label: string; r: Rango }[] = [
-    { id: 'todo', label: 'Todo', r: { desde: min, hasta: max } },
-    { id: '5', label: 'Últimos 5', r: { desde: Math.max(min, max - 4), hasta: max } },
-    { id: '10', label: 'Últimos 10', r: { desde: Math.max(min, max - 9), hasta: max } },
+    { id: 'todo', label: t('ui.todo'), r: { desde: min, hasta: max } },
+    { id: '5', label: t('ui.ultimos_5'), r: { desde: Math.max(min, max - 4), hasta: max } },
+    { id: '10', label: t('ui.ultimos_10'), r: { desde: Math.max(min, max - 9), hasta: max } },
   ];
 
   const isPreset = (r: Rango) =>
@@ -174,7 +176,7 @@ export function RangoTemporal({
           {p.label}
         </button>
       ))}
-      <span className="text-[10px] text-zinc-400 dark:text-zinc-600 mx-1">o</span>
+      <span className="text-[10px] text-zinc-400 dark:text-zinc-600 mx-1">{t('ui.o')}</span>
       <select
         value={value.desde}
         onChange={(e) => {
@@ -221,6 +223,7 @@ export function SearchSelect({
   onChange: (cod: string) => void;
   className?: string;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -289,7 +292,7 @@ export function SearchSelect({
           <button
             onClick={() => onChange('')}
             className="text-[10px] text-zinc-400 hover:text-rose-500 px-1.5 py-1.5 rounded-lg cursor-pointer"
-            aria-label="Limpiar filtro"
+            aria-label={t('ui.limpiar_filtro')}
           >
             ✕
           </button>
@@ -309,13 +312,13 @@ export function SearchSelect({
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Buscar…"
+                  placeholder={t('ui.buscar')}
                   className="w-full text-[12px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-700/60 rounded-lg px-2.5 py-1.5 text-zinc-800 dark:text-zinc-200 outline-none placeholder:text-zinc-400"
                 />
               </div>
               <div className="max-h-56 overflow-y-auto">
                 {filtered.length === 0 && (
-                  <p className="text-[11px] text-zinc-400 dark:text-zinc-600 p-3">Sin resultados</p>
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-600 p-3">{t('ui.sin_resultados')}</p>
                 )}
                 {filtered.map((o) => (
                   <button

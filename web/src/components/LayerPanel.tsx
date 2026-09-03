@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import { activeLayers, layerLoading, panelCollapsed, toggleLayer } from '../lib/store';
 import { CAPAS } from '../lib/api';
+import { estadoLabel, useT } from '../lib/i18n';
+import type { ClaveI18n } from '../lib/i18n/es';
 
 const ICON_PATHS: Record<string, string> = {
   layers: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
@@ -21,6 +23,7 @@ function SvgIcon({ name, size = 14, color = 'currentColor' }: { name: string; si
 }
 
 function LayerItem({ capa }: { capa: typeof CAPAS[number] }) {
+  const t = useT();
   const $activeLayers = useStore(activeLayers);
   const $layerLoading = useStore(layerLoading);
   const isActive = $activeLayers[capa.id];
@@ -34,7 +37,7 @@ function LayerItem({ capa }: { capa: typeof CAPAS[number] }) {
       >
         <SvgIcon name={capa.icon} size={12} color={capa.color} />
       </div>
-      <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 flex-1">{capa.label}</span>
+      <span className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 flex-1">{t(`mapa.capa.${capa.id}` as ClaveI18n)}</span>
       {isLoading ? (
         <div
           className="w-3 h-3 border-2 rounded-full animate-spin border-t-transparent"
@@ -64,6 +67,7 @@ function LayerItem({ capa }: { capa: typeof CAPAS[number] }) {
 }
 
 export default function LayerPanel() {
+  const t = useT();
   const $panelCollapsed = useStore(panelCollapsed);
   const $activeLayers = useStore(activeLayers);
 
@@ -83,7 +87,7 @@ export default function LayerPanel() {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-1">
               <SvgIcon name="layers" size={14} color="#3b82f6" />
-              <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">Capas</span>
+              <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">{t('mapa.panel')}</span>
             </div>
             <button
               onClick={() => panelCollapsed.set(true)}
@@ -103,17 +107,19 @@ export default function LayerPanel() {
               <hr className="border-zinc-300/40 dark:border-zinc-700/40" />
               <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-600">
-                  Estado DMA (último año)
+                  {t('mapa.estado_dma')}
                 </span>
                 {[
-                  { label: 'Buen estado', color: '#22c55e' },
-                  { label: 'En riesgo', color: '#f59e0b' },
-                  { label: 'Mal estado', color: '#f43f5e' },
-                  { label: 'Sin dato', color: '#71717a' },
+                  { estado: 'buen_estado', color: '#22c55e' },
+                  { estado: 'en_riesgo', color: '#f59e0b' },
+                  { estado: 'mal_estado', color: '#f43f5e' },
+                  { estado: 'sin_dato', color: '#71717a' },
                 ].map((l) => (
-                  <div key={l.label} className="flex items-center gap-1.5">
+                  <div key={l.estado} className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm" style={{ background: l.color }} />
-                    <span className="text-[10px] text-zinc-500 dark:text-zinc-500">{l.label}</span>
+                    <span className="text-[10px] text-zinc-500 dark:text-zinc-500">
+                      {l.estado === 'sin_dato' ? t('mapa.sin_dato') : estadoLabel(l.estado)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -124,7 +130,7 @@ export default function LayerPanel() {
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-1">
             <SvgIcon name="layers" size={14} color="#3b82f6" />
-            <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">Capas</span>
+            <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">{t('mapa.panel')}</span>
           </div>
           <button
             onClick={() => panelCollapsed.set(false)}
