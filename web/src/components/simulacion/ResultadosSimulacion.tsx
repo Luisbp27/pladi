@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import {
   Area, Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
@@ -54,9 +55,20 @@ export default function ResultadosSimulacion({
   }
   const chartData = [...byAnio.values()].sort((a, b) => a.anio - b.anio);
 
-  const muns = [...(data.municipios[activo] ?? [])].sort((a, b) => b.delta_pct - a.delta_pct);
-  const top = muns.slice(0, 5);
-  const bottom = muns.slice(-5).reverse();
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: 'delta', dir: -1 });
+  const muns = useMemo(() => {
+    const rows = [...(data.municipios[activo] ?? [])];
+    rows.sort((a, b) => {
+      let cmp: number;
+      if (sort.key === 'nombre') cmp = a.nombre_municipio.localeCompare(b.nombre_municipio);
+      else if (sort.key === 'isla') cmp = a.isla.localeCompare(b.isla);
+      else if (sort.key === 'base') cmp = a.base_hm3 - b.base_hm3;
+      else if (sort.key === 'proy') cmp = a.proy_hm3 - b.proy_hm3;
+      else cmp = a.delta_pct - b.delta_pct;
+      return cmp * sort.dir;
+    });
+    return rows;
+  }, [data.municipios, activo, sort]);
 
   const grid = dark ? '#3f3f46' : '#e4e4e7';
   const tick = { fill: dark ? '#71717a' : '#a1a1aa', fontSize: 10 };
@@ -163,30 +175,14 @@ export default function ResultadosSimulacion({
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Mayor incremento previsto</h3>
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-3">
-            Municipios con mayor Δ% de consumo proyectado · escenario «{kpisEsc.nombre}»
-          </p>
-          <EscenarioPills data={data} activo={activo} setActivo={setActivo} />
-          <MunicipioLista rows={top} />
-        </div>
-        <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-1">Menor incremento previsto</h3>
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mb-3">
-            Municipios con menor Δ% de consumo proyectado · escenario «{kpisEsc.nombre}»
-          </p>
-          <MunicipioLista rows={bottom} />
-        </div>
-      </div>
+      <BalanceSection balance={balance} activo={activo} />
 
       <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-5">
         <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
           <div>
             <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">Detalle por municipio</h3>
             <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-              Consumo base {data.base_anio} vs proyectado {data.hasta}
+              Consumo base {data.base_anio} vs proyectado {data.hasta} · clic en una columna para ordenar
             </p>
           </div>
           <EscenarioPills data={data} activo={activo} setActivo={setActivo} />
@@ -200,11 +196,30 @@ export default function ResultadosSimulacion({
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur">
                 <tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
-                  <th className="py-2 pr-3 font-medium">Municipio</th>
-                  {data.ambito === 'Baleares' && <th className="py-2 pr-3 font-medium">Isla</th>}
-                  <th className="py-2 pr-3 font-medium text-right">Base ({data.base_anio})</th>
-                  <th className="py-2 pr-3 font-medium text-right">Proy. ({data.hasta})</th>
-                  <th className="py-2 font-medium text-right">Δ%</th>
+                  <SortableTh
+                    col="nombre"
+                    label="Municipio"
+                    sort={sort}
+                    setSort={setSort}
+                  />
+                  {data.ambito === 'Baleares' && (
+                    <SortableTh col="isla" label="Isla" sort={sort} setSort={setSort} />
+                  )}
+                  <SortableTh
+                    col="base"
+                    label={`Base (${data.base_anio})`}
+                    sort={sort}
+                    setSort={setSort}
+                    align="right"
+                  />
+                  <SortableTh
+                    col="proy"
+                    label={`Proy. (${data.hasta})`}
+                    sort={sort}
+                    setSort={setSort}
+                    align="right"
+                  />
+                  <SortableTh col="delta" label="Δ%" sort={sort} setSort={setSort} align="right" />
                 </tr>
               </thead>
               <tbody>
@@ -235,8 +250,6 @@ export default function ResultadosSimulacion({
           </div>
         )}
       </div>
-
-      <BalanceSection balance={balance} activo={activo} />
     </div>
   );
 }
@@ -455,39 +468,45 @@ function EscenarioPills({
   );
 }
 
-function MunicipioLista({ rows }: { rows: { cod_municipio: string; nombre_municipio: string; isla: string; base_hm3: number; proy_hm3: number; delta_pct: number }[] }) {
-  if (rows.length === 0) {
-    return <p className="text-[11px] text-zinc-400 dark:text-zinc-600">Sin datos</p>;
-  }
+type SortKey = 'nombre' | 'isla' | 'base' | 'proy' | 'delta';
+
+function SortableTh({
+  col,
+  label,
+  sort,
+  setSort,
+  align,
+}: {
+  col: SortKey;
+  label: string;
+  sort: { key: SortKey; dir: 1 | -1 };
+  setSort: (s: { key: SortKey; dir: 1 | -1 }) => void;
+  align?: 'right';
+}) {
+  const activa = sort.key === col;
   return (
-    <div className="flex flex-col">
-      {rows.map((m) => (
-        <div
-          key={m.cod_municipio}
-          className="flex items-center justify-between py-2 border-b border-zinc-200/50 dark:border-zinc-800/50 last:border-0"
-        >
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200 truncate">
-              {m.nombre_municipio}
-            </span>
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-600">{m.isla}</span>
-          </div>
-          <div className="text-right shrink-0">
-            <span className="text-xs text-zinc-600 dark:text-zinc-300 tabular-nums">
-              {m.base_hm3.toFixed(2)} → {m.proy_hm3.toFixed(2)} hm³
-            </span>
-            <span
-              className={`ml-2 text-[10px] font-semibold tabular-nums ${
-                m.delta_pct >= 0 ? 'text-rose-500' : 'text-emerald-500'
-              }`}
-            >
-              {m.delta_pct > 0 ? '+' : ''}
-              {m.delta_pct}%
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
+    <th className={`py-2 pr-3 font-medium ${align === 'right' ? 'text-right' : ''}`}>
+      <button
+        type="button"
+        onClick={() =>
+          setSort(
+            activa
+              ? { key: col, dir: sort.dir === 1 ? -1 : 1 }
+              : { key: col, dir: col === 'nombre' || col === 'isla' ? 1 : -1 }
+          )
+        }
+        className={`inline-flex items-center gap-1 uppercase tracking-wide cursor-pointer select-none transition-colors ${
+          activa
+            ? 'text-zinc-700 dark:text-zinc-300'
+            : 'text-zinc-400 dark:text-zinc-600 hover:text-zinc-600 dark:hover:text-zinc-400'
+        }`}
+      >
+        {label}
+        <span className="text-[8px] leading-none">
+          {activa ? (sort.dir === 1 ? '▲' : '▼') : '↕'}
+        </span>
+      </button>
+    </th>
   );
 }
 

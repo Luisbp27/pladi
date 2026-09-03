@@ -90,18 +90,19 @@ async def resumen(
                 nombre_isla,
                 anio_fin,
             )
-        # Baleares: media de los picos de cada serie NUTS (sin sesgo por Mallorca)
+        # Baleares: pico real del total (suma mensual de las 3 series NUTS, mes del pico)
         return await _qrow(
             """
-            WITH picos AS (
-                SELECT DISTINCT ON (nombre_isla) nombre_isla, anio, mes, iph
+            WITH mensual AS (
+                SELECT anio, mes, SUM(iph) AS iph
                 FROM gold.presion_humana
                 WHERE anio = $1 AND iph IS NOT NULL
-                ORDER BY nombre_isla, iph DESC
+                GROUP BY anio, mes
             )
-            SELECT 'Baleares' AS nombre_isla, $1 AS anio, NULL::int AS mes,
-                   ROUND(AVG(iph)::numeric, 0) AS iph
-            FROM picos
+            SELECT 'Baleares' AS nombre_isla, anio, mes,
+                   ROUND(iph::numeric, 0) AS iph
+            FROM mensual
+            ORDER BY iph DESC LIMIT 1
             """,
             anio_fin,
         )
