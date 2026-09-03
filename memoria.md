@@ -345,7 +345,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 | FASE IV — Dashboards + UI/UX | ✅ Completada (2026-08-15) — ver sección "Dashboards y analítica" |
 | FASE V — Frontend (Astro) | ✅ (unificado con FASE II) |
 | FASE VI — Despliegue real | ✅ Completada — VPS en producción |
-| FASE VII — Modelos + data science | 🚧 Notebooks de experimentos creados y ejecutados (2026-08-30); pendiente UI `/simulacion` |
+| FASE VII — Modelos + data science | ✅ Completada (2026-09-02) — notebooks, UI `/simulacion` y productivización del modelo |
 
 ---
 
@@ -430,7 +430,7 @@ Cadena de oro: `gold.lluvia_masa_subterranea` → `gold.agua_infiltrada_masa_sub
 - **Encadenamiento por Assets (Airflow 3.3)**: los outlets se declaran **devolviendo `Asset(uri)` desde el task** (el kwarg `outlets` del DAG ya no existe). `agua_infiltrada` se dispara con `schedule=[Asset("pladi://gold/lluvia_masa_subterranea")]` y el balance con `schedule=[Asset("pladi://gold/agua_infiltrada_masa_subterranea")]`. `lluvia_masa_subterranea` produce su Asset.
 - DDL en `sql/gold_balance.sql`; documentado en `docs/schema.dbml`.
 
-## Simulación (FASE VII — 🚧 en desarrollo — notebooks creados 2026-08-30)
+## Simulación (FASE VII — ✅ completada — notebooks creados 2026-08-30)
 
 **Decisión (2026-08)**: antes de implementar nada en la UI, el equipo valida con notebooks de experimentos si un modelo propio mejora los baselines usando las tablas gold. La UI de `/simulacion` queda pendiente de esta validación.
 
@@ -474,7 +474,7 @@ notebooks/
 
 - `models/municipio/{cod_municipio}.joblib` — 67 GB (notebook 11) + `models/metadata.json` (features, params, base_anio 2024, MAPE por municipio) + `models/elasticidades.json`.
 - **Produccion**: el notebook 11 reentrena con datos 2016-2024 antes de serializar (los arboles no extrapolan `anio` mas alla del rango); las metricas de evaluacion siguen siendo las del holdout 2022-2024.
-- Patrón de despliegue: `models/` montado en jupyter (rw) y en fastapi (ro, `/opt/models`) — igual que `data/` con postgis/airflow. Reentrenamiento manual desde 11; versionado futuro vía MinIO/MLflow.
+- Patrón de despliegue: `models/` montado en jupyter (rw) y en fastapi (rw desde 2026-09) — **el notebook 11 queda como experimentación**; la producción es el DAG `modelo_consumo_urbano` → MinIO → registry `ml.model_versions` → FastAPI (ver "Productivización del modelo").
 
 ### Diseño del experimento (actualizado 2026-08-30 v2)
 
@@ -517,6 +517,43 @@ notebooks/
 - **Fórmula** (fiel al DAG `balance_hidrico_baleares`): `extracción(t) = extracción_base + Σ_mun (consumo_proy − consumo_base) × peso`, con los **pesos normalizados** de `municipio_masa_subterranea` (> 0, misma normalización que el DAG). El **slider de lluvia escala la infiltración** y las salidas climáticas (torrentes/manantiales × 1+lluvia_pct); el resto de componentes se mantienen en el valor de la última fila del balance ≤ base_anio. `disponibilidad = max((suma_entradas − intrusión) − (salida_mar + salida_zzhh), 0)`; explotación y estado DMA con los mismos umbrales (0.8/1.0). Año base = observado sin escalar.
 - **Respuesta**: por escenario, serie anual de conteos DMA + extracción/disponibilidad totales (con el año base como referencia) y `masas_cambio` (solo las que cambian de estado en `hasta`, empeoran primero). `n_masas` del ámbito (74 con balance, última fila ≤ base) + `nota` (Formentera sin mapping municipio→masa; municipio sin masas).
 - **UI** (`ResultadosSimulacion.tsx`, sección "Impacto en el balance hídrico", escenario activo): 4 KPIs (masas en mal estado Δ vs base, masas con cambio de estado, extracción total Δ%, disponibilidad total Δ%), BarChart apilado bueno/riesgo/malo por año, tabla de masas con cambio (chips DMA + explotación/extracción base→proy). EmptyState si el ámbito no tiene masas con balance. El shell pide `/consumo` y `/balance` en `Promise.all` con el mismo debounce (un solo loading). Mock con bloque balance sintético.
+
+---
+
+## Productivización del modelo (✅ 2026-09-02)
+
+**Decisión**: el serving ya existía (FastAPI + joblib en volumen), pero el ciclo de vida era manual (retrain desde notebook 11, sobreescritura in-place, sin versionado ni monitoreo). Se productiviza con **MinIO + registry PostGIS** (no MLflow: 1 familia de modelos, 1 pipeline controlado; MLflow añadiría infraestructura sin retorno). El patrón queda: **notebook = experimentación, DAG = producción**.
+
+### Registry y artefactos (`sql/ml_registry.sql`, `docs/schema.dbml`)
+
+| Tabla | Contenido |
+|---|---|
+| `ml.model_versions` | Una fila por versión publicada: `id`, `artifact_uri` (`s3://pladi/ml/simulacion/v{id}/`), `estado` (`active`/`shadow`/`archived`, **solo una active** — índice parcial único), `mape_holdout_medio`, `mape_por_municipio`, `features`, `params`, `elasticidades`, `base_anio`, `checksum_sha256`, `nota`, `creado_en`/`activado_en` |
+| `ml.backtests` | Resultados de los backtests walk-forward (drift): `ventana`, `mape_medio`, `umbral_mape` (= MAPE holdout × 1,5), `degradado`, `detalle` jsonb |
+
+- **Bundle en MinIO** (`pladi/ml/simulacion/v{id}/`): `municipio/*.joblib` + `metadata.json` + `elasticidades.json` + `manifest.json` con sha256 por archivo. Inmutable: cada versión su propio prefijo.
+
+### FastAPI — carga atómica (`api/model_store.py`)
+
+- Al arrancar, `simulacion_service.load()`: (1) si `MODEL_VERSION` (env) → esa versión exacta del registry; si no → la `active`; (2) sin registry → **modo local** (`/opt/models` raíz, desarrollo). Descarga del bundle a `models/versions/v{id}/`, verifica sha256 del manifest, carga; **solo tras cargar OK** escribe el puntero `current.json`; si falla, vuelve a la versión anterior del puntero.
+- `GET /api/v1/simulacion/version` → versión servida, n_modelos, MAPE medio, features, params, base_anio, elasticidades. `/health` lo refleja en `simulacion`.
+- `docker/fastapi/requirements.txt`: + `minio`; volumen `models` ahora **rw** (el API descarga bundles).
+- **Rollback** = `UPDATE ml.model_versions SET estado='archived' WHERE estado='active'` + activar la versión previa (o pin `MODEL_VERSION` en el compose). Reiniciar FastAPI.
+
+### Retrain en producción (Airflow)
+
+- `docker/airflow/requirements.txt`: + `scikit-learn`, `joblib` (rebuild de la imagen `pladi-airflow`).
+- **`include/ml/`**: `panel.py` (tablón desde golds, réplica exacta del notebook 08), `entrenar.py` (67 GBM + holdout 2022+ + reentrenado producción + elasticidades ±10% del notebook 14), `publicar.py` (bundle + manifest + registry), `backtest.py` (walk-forward del notebook 20), `registry.py` (DDL idempotente).
+- **DAG `modelo_consumo_urbano`**: `schedule=AssetAny(abastecimiento_urbano_baleares, presion_humana, ocupacion_turistica, lluvia_masa_subterranea)` + trigger manual. **Guardrail**: no publica si `mape_holdout > mape_activa + 2pp` (aborta antes de subir nada; el fallo del DAG es la alerta). Para esto, los golds DGRH/IPH/ocupación ahora **devuelven `Asset`** desde su último task (patrón de `lluvia_masa_subterranea`; URIs `pladi://gold/...`).
+- **DAG `modelo_seed`** (`@once`): sube los `models/` actuales como **versión 0** a MinIO + fila active (bootstrap único; modelos montados ro en los 4 servicios de airflow).
+- **DAG `modelo_backtest`** (mismo `AssetAny`): walk-forward anual (ventanas 2021+) → `ml.backtests`; **falla si alguna ventana degrada** (MAPE > holdout × 1,5) → DAG rojo = alerta.
+
+### Despliegue de esta fase (VPS)
+
+1. Rebuild de imágenes: `docker compose build fastapi` y `airflow-init` (o `--build` en el compose raíz).
+2. Trigger manual de `modelo_seed` (crea schema `ml` + versión 0).
+3. Reiniciar FastAPI → `/api/v1/simulacion/version` debe mostrar la versión 0.
+4. (PostGIS nuevo desde cero: `sql/ml_registry.sql` corre en el init; con volumen existente lo crea el seed.)
 
 ---
 

@@ -9,6 +9,7 @@ from airflow.sdk.definitions.asset import Asset
 from include.gold import abastecimiento_urbano_baleares as gold
 
 DGRH_ASSET = Asset("pladi://silver/dgrh/abastecimiento_urbano")
+GOLD_ASSET = Asset("pladi://gold/abastecimiento_urbano_baleares")
 
 
 @dag(
@@ -27,8 +28,9 @@ DGRH_ASSET = Asset("pladi://silver/dgrh/abastecimiento_urbano")
 )
 def abastecimiento_urbano_baleares_dag():
     @task
-    def aggregate() -> str:
-        return gold.aggregate()
+    def aggregate() -> Asset:
+        gold.aggregate()
+        return GOLD_ASSET
 
     aggregate()
 

@@ -54,6 +54,7 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
       - ../../data:/opt/airflow/data:ro
+      - ../../models:/opt/airflow/models:ro
       - airflow_home_data:/opt/airflow
 
   airflow-webserver:
@@ -72,6 +73,7 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
       - ../../data:/opt/airflow/data:ro
+      - ../../models:/opt/airflow/models:ro
       - airflow_home_data:/opt/airflow
     healthcheck:
       test: ["CMD-SHELL", "curl -s http://localhost:8080/api/v2/monitor/health >/dev/null || exit 1"]
@@ -95,6 +97,7 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
       - ../../data:/opt/airflow/data:ro
+      - ../../models:/opt/airflow/models:ro
       - airflow_home_data:/opt/airflow
     restart: unless-stopped
 
@@ -112,6 +115,7 @@ services:
       - ./plugins:/opt/airflow/plugins
       - ./logs:/opt/airflow/logs
       - ../../data:/opt/airflow/data:ro
+      - ../../models:/opt/airflow/models:ro
       - airflow_home_data:/opt/airflow
     restart: unless-stopped
 

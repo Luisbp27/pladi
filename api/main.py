@@ -7,7 +7,7 @@ from database import close_pool
 from routers.analytics import router as analytics_router
 from routers.mapa import router as mapa_router
 from routers.simulacion import router as simulacion_router
-from simulacion_service import ModelosError, load as load_modelos
+from simulacion_service import ModelosError, load as load_modelos, tiene_modelos, version_info
 
 
 @asynccontextmanager
@@ -36,4 +36,8 @@ app.include_router(simulacion_router)
 
 @app.get("/api/v1/health")
 async def health():
-    return {"status": "ok", "service": "pladi-api"}
+    return {
+        "status": "ok",
+        "service": "pladi-api",
+        "simulacion": version_info() if tiene_modelos() else None,
+    }

@@ -7,7 +7,13 @@ from fastapi import APIRouter, HTTPException, Query
 
 from balance_service import proyectar_balance
 from database import get_pool
-from simulacion_service import ModelosError, elasticidades, predecir_recursivo, tiene_modelos
+from simulacion_service import (
+    ModelosError,
+    elasticidades,
+    predecir_recursivo,
+    tiene_modelos,
+    version_info,
+)
 
 router = APIRouter(
     prefix="/api/v1/simulacion",
@@ -201,6 +207,14 @@ def _proyectar(
                 continue
         out[e["id"]] = proy_por_mun
     return out
+
+
+@router.get("/version")
+async def version():
+    """Metadatos de la version del modelo servida (registry ml.model_versions)."""
+    if not tiene_modelos():
+        raise HTTPException(503, "modelos no disponibles")
+    return version_info()
 
 
 @router.get("/consumo")

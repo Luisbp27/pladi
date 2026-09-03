@@ -4,9 +4,12 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
+from airflow.sdk.definitions.asset import Asset
 from include.bronze import ibestat_indice_presion_humana as bronze
 from include.gold import presion_humana as gold
 from include.silver import ibestat_indice_presion_humana as silver
+
+GOLD_ASSET = Asset("pladi://gold/presion_humana")
 
 
 @dag(
@@ -33,8 +36,9 @@ def indice_presion_humana():
         return silver.clean(source_path)
 
     @task
-    def load_gold(source_path: str | None = None) -> str:
-        return gold.load()
+    def load_gold(source_path: str | None = None) -> Asset:
+        gold.load()
+        return GOLD_ASSET
 
     extract_result = extract()
     clean_result = clean(source_path=extract_result)

@@ -188,3 +188,48 @@ Table gold.balance_hidrico_baleares {
     estado_cuantitativo [name: "idx_balance_hidrico_estado"]
   }
 }
+
+// ── ML (registry + monitoreo del modelo de consumo urbano) ──────────────────
+
+Table ml.model_versions {
+  id text [pk, note: 'version UTC, p.ej. 20260902T183000Z']
+  artifact_uri text [not null, unique, note: 's3://pladi/ml/simulacion/v{id}/']
+  estado text [not null, default: `shadow`, note: 'active | shadow | archived — solo una active (indice parcial unico en SQL)']
+  mape_holdout_medio double [note: 'MAPE medio holdout 2022-2024']
+  mae_holdout_medio double
+  mape_por_municipio jsonb [note: '{cod_municipio: mape %}']
+  features jsonb
+  params jsonb
+  elasticidades jsonb [note: '{iph, ocupacion, lluvia}']
+  base_anio int [note: 'ultimo anio de entrenamiento']
+  train_desde int
+  test_start int
+  n_modelos int
+  checksum_sha256 text [note: 'sha256 del manifest del bundle']
+  nota text
+  creado_en timestamptz [not null, default: `now()`]
+  activado_en timestamptz
+
+  indexes {
+    estado [name: "idx_model_versions_estado"]
+    creado_en [name: "idx_model_versions_creado"]
+  }
+}
+
+Table ml.backtests {
+  id bigserial [pk]
+  version_id text [ref: > ml.model_versions.id]
+  run_en timestamptz [not null, default: `now()`]
+  ventana text [not null, note: 'anio evaluado, p.ej. 2025']
+  n_municipios int
+  mape_medio double
+  mae_medio double
+  umbral_mape double [note: 'umbral de degradacion aplicado']
+  degradado boolean [note: 'mape_medio > umbral_mape']
+  detalle jsonb
+
+  indexes {
+    ventana [name: "idx_backtests_ventana"]
+    run_en [name: "idx_backtests_run"]
+  }
+}

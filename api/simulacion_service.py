@@ -1,27 +1,30 @@
-"""Carga de modelos joblib (notebook 11) y prediccion recursiva para /simulacion."""
+"""Carga de modelos joblib (registry ml.model_versions + MinIO) y prediccion recursiva para /simulacion."""
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import joblib
 
 from config import settings
+from database import get_pool
+from model_store import BundleError, download_and_verify, escribir_puntero, leer_puntero
 
 logger = logging.getLogger("pladi.simulacion")
 
 _state: dict | None = None
+_version: str | None = None
 
 
 class ModelosError(Exception):
     """Modelos no disponibles (sin entrenar o sin montar el volumen)."""
 
 
-def _load_state() -> dict:
-    root = Path(settings.models_dir)
+def _load_state(root: Path) -> dict:
     meta_path = root / "metadata.json"
     if not meta_path.exists():
         raise ModelosError(f"metadata.json no encontrado en {root}")
@@ -52,6 +55,10 @@ def _load_state() -> dict:
         "mape": mape,
         "elasticidades": elasticidades,
         "params": meta.get("params", {}),
+        "base_anio": meta.get("base_anio"),
+        "train_desde": meta.get("train_desde"),
+        "test_start": meta.get("test_start"),
+        "modelo": meta.get("modelo"),
     }
     if not modelos:
         raise ModelosError(f"ningun modelo joblib en {dir_mun}")
@@ -59,10 +66,91 @@ def _load_state() -> dict:
 
 
 async def load() -> None:
-    """Carga los modelos al arrancar la API (threadpool para no bloquear el loop)."""
-    global _state
-    _state = await asyncio.to_thread(_load_state)
-    logger.info("modelos cargados: %d | features: %s", len(_state["modelos"]), _state["features"])
+    """Resuelve la version activa (registry), descarga y carga los modelos al arrancar."""
+    global _state, _version
+
+    row = None
+    try:
+        pool = await get_pool()
+        if settings.model_version:
+            row = await pool.fetchrow(
+                "SELECT id, artifact_uri, estado FROM ml.model_versions WHERE id = $1",
+                settings.model_version,
+            )
+            if row is None:
+                raise ModelosError(f"version pineada no existe en el registry: {settings.model_version}")
+        else:
+            row = await pool.fetchrow(
+                "SELECT id, artifact_uri, estado FROM ml.model_versions "
+                "WHERE estado = 'active' ORDER BY activado_en DESC LIMIT 1"
+            )
+    except ModelosError:
+        raise
+    except Exception as e:
+        logger.warning("registry ml.model_versions no disponible (%s) — modo local", e)
+        row = None
+
+    version: str | None = None
+    if row is not None:
+        try:
+            dir_modelos = await asyncio.to_thread(download_and_verify, dict(row))
+            version = row["id"]
+        except BundleError as e:
+            raise ModelosError(f"no se pudo preparar el bundle {row['id']}: {e}") from e
+    else:
+        dir_modelos = Path(settings.models_dir)
+
+    try:
+        _state = await asyncio.to_thread(_load_state, dir_modelos)
+    except ModelosError as e:
+        puntero = await asyncio.to_thread(leer_puntero)
+        prev_dir = Path(puntero["dir"]) if puntero and puntero.get("dir") else None
+        if prev_dir and prev_dir != dir_modelos and prev_dir.exists():
+            logger.warning(
+                "fallo al cargar '%s' (%s) — volviendo a la version anterior %s",
+                version or "local",
+                e,
+                puntero.get("version"),
+            )
+            _state = await asyncio.to_thread(_load_state, prev_dir)
+            version = puntero.get("version")
+        else:
+            raise
+
+    _version = version
+    if version:
+        await asyncio.to_thread(
+            escribir_puntero,
+            {
+                "version": version,
+                "dir": str(dir_modelos),
+                "cargado_en": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+    logger.info(
+        "modelos cargados: %d | version: %s | features: %s",
+        len(_state["modelos"]),
+        version or "local",
+        _state["features"],
+    )
+
+
+def version_info() -> dict:
+    """Metadatos de la version servida (endpoint /simulacion/version y /health)."""
+    st = _get_state()
+    mape_vals = list(st["mape"].values())
+    return {
+        "version": _version,
+        "modelo": st.get("modelo"),
+        "n_modelos": len(st["modelos"]),
+        "mape_medio": round(sum(mape_vals) / len(mape_vals), 2) if mape_vals else None,
+        "features": st["features"],
+        "params": st.get("params", {}),
+        "base_anio": st.get("base_anio"),
+        "train_desde": st.get("train_desde"),
+        "test_start": st.get("test_start"),
+        "elasticidades": st["elasticidades"],
+    }
 
 
 def _get_state() -> dict:
