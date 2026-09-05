@@ -17,10 +17,20 @@ import { islaLabel, useT } from '../../lib/i18n';
 import PanelEscenarios from './PanelEscenarios';
 import ResultadosSimulacion from './ResultadosSimulacion';
 
+// sessionStorage: los escenarios sobreviven a recargas y a la navegación dentro
+// de la web, pero se resetean al cerrar la pestaña/navegador.
 const STORAGE_KEY = 'pladi:simulacion:v1';
 
+interface EscenarioGuardado {
+  id: string;
+  n: number;
+  iph_pct: number;
+  ocupacion_pct: number;
+  lluvia_pct: number;
+}
+
 interface Persistido {
-  escenarios: SimulacionEscenario[];
+  escenarios: EscenarioGuardado[];
   counter: number;
   visible: Record<string, boolean>;
 }
@@ -33,16 +43,16 @@ function clampPct(v: unknown): number {
 
 function cargar(): Persistido {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return { escenarios: [], counter: 1, visible: {} };
     const p = JSON.parse(raw) as Partial<Persistido>;
     const escenarios = Array.isArray(p.escenarios)
       ? p.escenarios
-          .filter((e) => e && typeof e.id === 'string' && typeof e.nombre === 'string')
+          .filter((e) => e && typeof e.id === 'string')
           .slice(0, MAX_ESCENARIOS)
           .map((e) => ({
             id: e.id,
-            nombre: String(e.nombre),
+            n: typeof e.n === 'number' && e.n > 0 ? Math.floor(e.n) : 1,
             iph_pct: clampPct(e.iph_pct),
             ocupacion_pct: clampPct(e.ocupacion_pct),
             lluvia_pct: clampPct(e.lluvia_pct),
@@ -71,6 +81,27 @@ export default function SimulacionShell() {
 
   const { escenarios, counter, visible } = est;
 
+  // Los nombres se generan al render (idioma activo) a partir del número
+  const escenariosView: SimulacionEscenario[] = escenarios.map((e) => ({
+    ...e,
+    nombre: t('simul.escenario_n', { n: e.n }),
+  }));
+
+  const escenarioNombre = (n: number) => t('simul.escenario_n', { n });
+
+  // Las respuestas de la API repiten el nombre enviado: se reemplaza por el
+  // nombre actual (para que el switch ca/es los retraduzca sin refetch)
+  const nombrePorId = new Map(escenariosView.map((e) => [e.id, e.nombre]));
+  const dataView: SimulacionResp | null = data
+    ? { ...data, escenarios: data.escenarios.map((e) => ({ ...e, nombre: nombrePorId.get(e.id) ?? e.nombre })) }
+    : null;
+  const dataBalanceView: SimulacionBalanceResp | null = dataBalance
+    ? {
+        ...dataBalance,
+        escenarios: dataBalance.escenarios.map((e) => ({ ...e, nombre: nombrePorId.get(e.id) ?? e.nombre })),
+      }
+    : null;
+
   useEffect(() => {
     let alive = true;
     fetchMunicipios(isla === 'Baleares' ? undefined : isla)
@@ -86,7 +117,7 @@ export default function SimulacionShell() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(est));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(est));
     } catch {
       // almacenamiento no disponible: los escenarios viven solo en memoria
     }
@@ -114,7 +145,7 @@ export default function SimulacionShell() {
         isla,
         municipio: municipio || undefined,
         hasta,
-        escenarios,
+        escenarios: escenarios.map((e) => ({ ...e, nombre: escenarioNombre(e.n) })),
       };
       Promise.all([fetchSimulacion(params), fetchSimulacionBalance(params)])
         .then(([r, b]) => {
@@ -143,9 +174,8 @@ export default function SimulacionShell() {
   const addEscenario = () => {
     if (escenarios.length >= MAX_ESCENARIOS) return;
     const id = crypto.randomUUID();
-    const nombre = t('simul.escenario_n', { n: counter });
     setEst((s) => ({
-      escenarios: [...s.escenarios, { id, nombre, iph_pct: 0, ocupacion_pct: 0, lluvia_pct: 0 }],
+      escenarios: [...s.escenarios, { id, n: counter, iph_pct: 0, ocupacion_pct: 0, lluvia_pct: 0 }],
       counter: s.counter + 1,
       visible: { ...s.visible, [id]: true },
     }));
@@ -171,7 +201,7 @@ export default function SimulacionShell() {
     setEst((s) => ({ ...s, visible: { ...s.visible, [id]: !(s.visible[id] ?? true) } }));
 
   return (
-    <div className="h-screen w-screen flex flex-col pt-11 pb-9 bg-zinc-50 dark:bg-[#09090b] overflow-hidden">
+    <div className="h-dvh w-full flex flex-col pt-11 pb-9 bg-zinc-50 dark:bg-[#09090b] overflow-hidden">
       <header className="sticky top-0 z-20 flex items-center gap-3 px-5 py-3 bg-zinc-50/80 dark:bg-[#09090b]/80 backdrop-blur-xl border-b border-zinc-200/60 dark:border-zinc-800/50">
         <h1 className="flex items-center gap-2 text-sm font-semibold text-zinc-800 dark:text-zinc-100">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: '#a855f7' }} />
@@ -208,7 +238,7 @@ export default function SimulacionShell() {
             onMunicipio={setMunicipio}
             hasta={hasta}
             onHasta={setHasta}
-            escenarios={escenarios}
+            escenarios={escenariosView}
             onUpdate={updateEscenario}
             onAdd={addEscenario}
             onRemove={removeEscenario}
@@ -231,10 +261,10 @@ export default function SimulacionShell() {
               <>
                 {err && <ErrorBox msg={err} />}
                 {!err && loading && <Spinner />}
-                {!err && !loading && data && (
+                {!err && !loading && dataView && (
                   <ResultadosSimulacion
-                    data={data}
-                    balance={dataBalance}
+                    data={dataView}
+                    balance={dataBalanceView}
                     visible={visible}
                     activo={activo}
                     setActivo={setActivo}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  Area, Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
   ESTADO_COLORS,
@@ -9,7 +9,7 @@ import {
   type SimulacionResp,
 } from '../../lib/api';
 import { collator, estadoLabel, islaLabel, useT } from '../../lib/i18n';
-import { KpiCard, useIsDark } from '../dashboards/ui';
+import { ChartLegend, KpiCard, useIsDark } from '../dashboards/ui';
 
 export default function ResultadosSimulacion({
   data,
@@ -163,17 +163,15 @@ export default function ResultadosSimulacion({
           </ComposedChart>
         </ResponsiveContainer>
         {visibles.length > 0 && (
-          <div className="flex gap-3 flex-wrap mt-2">
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-600 flex items-center gap-1.5">
-              <span className="w-3 h-0.5 bg-zinc-500 inline-block" /> {t('simul.historico')}
-            </span>
-            {visibles.map((esc) => (
-              <span key={esc.id} className="text-[10px] text-zinc-400 dark:text-zinc-600 flex items-center gap-1.5">
-                <span className="w-3 h-0 border-t-2 border-dashed inline-block" style={{ borderColor: esc.color }} />
-                {esc.nombre}
-              </span>
-            ))}
-          </div>
+          <ChartLegend
+            items={[
+              { label: t('simul.historico'), swatches: [{ color: dark ? '#f4f4f5' : '#52525b', shape: 'line' }] },
+              ...visibles.map((esc) => ({
+                label: esc.nombre,
+                swatches: [{ color: esc.color, dashed: true }],
+              })),
+            ]}
+          />
         )}
       </div>
 
@@ -194,7 +192,7 @@ export default function ResultadosSimulacion({
             {t('simul.sin_ambito')}
           </p>
         ) : (
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-80 overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur">
                 <tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
@@ -205,7 +203,13 @@ export default function ResultadosSimulacion({
                     setSort={setSort}
                   />
                   {data.ambito === 'Baleares' && (
-                    <SortableTh col="isla" label={t('simul.th.isla')} sort={sort} setSort={setSort} />
+                    <SortableTh
+                      col="isla"
+                      label={t('simul.th.isla')}
+                      sort={sort}
+                      setSort={setSort}
+                      extraClass="hidden sm:table-cell"
+                    />
                   )}
                   <SortableTh
                     col="base"
@@ -213,6 +217,7 @@ export default function ResultadosSimulacion({
                     sort={sort}
                     setSort={setSort}
                     align="right"
+                    extraClass="hidden min-[420px]:table-cell"
                   />
                   <SortableTh
                     col="proy"
@@ -229,9 +234,9 @@ export default function ResultadosSimulacion({
                   <tr key={m.cod_municipio} className="border-t border-zinc-200/50 dark:border-zinc-800/50">
                     <td className="py-2 pr-3 text-zinc-700 dark:text-zinc-300">{m.nombre_municipio}</td>
                     {data.ambito === 'Baleares' && (
-                      <td className="py-2 pr-3 text-zinc-500 dark:text-zinc-400">{m.isla}</td>
+                      <td className="py-2 pr-3 text-zinc-500 dark:text-zinc-400 hidden sm:table-cell">{m.isla}</td>
                     )}
-                    <td className="py-2 pr-3 text-right text-zinc-500 dark:text-zinc-400 tabular-nums">
+                    <td className="py-2 pr-3 text-right text-zinc-500 dark:text-zinc-400 tabular-nums hidden min-[420px]:table-cell">
                       {m.base_hm3.toFixed(3)} hm³
                     </td>
                     <td className="py-2 pr-3 text-right text-zinc-500 dark:text-zinc-400 tabular-nums">
@@ -368,12 +373,18 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
                 fontSize: 12,
               }}
             />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar dataKey="n_buen_estado" name={estadoLabel('buen_estado')} stackId="a" fill={ESTADO_COLORS.buen_estado} radius={[0, 0, 0, 0]} />
             <Bar dataKey="n_en_riesgo" name={estadoLabel('en_riesgo')} stackId="a" fill={ESTADO_COLORS.en_riesgo} />
             <Bar dataKey="n_mal_estado" name={estadoLabel('mal_estado')} stackId="a" fill={ESTADO_COLORS.mal_estado} radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        <ChartLegend
+          items={[
+            { label: estadoLabel('buen_estado'), swatches: [{ color: ESTADO_COLORS.buen_estado, shape: 'bar' }] },
+            { label: estadoLabel('en_riesgo'), swatches: [{ color: ESTADO_COLORS.en_riesgo, shape: 'bar' }] },
+            { label: estadoLabel('mal_estado'), swatches: [{ color: ESTADO_COLORS.mal_estado, shape: 'bar' }] },
+          ]}
+        />
       </div>
 
       <div>
@@ -385,14 +396,16 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
             {t('simul.ninguna')}
           </p>
         ) : (
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-64 overflow-auto">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur">
                 <tr className="text-left text-[10px] uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
                   <th className="py-2 pr-3 font-medium">{t('simul.th.masa')}</th>
                   <th className="py-2 pr-3 font-medium">{t('simul.th.estado')}</th>
-                  <th className="py-2 pr-3 font-medium text-right">{t('simul.th.explotacion')}</th>
-                  <th className="py-2 font-medium text-right">{t('simul.th.extraccion')}</th>
+                  <th className="py-2 pr-3 font-medium text-right hidden min-[420px]:table-cell">
+                    {t('simul.th.explotacion')}
+                  </th>
+                  <th className="py-2 font-medium text-right hidden sm:table-cell">{t('simul.th.extraccion')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -423,12 +436,12 @@ function BalanceSection({ balance, activo }: { balance: SimulacionBalanceResp | 
                           </span>
                         </span>
                       </td>
-                      <td className="py-2 pr-3 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                      <td className="py-2 pr-3 text-right tabular-nums text-zinc-500 dark:text-zinc-400 hidden min-[420px]:table-cell">
                         {m.explotacion_base !== null ? `${(m.explotacion_base * 100).toFixed(0)}%` : '—'}
                         {' → '}
                         {m.explotacion_proy !== null ? `${(m.explotacion_proy * 100).toFixed(0)}%` : '—'}
                       </td>
-                      <td className="py-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                      <td className="py-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400 hidden sm:table-cell">
                         {m.extraccion_base_hm3.toFixed(2)} → {m.extraccion_proy_hm3.toFixed(2)} hm³
                       </td>
                     </tr>
@@ -480,16 +493,18 @@ function SortableTh({
   sort,
   setSort,
   align,
+  extraClass = '',
 }: {
   col: SortKey;
   label: string;
   sort: { key: SortKey; dir: 1 | -1 };
   setSort: (s: { key: SortKey; dir: 1 | -1 }) => void;
   align?: 'right';
+  extraClass?: string;
 }) {
   const activa = sort.key === col;
   return (
-    <th className={`py-2 pr-3 font-medium ${align === 'right' ? 'text-right' : ''}`}>
+    <th className={`py-2 pr-3 font-medium ${align === 'right' ? 'text-right' : ''} ${extraClass}`}>
       <button
         type="button"
         onClick={() =>

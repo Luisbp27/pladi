@@ -1,6 +1,6 @@
 import { ESCENARIO_COLORS } from '../../lib/simulacionMock';
 import type { SelectOption } from '../dashboards/ui';
-import { SearchSelect } from '../dashboards/ui';
+import { DropdownSelect, SearchSelect } from '../dashboards/ui';
 import { MAX_ESCENARIOS, type SimulacionEscenario } from '../../lib/api';
 import { useT } from '../../lib/i18n';
 import type { ClaveI18n } from '../../lib/i18n/es';
@@ -62,17 +62,15 @@ export default function PanelEscenarios({
 
         <div>
           <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 mb-2">{t('simul.horizonte')}</h3>
-          <select
+          <DropdownSelect
             value={hasta}
-            onChange={(e) => onHasta(Number(e.target.value))}
-            className="w-full text-[12px] bg-white dark:bg-zinc-800 border border-zinc-300/60 dark:border-zinc-700/60 rounded-lg px-2.5 py-2 text-zinc-700 dark:text-zinc-200 outline-none"
-          >
-            {Array.from({ length: 10 }, (_, i) => 2026 + i).map((a) => (
-              <option key={a} value={a}>
-                {t('simul.proyectar', { a })}
-              </option>
-            ))}
-          </select>
+            options={Array.from({ length: 10 }, (_, i) => 2026 + i).map((a) => ({
+              value: a,
+              label: t('simul.proyectar', { a }),
+            }))}
+            onChange={(v) => onHasta(Number(v))}
+            className="w-full"
+          />
         </div>
       </section>
 
