@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import {
-  Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { fetchAbastecimiento, fetchMunicipios } from '../../lib/api';
 import { useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
-import { Card, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
+import { Card, ChartLegend, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
 export default function DashboardAbastecimiento({ municipioInicial }: { municipioInicial?: string }) {
   const t = useT();
@@ -20,6 +20,15 @@ export default function DashboardAbastecimiento({ municipioInicial }: { municipi
   const [serie, setSerie] = useState<Record<string, number | string>[]>([]);
   const [top, setTop] = useState<{ nombre_municipio: string; consumo_hm3: number }[]>([]);
   const [err, setErr] = useState('');
+
+  // Al cambiar de isla el filtro de municipio deja de ser válido → se limpia
+  const prevIsla = useRef(islaParam);
+  useEffect(() => {
+    if (prevIsla.current !== islaParam) {
+      prevIsla.current = islaParam;
+      setMunicipio('');
+    }
+  }, [islaParam]);
 
   useEffect(() => {
     let alive = true;
@@ -56,7 +65,7 @@ export default function DashboardAbastecimiento({ municipioInicial }: { municipi
   const anios = serie.map((s) => Number(s.anio));
   const minAnio = anios.length > 0 ? Math.min(...anios) : 2000;
   const maxAnio = anios.length > 0 ? Math.max(...anios) : 2024;
-  const rangoEf: Rango = rango ?? { desde: Math.max(minAnio, maxAnio - 9), hasta: maxAnio };
+  const rangoEf: Rango = rango ?? { desde: Math.max(minAnio, maxAnio - 4), hasta: maxAnio };
   const serieFiltrada = serie.filter((s) => Number(s.anio) >= rangoEf.desde && Number(s.anio) <= rangoEf.hasta);
 
   return (
@@ -99,7 +108,6 @@ export default function DashboardAbastecimiento({ municipioInicial }: { municipi
                   fontSize: 12,
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Area type="monotone" dataKey="subterranea_hm3" name={t('dash.general.series.subterranea')} stackId="1" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.55} />
               <Area type="monotone" dataKey="desalinizada_hm3" name={t('dash.general.series.desalinizada')} stackId="1" stroke="#0ea5e9" fill="#0ea5e9" fillOpacity={0.55} />
               <Area type="monotone" dataKey="superficial_hm3" name={t('dash.general.series.superficial')} stackId="1" stroke="#22c55e" fill="#22c55e" fillOpacity={0.55} />
@@ -109,6 +117,16 @@ export default function DashboardAbastecimiento({ municipioInicial }: { municipi
             </AreaChart>
           </ResponsiveContainer>
         )}
+        <ChartLegend
+          items={[
+            { label: t('dash.general.series.subterranea'), swatches: [{ color: '#3b82f6', shape: 'bar' }] },
+            { label: t('dash.general.series.desalinizada'), swatches: [{ color: '#0ea5e9', shape: 'bar' }] },
+            { label: t('dash.general.series.superficial'), swatches: [{ color: '#22c55e', shape: 'bar' }] },
+            { label: t('dash.general.series.potabilizada'), swatches: [{ color: '#a855f7', shape: 'bar' }] },
+            { label: t('dash.general.series.indiferenciada'), swatches: [{ color: '#f59e0b', shape: 'bar' }] },
+            { label: t('dash.general.series.consumo'), swatches: [{ color: '#f43f5e', shape: 'line' }] },
+          ]}
+        />
       </Card>
 
       {!municipio && top.length > 0 && (

@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import {
-  Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { fetchOcupacion, fetchMunicipios, fetchOcupacionRanking } from '../../lib/api';
 import { meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
-import { Card, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
+import { Card, ChartLegend, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
 interface OcupRow {
   anio: number;
@@ -32,6 +32,15 @@ export default function DashboardOcupacion() {
     { nombre_municipio: string; isla: string; ocupacion_media_pct: number | null; meses_con_datos: number }[]
   >([]);
   const [err, setErr] = useState('');
+
+  // Al cambiar de isla el filtro de municipio deja de ser válido → se limpia
+  const prevIsla = useRef(islaParam);
+  useEffect(() => {
+    if (prevIsla.current !== islaParam) {
+      prevIsla.current = islaParam;
+      setMunicipio('');
+    }
+  }, [islaParam]);
 
   useEffect(() => {
     let alive = true;
@@ -186,8 +195,9 @@ export default function DashboardOcupacion() {
         {rows.length === 0 ? (
           <Spinner />
         ) : comparativa ? (
-          <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={datosComparativa}>
+          <>
+            <ResponsiveContainer width="100%" height={320}>
+              <LineChart data={datosComparativa}>
               <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
               <XAxis dataKey="mes" tick={tick} />
               <YAxis tick={tick} width={34} unit="%" domain={[0, 100]} />
@@ -199,7 +209,6 @@ export default function DashboardOcupacion() {
                   fontSize: 12,
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               {aniosComparativa.map((anio, i) => (
                 <Line
                   key={anio}
@@ -214,7 +223,15 @@ export default function DashboardOcupacion() {
               ))}
             </LineChart>
           </ResponsiveContainer>
+            <ChartLegend
+              items={aniosComparativa.map((anio, i) => ({
+                label: String(anio),
+                swatches: [{ color: colores[i % colores.length], shape: 'line' as const }],
+              }))}
+            />
+          </>
         ) : (
+          <>
           <ResponsiveContainer width="100%" height={320}>
             <BarChart data={rowsFiltrados}>
               <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
@@ -228,7 +245,6 @@ export default function DashboardOcupacion() {
                   fontSize: 12,
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               {(tipo === 'ambos' || tipo === 'hotelera') && (
                 <Bar dataKey="hotelera" name={t('dash.ocup.hotelera')} fill="#3b82f6" radius={[3, 3, 0, 0]} />
               )}
@@ -237,6 +253,17 @@ export default function DashboardOcupacion() {
               )}
             </BarChart>
           </ResponsiveContainer>
+            <ChartLegend
+              items={[
+                ...(tipo === 'ambos' || tipo === 'hotelera'
+                  ? [{ label: t('dash.ocup.hotelera'), swatches: [{ color: '#3b82f6', shape: 'bar' as const }] }]
+                  : []),
+                ...(tipo === 'ambos' || tipo === 'apartamentos'
+                  ? [{ label: t('dash.ocup.apartamentos'), swatches: [{ color: '#f59e0b', shape: 'bar' as const }] }]
+                  : []),
+              ]}
+            />
+          </>
         )}
       </Card>
 

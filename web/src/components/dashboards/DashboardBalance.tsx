@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import {
-  Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
   ESTADO_COLORS,
@@ -11,7 +11,7 @@ import {
 import { estadoLabel, useT } from '../../lib/i18n';
 import type { ClaveI18n } from '../../lib/i18n/es';
 import { dashIsla } from '../../lib/store';
-import { Card, ErrorBox, KpiCard, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
+import { Card, ChartLegend, ErrorBox, KpiCard, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
 const nf = new Intl.NumberFormat('es-ES');
 
@@ -220,6 +220,16 @@ export default function DashboardBalance({
     if (udInicial) setUd(udInicial);
   }, [nivelInicial, masaInicial, udInicial]);
 
+  // Al cambiar de isla los filtros de masa/UD dejan de ser válidos → se limpian
+  const prevIsla = useRef(islaParam);
+  useEffect(() => {
+    if (prevIsla.current !== islaParam) {
+      prevIsla.current = islaParam;
+      setMasa('');
+      setUd('');
+    }
+  }, [islaParam]);
+
   useEffect(() => {
     let alive = true;
     fetchMasas(islaParam)
@@ -335,7 +345,7 @@ export default function DashboardBalance({
           <Spinner />
         ) : snapshot ? (
           <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-1.5">
                 <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
                   {t('dash.balance.disponibilidad')}
@@ -420,24 +430,31 @@ export default function DashboardBalance({
             {loading ? (
               <Spinner />
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={serieFiltrada}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
-                  <XAxis dataKey="anio" tick={tick} />
-                  <YAxis tick={tick} width={40} />
-                  <Tooltip
-                    contentStyle={{
-                      background: dark ? '#18181b' : '#fff',
-                      border: `1px solid ${grid}`,
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="disponibilidad_hm3" name={t('dash.balance.disponibilidad')} stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
-                <Line type="monotone" dataKey="extraccion_hm3" name={t('dash.balance.extraccion')} stroke="#f43f5e" strokeWidth={2} dot={false} connectNulls />
-                </LineChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={serieFiltrada}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+                    <XAxis dataKey="anio" tick={tick} />
+                    <YAxis tick={tick} width={40} />
+                    <Tooltip
+                      contentStyle={{
+                        background: dark ? '#18181b' : '#fff',
+                        border: `1px solid ${grid}`,
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Line type="monotone" dataKey="disponibilidad_hm3" name={t('dash.balance.disponibilidad')} stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
+                    <Line type="monotone" dataKey="extraccion_hm3" name={t('dash.balance.extraccion')} stroke="#f43f5e" strokeWidth={2} dot={false} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+                <ChartLegend
+                  items={[
+                    { label: t('dash.balance.disponibilidad'), swatches: [{ color: '#06b6d4', shape: 'line' }] },
+                    { label: t('dash.balance.extraccion'), swatches: [{ color: '#f43f5e', shape: 'line' }] },
+                  ]}
+                />
+              </>
             )}
           </Card>
 
@@ -445,25 +462,33 @@ export default function DashboardBalance({
             {loading ? (
               <Spinner />
             ) : (
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={serieFiltrada}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
-                  <XAxis dataKey="anio" tick={tick} />
-                  <YAxis tick={tick} width={34} />
-                  <Tooltip
-                    contentStyle={{
-                      background: dark ? '#18181b' : '#fff',
-                      border: `1px solid ${grid}`,
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                    formatter={(v) => [fmt(Number(v), 2), t('dash.balance.explotacion')]}
-                  />
-                  <ReferenceLine y={0.8} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: '0.8', fontSize: 10, fill: '#f59e0b', position: 'insideTopRight' }} />
-                  <ReferenceLine y={1.0} stroke="#f43f5e" strokeDasharray="4 4" label={{ value: '1.0', fontSize: 10, fill: '#f43f5e', position: 'insideTopRight' }} />
-                  <Line type="monotone" dataKey="explotacion_porcentaje" name={t('dash.balance.explotacion')} stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
-                </LineChart>
-              </ResponsiveContainer>
+              <>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={serieFiltrada}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+                    <XAxis dataKey="anio" tick={tick} />
+                    <YAxis tick={tick} width={34} />
+                    <Tooltip
+                      contentStyle={{
+                        background: dark ? '#18181b' : '#fff',
+                        border: `1px solid ${grid}`,
+                        borderRadius: 12,
+                        fontSize: 12,
+                      }}
+                      formatter={(v) => [fmt(Number(v), 2), t('dash.balance.explotacion')]}
+                    />
+                    <ReferenceLine y={0.8} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: '0.8', fontSize: 10, fill: '#f59e0b', position: 'insideTopRight' }} />
+                    <ReferenceLine y={1.0} stroke="#f43f5e" strokeDasharray="4 4" label={{ value: '1.0', fontSize: 10, fill: '#f43f5e', position: 'insideTopRight' }} />
+                    <Line type="monotone" dataKey="explotacion_porcentaje" name={t('dash.balance.explotacion')} stroke="#06b6d4" strokeWidth={2} dot={false} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+                <ChartLegend
+                  items={[
+                    { label: t('dash.balance.explotacion'), swatches: [{ color: '#06b6d4', shape: 'line' }] },
+                    { label: t('dash.balance.umbrales'), swatches: [{ color: '#f59e0b', dashed: true }, { color: '#f43f5e', dashed: true }] },
+                  ]}
+                />
+              </>
             )}
           </Card>
         </div>

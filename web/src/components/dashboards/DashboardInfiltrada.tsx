@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import {
-  Bar, BarChart, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { fetchInfiltrada, fetchInfiltradaRanking, fetchMasas, type InfiltradaRanking } from '../../lib/api';
 import { islaLabel, meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
-import { Card, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
+import { Card, ChartLegend, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
 function ahLabel(m: string[], anio: number, mes: number): string {
   const ah = mes >= 9 ? anio + 1 : anio;
@@ -31,6 +31,15 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
   useEffect(() => {
     if (masaInicial) setMasa(masaInicial);
   }, [masaInicial]);
+
+  // Al cambiar de isla el filtro de masa deja de ser válido → se limpia
+  const prevIsla = useRef(islaParam);
+  useEffect(() => {
+    if (prevIsla.current !== islaParam) {
+      prevIsla.current = islaParam;
+      setMasa('');
+    }
+  }, [islaParam]);
 
   useEffect(() => {
     let alive = true;
@@ -101,7 +110,7 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
   const maxAnio = serie.length > 0 ? Number(serie[serie.length - 1].anio) : 2026;
   const rangoEf: Rango = ah
     ? { desde: maxAnio, hasta: maxAnio }
-    : (rango ?? { desde: Math.max(minAnio, maxAnio - 9), hasta: maxAnio });
+    : (rango ?? { desde: Math.max(minAnio, maxAnio - 4), hasta: maxAnio });
   const serieFiltrada = ah
     ? serie
     : serie.filter((x) => Number(x.anio) >= rangoEf.desde && Number(x.anio) <= rangoEf.hasta);
@@ -164,12 +173,17 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
                   fontSize: 12,
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="hm3" name={t('dash.infiltrada.series.agua')} fill="#3b82f6" radius={[3, 3, 0, 0]} />
               <Line type="monotone" dataKey="media" name={t('dash.infiltrada.series.media')} stroke={dark ? '#f4f4f5' : '#52525b'} strokeWidth={1.5} dot={false} />
             </BarChart>
           </ResponsiveContainer>
         )}
+        <ChartLegend
+          items={[
+            { label: t('dash.infiltrada.series.agua'), swatches: [{ color: '#3b82f6', shape: 'bar' }] },
+            { label: t('dash.infiltrada.series.media'), swatches: [{ color: dark ? '#f4f4f5' : '#52525b' }] },
+          ]}
+        />
       </Card>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

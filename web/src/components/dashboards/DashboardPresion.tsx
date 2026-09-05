@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import {
-  CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { fetchPresion } from '../../lib/api';
 import { collator, meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
-import { Card, ErrorBox, RangoTemporal, Spinner, useIsDark, type Rango } from './ui';
+import { Card, ChartLegend, ErrorBox, RangoTemporal, Spinner, useIsDark, type Rango } from './ui';
 
 const nf = new Intl.NumberFormat('es-ES');
 
@@ -30,6 +30,7 @@ export default function DashboardPresion() {
   const dark = useIsDark();
 
   const [rango, setRango] = useState<Rango | null>(null);
+  const [comparativa, setComparativa] = useState<boolean>(false);
   const [serie, setSerie] = useState<Array<Record<string, string | number>>>([]);
   const [ratio, setRatio] = useState<{ iph: number; pob: number; isla: string } | null>(null);
   const [err, setErr] = useState('');
@@ -128,6 +129,31 @@ export default function DashboardPresion() {
     (s) => Number(s.anio) >= rangoEf.desde && Number(s.anio) <= rangoEf.hasta
   );
 
+  // Comparativa interanual: eje X = mes, una línea por año (máx. 5 años recientes del rango)
+  const aniosComparativa = [...new Set(serieFiltrada.map((r) => Number(r.anio)))]
+    .sort((a, b) => a - b)
+    .slice(-5);
+  const valorDe = (row: Record<string, string | number>): number | null => {
+    if (isla !== 'Baleares') {
+      const v = row['iph'];
+      return typeof v === 'number' ? v : null;
+    }
+    const vals = ['Mallorca', 'Menorca', 'Eivissa i Formentera']
+      .map((k) => row[k])
+      .filter((v): v is number => typeof v === 'number');
+    return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) : null;
+  };
+  const ms = meses();
+  const datosComparativa: Array<Record<string, string | number | null>> = ms.map((m, i) => {
+    const row: Record<string, string | number | null> = { mes: m };
+    for (const anio of aniosComparativa) {
+      const r = serieFiltrada.find((x) => Number(x.anio) === anio && Number(x.mes) === i + 1);
+      row[String(anio)] = r ? valorDe(r) : null;
+    }
+    return row;
+  });
+  const colores = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#f43f5e'];
+
   return (
     <div className="flex flex-col gap-4">
       {err && <ErrorBox msg={err} />}
@@ -151,7 +177,27 @@ export default function DashboardPresion() {
 
       <Card
         title={t('dash.presion.titulo')}
-        subtitle={isla === 'Baleares' ? t('dash.presion.sub_baleares') : t('dash.presion.sub_isla')}
+        subtitle={
+          comparativa
+            ? t('dash.presion.sub_comp', { d: rangoEf.desde, h: rangoEf.hasta })
+            : isla === 'Baleares'
+              ? t('dash.presion.sub_baleares')
+              : t('dash.presion.sub_isla')
+        }
+        right={
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button
+              onClick={() => setComparativa((v) => !v)}
+              className={`text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                comparativa
+                  ? 'bg-violet-500/10 text-violet-500 border-violet-500/30'
+                  : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
+              }`}
+            >
+              {t('dash.presion.comparativa')}
+            </button>
+          </div>
+        }
       >
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <span className="text-[11px] text-zinc-400 dark:text-zinc-600">{t('ui.rango')}</span>
@@ -159,7 +205,45 @@ export default function DashboardPresion() {
         </div>
         {serie.length === 0 ? (
           <Spinner />
+        ) : comparativa ? (
+          <>
+            <ResponsiveContainer width="100%" height={340}>
+              <LineChart data={datosComparativa}>
+              <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+              <XAxis dataKey="mes" tick={tick} />
+              <YAxis tick={tick} width={44} tickFormatter={(v: number) => nf.format(v)} />
+              <Tooltip
+                contentStyle={{
+                  background: dark ? '#18181b' : '#fff',
+                  border: `1px solid ${grid}`,
+                  borderRadius: 12,
+                  fontSize: 12,
+                }}
+                formatter={(v) => nf.format(Number(v))}
+              />
+              {aniosComparativa.map((anio, i) => (
+                <Line
+                  key={anio}
+                  type="monotone"
+                  dataKey={String(anio)}
+                  name={String(anio)}
+                  stroke={colores[i % colores.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+          <ChartLegend
+            items={aniosComparativa.map((anio, i) => ({
+              label: String(anio),
+              swatches: [{ color: colores[i % colores.length], shape: 'line' as const }],
+            }))}
+          />
+          </>
         ) : (
+          <>
           <ResponsiveContainer width="100%" height={340}>
             <LineChart data={serieFiltrada}>
               <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
@@ -174,7 +258,6 @@ export default function DashboardPresion() {
                 }}
                 formatter={(v) => nf.format(Number(v))}
               />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
               {isla === 'Baleares' ? (
                 <>
                   <Line type="monotone" dataKey="Mallorca" name="Mallorca" stroke={LINE_COLORS.Mallorca} dot={false} connectNulls />
@@ -193,6 +276,35 @@ export default function DashboardPresion() {
               )}
             </LineChart>
           </ResponsiveContainer>
+          {isla === 'Baleares' ? (
+            <ChartLegend
+              items={['Mallorca', 'Menorca', 'Eivissa i Formentera'].map((n) => ({
+                label: n,
+                swatches: [
+                  { color: LINE_COLORS[n], shape: 'line' as const },
+                  { color: LINE_COLORS[n], dashed: true },
+                ],
+              }))}
+            />
+          ) : (
+            <ChartLegend
+              items={[
+                {
+                  label: t('dash.presion.series.iph'),
+                  swatches: [{ color: LINE_COLORS[isla] ?? '#f59e0b', shape: 'line' as const }],
+                },
+                {
+                  label: t('dash.presion.series.media'),
+                  swatches: [{ color: dark ? '#f4f4f5' : '#52525b', shape: 'line' as const }],
+                },
+                {
+                  label: t('dash.presion.series.pob_censal'),
+                  swatches: [{ color: LINE_COLORS[isla] ?? '#f59e0b', dashed: true }],
+                },
+              ]}
+            />
+          )}
+          </>
         )}
       </Card>
     </div>
