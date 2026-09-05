@@ -152,6 +152,25 @@ export const fetchMasas = (isla?: string) =>
     `masas${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`
   );
 
+export interface MapaKpiMunicipio {
+  cod_municipio: string;
+  nombre_municipio: string;
+  isla: string;
+  consumo_hm3: number | null;
+  ocupacion_media_pct: number | null;
+  poblacion: number | null;
+}
+
+export interface MapaKpisResp {
+  isla: string;
+  anio_consumo: number | null;
+  anio_poblacion: number | null;
+  municipios: MapaKpiMunicipio[];
+}
+
+export const fetchMapaKpis = (isla?: string) =>
+  getJson<MapaKpisResp>(`mapa/kpis${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`);
+
 export const fetchLluvia = (opts: { isla?: string; masa?: string } = {}) => {
   const q = opts.masa
     ? `masa=${encodeURIComponent(opts.masa)}`

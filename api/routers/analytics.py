@@ -479,6 +479,69 @@ async def masas(isla: str | None = Query(default=None)):
     return {"masas": rows}
 
 
+@router.get("/mapa/kpis")
+async def mapa_kpis(isla: str | None = Query(default=None)):
+    """KPIs por municipio para el mapa choropleth de Vision general.
+
+    Devuelve consumo urbano (ultimo anio), ocupacion media (ultimos 12 meses
+    consolidados) y poblacion censal (ultimo censo) para cada municipio del
+    ambito, con las fechas de referencia.
+    """
+    if isla and isla not in ISLAS:
+        raise HTTPException(400, f"isla no valida: {isla}")
+    isla_sql = "AND p.nombre_provincia = $3 " if isla else ""
+    params = [isla] if isla else []
+
+    meta_consumo = await _qrow("SELECT MAX(anio) AS anio FROM gold.abastecimiento_urbano_baleares")
+    meta_poblacion = await _qrow("SELECT MAX(anio) AS anio FROM gold.censo_municipal_baleares")
+    anio_consumo = (meta_consumo or {}).get("anio")
+    anio_poblacion = (meta_poblacion or {}).get("anio")
+
+    rows = await _q(
+        f"""
+        WITH consumo AS (
+            SELECT cod_municipio, ROUND(consumo_hm3::numeric, 2) AS consumo_hm3
+            FROM gold.abastecimiento_urbano_baleares
+            WHERE anio = $1
+        ),
+        ocup AS (
+            SELECT cod_municipio_ine AS cod_municipio,
+                   ROUND(AVG(ocupacion_plazas_pct)::numeric, 1) AS ocupacion_media_pct
+            FROM gold.ocupacion_turistica
+            WHERE anio * 12 + mes > (SELECT MAX(anio * 12 + mes) FROM gold.ocupacion_turistica) - 12
+            GROUP BY cod_municipio_ine
+        ),
+        pob AS (
+            SELECT cod_municipio_ine AS cod_municipio, poblacion
+            FROM gold.censo_municipal_baleares
+            WHERE anio = $2
+        )
+        SELECT m.cod_municipio,
+               m.nombre_municipio,
+               p.nombre_provincia AS isla,
+               c.consumo_hm3,
+               o.ocupacion_media_pct,
+               pb.poblacion
+        FROM public.municipio m
+        JOIN public.provincia p USING (cod_provincia)
+        LEFT JOIN consumo c USING (cod_municipio)
+        LEFT JOIN ocup o USING (cod_municipio)
+        LEFT JOIN pob pb USING (cod_municipio)
+        WHERE 1=1 {isla_sql}
+        ORDER BY m.nombre_municipio
+        """,
+        anio_consumo,
+        anio_poblacion,
+        *params,
+    )
+    return {
+        "isla": isla or "Baleares",
+        "anio_consumo": anio_consumo,
+        "anio_poblacion": anio_poblacion,
+        "municipios": rows,
+    }
+
+
 @router.get("/abastecimiento")
 async def abastecimiento(
     isla: str | None = Query(default=None),

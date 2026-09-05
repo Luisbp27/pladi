@@ -6,6 +6,43 @@ import { useT } from '../../lib/i18n';
 
 export const CHART_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#0ea5e9', '#f43f5e'];
 
+export interface ChartLegendSwatch {
+  color: string;
+  dashed?: boolean;
+  shape?: 'line' | 'bar';
+}
+
+export interface ChartLegendItem {
+  label: string;
+  swatches: ChartLegendSwatch[];
+}
+
+export function ChartLegend({ items, className = '' }: { items: ChartLegendItem[]; className?: string }) {
+  return (
+    <div className={`flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 ${className}`}>
+      {items.map((it) => (
+        <span
+          key={it.label}
+          className="inline-flex items-center gap-1.5 text-[10px] text-zinc-500 dark:text-zinc-400"
+        >
+          <span className="inline-flex items-center gap-1">
+            {it.swatches.map((s, i) =>
+              s.shape === 'bar' ? (
+                <span key={i} className="w-2.5 h-2.5 rounded-[3px]" style={{ background: s.color }} />
+              ) : s.dashed ? (
+                <span key={i} className="w-3.5 h-0 border-t-2 border-dashed" style={{ borderColor: s.color }} />
+              ) : (
+                <span key={i} className="w-3.5 h-0.5 rounded-full" style={{ background: s.color }} />
+              )
+            )}
+          </span>
+          {it.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function useIsDark() {
   return useStore(theme) === 'dark';
 }
@@ -54,6 +91,7 @@ export function KpiCard({
   sub,
   chip,
   chipTone = 'zinc',
+  accent,
 }: {
   label: string;
   value: string;
@@ -63,6 +101,7 @@ export function KpiCard({
   sub?: string;
   chip?: string;
   chipTone?: 'rose' | 'emerald' | 'zinc';
+  accent?: string;
 }) {
   const deltaGood = delta !== null && delta !== undefined && (delta >= 0) === positiveGood;
   const deltaColor =
@@ -79,7 +118,10 @@ export function KpiCard({
         : 'text-zinc-400 dark:text-zinc-500 bg-zinc-500/10 border-zinc-500/20';
 
   return (
-    <div className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-1.5">
+    <div
+      className="rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-300/40 dark:border-zinc-700/40 p-4 flex flex-col gap-1.5"
+      style={accent ? { borderTop: `2px solid ${accent}` } : undefined}
+    >
       <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
         {label}
       </span>
@@ -334,6 +376,111 @@ export function SearchSelect({
                     }`}
                   >
                     {o.nombre}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
+    </div>
+  );
+}
+
+export interface DropdownOption {
+  value: number | string;
+  label: string;
+}
+
+export function DropdownSelect({
+  value,
+  options,
+  onChange,
+  className = '',
+}: {
+  value: number | string;
+  options: DropdownOption[];
+  onChange: (v: number | string) => void;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; left: number; width: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+
+  const toggle = () => {
+    if (!open) {
+      const r = wrapRef.current?.getBoundingClientRect();
+      if (r) setRect({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 200) });
+    }
+    setOpen((v) => !v);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const onResize = () => setOpen(false);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [open]);
+
+  const menuStyle: CSSProperties = (() => {
+    if (!rect) return { top: 0, left: 0 };
+    const margin = 8;
+    const width = Math.min(Math.max(rect.width, 200), window.innerWidth - margin * 2);
+    const left = Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin));
+    const altura = Math.min(options.length * 36 + 8, 300);
+    if (rect.top + altura > window.innerHeight) {
+      return { bottom: window.innerHeight - rect.top + 4, left, width };
+    }
+    return { top: rect.top, left, width };
+  })();
+
+  return (
+    <div ref={wrapRef} className={`relative ${className}`}>
+      <button
+        onClick={toggle}
+        className={`flex w-full items-center justify-between gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+          open
+            ? 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+            : 'bg-white dark:bg-zinc-800 text-zinc-500 border-zinc-300/60 dark:border-zinc-700/60 hover:text-zinc-700 dark:hover:text-zinc-300'
+        }`}
+      >
+        <span className="truncate">{selected ? selected.label : ''}</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[9990]" onClick={() => setOpen(false)} />
+            <div
+              className="fixed z-[9991] rounded-xl bg-white dark:bg-zinc-900 border border-zinc-300/50 dark:border-zinc-700/50 shadow-xl overflow-hidden"
+              style={menuStyle}
+            >
+              <div className="max-h-60 overflow-y-auto">
+                {options.map((o) => (
+                  <button
+                    key={String(o.value)}
+                    onClick={() => {
+                      onChange(o.value);
+                      setOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[12px] transition-colors cursor-pointer ${
+                      o.value === value
+                        ? 'bg-blue-500/10 text-blue-500'
+                        : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    {o.label}
                   </button>
                 ))}
               </div>
