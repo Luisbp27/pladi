@@ -365,6 +365,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 | `GET /api/v1/analytics/ocupacion?isla=&tipo=&municipio=` | Ocupación mensual (Baleares = media de las islas) |
 | `GET /api/v1/analytics/ocupacion/ranking?isla=&anio=&tipo=` | Ranking de municipios por ocupación media anual (solo con datos) |
 | `GET /api/v1/analytics/uds?isla=` / `municipios?isla=` / `masas?isla=` | Catálogos para SearchSelect |
+| `GET /api/v1/analytics/mapa/kpis?isla=` | KPIs por municipio para el mapa choropleth de Visión general (consumo 2024, ocupación 12m, población censal) |
 | `GET /api/v1/analytics/entidad/{tipo}/{cod}` | KPIs + sparkline para drawer (masa: infiltración + balance; municipio/pozo/ud) |
 
 - Los endpoints antiguos `/lluvia` se mantienen sin uso en el front (por si acaso).
@@ -394,6 +395,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 - CTA "Más detalle": masa → vista balance; municipio → vista abastecimiento.
 - **Capas masas/UDs coloreadas siempre por estado DMA** (bueno verde, riesgo ámbar, malo rojo, sin dato neutro) + **leyenda** en el panel de capas.
 - **Tooltips** con el nombre en hover; **clustering de pozos** (Leaflet.markercluster CDN, `disableClusteringAtZoom: 10`, spiderfy); zoom inicial 9.
+- **Masas sin balance en gris (2026-09-04)**: `dmaStyleFor` devuelve gris `#71717a` cuando no hay `estado_cuantitativo` (masas) o `explotacion_porcentaje` (UDs) — antes caían al azul por defecto y contradecían la leyenda.
 - `PUBLIC_PLADI_API_URL=/api/v1` en `web/.env.production` (Caddy proxys `/api/*` → FastAPI; dev usa `http://localhost:8000/api/v1`).
 
 ### Notas técnicas
@@ -407,12 +409,35 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 - **Logo**: icono de capas (bronze/silver/gold) en navbar + **favicon.svg** (pestaña del navegador).
 - **Responsive completa** (iPhone SE 320px → iPad): labels del navbar ocultas en móvil, footer con scroll horizontal, selector de islas con scroll, sidebar móvil con backdrop, panel de capas auto-colapsado <640px, KPI cards 1 col <360px, desglose sin % en xs, tooltips con soporte tap, `:focus-visible` global, leyendas de charts compactas en móvil.
 
+### Auditoría responsive 2026-09-04 (verificación Playwright)
+
+- **Verificación programática** (Playwright + Chromium, `/tmp/opencode/responsive/`): 3 páginas × 320/375/414/768/1024/1440 × light/dark + interacciones (6 vistas de dashboards, escenario de simulación, capas + drawer en inicio). Métrica: `docOverflow=false` y **0 elementos desbordados** en todas las combinaciones (los únicos "offenders" son falsos positivos: drawer cerrado off-canvas, sidebar móvil off-canvas y svg/tiles internos de Leaflet clipados).
+- **Fixes aplicados**:
+  - `h-screen`/`w-screen` → **`h-dvh`/`w-full`** en los 3 shells + sidebar y drawer con `calc(100dvh-44px-36px)` + `min-h-dvh` en body (en iOS/Android la barra del navegador no recorta el layout).
+  - **Tablas de /simulacion** (municipios y masas con cambio): wrappers `overflow-auto` + columnas secundarias ocultas en xs (`base`/`explotación` <420px, `isla`/`extracción` <640px). Antes desbordaban ~70px su contenedor a 320px.
+  - Balance: grid de KPIs `grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4` (consistente con el resto).
+  - `KpiMap`: hint de clic `w-full sm:w-auto sm:ml-auto` en la leyenda.
+  - `LayerPanel`: se recolapsa automáticamente al redimensionar a <640px (antes solo al montar).
+- **Ojo builds locales**: `astro build` carga `.env.production` (`PUBLIC_PLADI_API_URL=/api/v1`, pensado para Caddy). Para probar el build contra la API local: `PUBLIC_PLADI_API_URL=http://localhost:8000/api/v1 npm run build`.
+- ⚠️ **Caddy sirve `web/dist` en vivo** (bind mount ro) — un build de verificación con URL local deja la web pública sin datos (el navegador llama a `localhost:8000` del cliente). Regla: terminar siempre con `npm run build:prod` (script que fuerza `/api/v1`) y verificar `grep -r "localhost:8000" dist/` vacío. Para desarrollo usar `npm run dev` (no toca `dist`). Incidente ocurrido el 2026-09-04 y resuelto con rebuild de producción.
+- Capturas de la verificación en `/tmp/opencode/responsive/shots/` (44 PNG, no commiteadas).
+
 ### Turismo — IPH vs población y ranking de ocupación (2026-08-15)
 
 - **DashboardPresion**: KPI "IPH pico vs población" (ratio `×2,1` + desglose IPH/población) y líneas discontinuas de **población censal anual** bajo el IPH (modo isla y Baleares). El IPH es a nivel NUTS: **Eivissa i Formentera van juntas** (sin estimaciones).
 - **DashboardOcupacion**: ranking top 5 / bottom 5 de municipios (media anual del año `hasta` del rango, respeta el toggle de tipo, nota "solo municipios con datos" — 26 de 67 tienen turismo).
 - **Drawer municipio**: sin card de infiltración; ocupación = media 12 meses + pico mensual + sparkline con **ventana propia del municipio** (fix: Alaior acaba en 2025-09 y Sant Joan de Labritja en 2024-10, el corte global los dejaba vacíos).
 - **EmptyState** (borde discontinuo + icono + texto contextual) para entidades sin datos: municipios sin turismo, masas/UDs sin balance, vista Ocupación sin datos; leyenda del mapa con "Sin dato" (gris); KpiBlocks con sub explicativo en vez de `—`.
+
+### Mejoras UX (2026-09-04)
+
+- **Visión general rediseñada**: los 2 charts (agua infiltrada 24m + consumo por origen) se sustituyen por un **mapa de KPIs** (`web/src/components/dashboards/KpiMap.tsx`, Leaflet propio): choropleth de municipios con selector de KPI (consumo urbano 2024, ocupación media 12m, población censal) + modo "Masas (DMA)" (estado coloreado). Hace `fitBounds` a la isla del filtro de arriba; tooltip con nombre; clic → `vista=abastecimiento&municipio=X` (o `vista=balance&nivel=masa&masa=X`); leyenda con rampa min/máx + "Sin dato". Las 6 KPI cards van en **una sola fila horizontal** (grid hasta 6 columnas) con la temática marcada por el **borde superior de color** de cada tarjeta (`accent` en `KpiCard`): azul Recursos hídricos, ámbar Turismo, violeta Población.
+  - **Endpoint nuevo**: `GET /api/v1/analytics/mapa/kpis?isla=` → por municipio `consumo_hm3` (último año), `ocupacion_media_pct` (12 meses), `poblacion` (último censo) + `anio_consumo`/`anio_poblacion`. Geometrías reutilizan `/mapa/municipios` y `/mapa/masas`.
+- **Rango por defecto 5 años**: Abastecimiento e Infiltrada arrancan con "Últimos 5" (antes 10).
+- **IPH comparativa interanual**: toggle en Presión (patrón de Ocupación): eje X = mes, una línea por año (máx 5 del rango); en Baleares la línea es la suma mensual de las 3 series NUTS.
+- **Leyendas de charts**: componente `ChartLegend` (`ui.tsx`, pills con punto de color/línea/discontinua + nombre) sustituye al `<Legend>` de Recharts en Infiltrada, Abastecimiento, Presión (agrupando IPH sólido + población discontinua por isla), Ocupación, Balance (con umbrales 0.8/1.0) y ResultadosSimulacion (histórico + escenarios; barras de estado).
+- **Fix filtros cruzados**: al cambiar de isla se resetea el filtro de municipio/masa/UD en los 5 dashboards (patrón `useRef` de isla previa, sin pisar los presets del "Más detalle").
+- **Navbar**: el estado activo se pinta en el SSR con `path={Astro.url.pathname}` desde cada página (antes el HTML inicial marcaba siempre "Inici" hasta hidratar React). Normalización de `/index.html` y barra final en `Navbar.tsx`. Estilo activo azul más marcado.
 
 ---
 
@@ -499,7 +524,8 @@ notebooks/
 ### UI `/simulacion` (rediseñada 2026-08-31 — escenarios libres)
 
 - **Layout 2 paneles**: izquierda "PanelEscenarios" (340px), derecha resultados. Header con punto violeta (`#a855f7`) y pills de isla (patrón dashboards). Responsive: panel encima en móvil.
-- **Escenarios libres (rediseño 2026-08-31)**: la página arranca **sin escenarios**. Un escenario = combinación de variaciones de IPH / ocupación turística / lluvia; el usuario añade hasta **5** (`MAX_ESCENARIOS`, límite del backend) con «+ Añadir escenario» y los compara en el gráfico. Nombres **auto-generados** (`Escenario 1, 2…`, contador sin reutilizar números) y no editables. Cada tarjeta: punto de color, nombre, ojo (ocultar del gráfico), ✕ borrar (se puede borrar todo) y sliders % (−30..+30) con presets de lluvia (Año seco −30 / Normal / Año húmedo +30). **Persistencia en localStorage** (`pladi:simulacion:v1`: escenarios + contador + visibilidad, validados al hidratar). Sin escenarios → no se llama a la API y los resultados muestran un EmptyState. `escenarioActivo` vive en el shell (al añadir se selecciona el nuevo; al borrar el activo pasa al primero restante).
+- **Persistencia y nombres (2026-09-04)**: los escenarios viven en **`sessionStorage`** (antes `localStorage`): sobreviven a recargas y navegación dentro de la web, se resetean al cerrar la pestaña/navegador. Se persiste solo el **número** del escenario (`n`); el nombre se genera al render con `t('simul.escenario_n', {n})` → siempre en el idioma activo (las respuestas de la API se re-etiquetan por id sin refetch). **Selector de horizonte**: el `<select>` nativo se sustituye por `DropdownSelect` (`ui.tsx`, dropdown custom estilo SearchSelect).
+- **Escenarios libres (rediseño 2026-08-31)**: la página arranca **sin escenarios**. Un escenario = combinación de variaciones de IPH / ocupación turística / lluvia; el usuario añade hasta **5** (`MAX_ESCENARIOS`, límite del backend) con «+ Añadir escenario» y los compara en el gráfico. Nombres **auto-generados** (`Escenario 1, 2…`, contador sin reutilizar números) y no editables. Cada tarjeta: punto de color, nombre, ojo (ocultar del gráfico), ✕ borrar (se puede borrar todo) y sliders % (−30..+30) con presets de lluvia (Año seco −30 / Normal / Año húmedo +30). Sin escenarios → no se llama a la API y los resultados muestran un EmptyState. `escenarioActivo` vive en el shell (al añadir se selecciona el nuevo; al borrar el activo pasa al primero restante).
 - Los sliders muestran el efecto medido del modelo (IPH 0,093 · ocupación ≈0 · lluvia ≈−0,017) — por eso la lluvia apenas mueve el consumo urbano (su dominio es el balance hídrico). Chip ámbar si |Δ| > 25 (fuera del rango de entrenamiento). Tooltips: IPH NUTS (Eivissa+Formentera juntas), ocupación sin efecto en municipios sin turismo.
 - **Ámbito**: isla (incluida **Baleares** = las 4 islas, soportado por la API 2026-08-31) + SearchSelect de municipio (con Baleares lista los 67) + horizonte (2026-2035).
 - **Resultados** (`ResultadosSimulacion.tsx`): pills «Escenario para los indicadores» sobre 4 KpiCards (consumo proyectado + Δ% vs base, consumo base, variación media anual, sensibilidad IPH), ComposedChart Recharts (histórico sólido + proyecciones dashed por escenario + tooltip con banda lo/hi deduplicado — Area y Line comparten dataKey), tabla municipal completa con pills de escenario y columna Isla cuando el ámbito es Baleares. ~~Ranking top/bottom 5~~ eliminado (2026-09, redundante): la tabla de detalle es **ordenable por columnas** (click en header, ▲/▼, default Δ% desc).
@@ -568,7 +594,7 @@ notebooks/
 - **Persistencia**: `localStorage['pladi-locale']`; script `is:inline` en `MainLayout.astro` aplica `lang`/`__pladiLocale` antes del primer paint (patrón theme).
 - **Switch**: `LocaleSwitcher.tsx` (pills CA|ES) en el navbar. **Navbar y Footer son ahora islands React** (`Navbar.tsx`, `Footer.tsx`, `client:load`) para retraducirse al instante; títulos de página estáticos en ca (default) y `document.title` se actualiza al cambiar.
 - **Números**: `Intl.NumberFormat('es-ES')` se mantiene tal cual — **es-ES y ca-ES formatean idéntico** (1.234,56); si algún día se añade un locale con otro formato habrá que hacerlo reactivo.
-- **Nombres de escenario** persistidos en localStorage se generan en el idioma activo («Escenario N»/«Escenari N»); los ya guardados no se retraducen.
+- **Nombres de escenario**: se generan al render desde el número persistido (`t('simul.escenario_n')`) → siempre en el idioma activo (2026-09-04).
 
 ### Fuera de alcance (backend)
 
