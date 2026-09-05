@@ -1,4 +1,4 @@
-pladi.dadesbalears.es {
+{$PLADI_SITE:localhost} {
     root * /usr/share/caddy
     file_server
 

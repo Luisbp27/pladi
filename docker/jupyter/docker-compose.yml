@@ -6,7 +6,7 @@ services:
     environment:
       JUPYTER_TOKEN: ${JUPYTER_TOKEN:?JUPYTER_TOKEN no definido en docker/.env}
     ports:
-      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:${JUPYTER_PORT:-8888}:8888"
     volumes:
       - ../../notebooks:/home/jovyan/work
       - ../../models:/home/jovyan/models
