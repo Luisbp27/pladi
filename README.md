@@ -1,8 +1,15 @@
 # pladi
 
-**PLADI** — Plataforma de Datos Inteligente de la Dirección General de Recursos Hídricos del Gobierno de las Islas Baleares.
+**PLADI — Plataforma de Datos Inteligente.** Infraestructura completa para la
+ingesta, el procesamiento y la explotación de datos: arquitectura medallón
+(bronze → silver → gold) orquestada con Airflow, data lake MinIO, base de datos
+geoespacial PostGIS, API REST, dashboards analíticos y machine learning
+productivizado.
 
-Una plataforma completa de datos abiertos sobre el ciclo del agua en Baleares: ingestas automatizadas (arquitectura medallón), base de datos geoespacial, dashboards analíticos, mapa interactivo y simulación del consumo urbano con modelos de machine learning.
+Este repositorio aplica la plataforma a la **gestión del agua en las Islas
+Baleares**: datos de DGRH, AEMET, IBESTAT y Open-Meteo, balance hídrico por masa
+de agua, mapa interactivo y simulación del consumo urbano con modelos
+entrenados por municipio.
 
 ## Funcionalidades
 
