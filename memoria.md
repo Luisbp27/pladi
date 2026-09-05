@@ -406,7 +406,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 
 ### Identidad y responsive (2026-08-15)
 
-- **Logo**: icono de capas (bronze/silver/gold) en navbar + **favicon.svg** (pestaña del navegador).
+- **Logo**: icono de capas (bronze/silver/gold) en navbar + kit en `web/public/assets/` (**favicon.svg**, PNGs, OG) servido en `/assets/*`.
 - **Responsive completa** (iPhone SE 320px → iPad): labels del navbar ocultas en móvil, footer con scroll horizontal, selector de islas con scroll, sidebar móvil con backdrop, panel de capas auto-colapsado <640px, KPI cards 1 col <360px, desglose sin % en xs, tooltips con soporte tap, `:focus-visible` global, leyendas de charts compactas en móvil.
 
 ### Auditoría responsive 2026-09-04 (verificación Playwright)

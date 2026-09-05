@@ -1,5 +1,9 @@
 # pladi
 
+<p align="center">
+  <img src="web/public/assets/logo-chip.svg" alt="pladi" width="320" />
+</p>
+
 **PLADI — Plataforma de Datos Inteligente.** Infraestructura completa para la
 ingesta, el procesamiento y la explotación de datos: arquitectura medallón
 (bronze → silver → gold) orquestada con Airflow, data lake MinIO, base de datos

@@ -20,7 +20,7 @@ export default function Navbar({ path }: { path?: string }) {
     <nav className="fixed top-0 left-0 right-0 z-30 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-lg border-b border-zinc-200/40 dark:border-zinc-800/40 h-11">
       <div className="flex items-center justify-between w-full h-full px-4">
         <a href="/" className="flex items-center gap-1">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+          <svg width="16" height="16" viewBox="0 0 48 48" fill="none"><path d="M8 14L24 6L40 14L37 18.5L24 12.5L11 18.5Z" fill="#60a5fa"/><path d="M6 27L24 18L42 27L38.5 31.5L24 24.5L9.5 31.5Z" fill="#3b82f6"/><path d="M4 40L24 30L44 40L40 44L24 37.5L8 44Z" fill="#1d4ed8"/></svg>
           <span className="text-sm font-bold text-zinc-800 dark:text-zinc-200 tracking-tight">pladi</span>
         </a>
 
