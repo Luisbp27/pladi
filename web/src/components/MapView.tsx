@@ -26,16 +26,18 @@ const DMA_COLOR: Record<string, string> = {
   mal_estado: '#f43f5e',
 };
 
+const SIN_DATO_COLOR = { color: '#71717a', fillColor: '#71717a' };
+
 function dmaStyleFor(layerId: string, props: Record<string, unknown>): { color: string; fillColor: string } | null {
   if (layerId === 'masas') {
     const e = props.estado_cuantitativo;
-    if (!e) return null;
+    if (!e) return SIN_DATO_COLOR;
     const c = DMA_COLOR[String(e)];
-    return c ? { color: c, fillColor: c } : null;
+    return c ? { color: c, fillColor: c } : SIN_DATO_COLOR;
   }
   if (layerId === 'unidades_demanda') {
     const x = props.explotacion_porcentaje;
-    if (x === null || x === undefined) return null;
+    if (x === null || x === undefined) return SIN_DATO_COLOR;
     const n = Number(x);
     const c = n > 1 ? '#f43f5e' : n >= 0.8 ? '#f59e0b' : '#22c55e';
     return { color: c, fillColor: c };
