@@ -73,9 +73,12 @@ export default function LayerPanel() {
 
   // En móvil el panel arranca colapsado para no tapar el mapa
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 640) {
-      panelCollapsed.set(true);
-    }
+    const colapsarSiMovil = () => {
+      if (window.innerWidth < 640) panelCollapsed.set(true);
+    };
+    colapsarSiMovil();
+    window.addEventListener('resize', colapsarSiMovil);
+    return () => window.removeEventListener('resize', colapsarSiMovil);
   }, []);
 
   const showDmaLegend = $activeLayers['masas'] || $activeLayers['unidades_demanda'];

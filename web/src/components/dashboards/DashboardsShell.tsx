@@ -94,7 +94,7 @@ export default function DashboardsShell() {
   };
 
   return (
-    <div className="h-screen w-screen flex pt-11 pb-9 bg-zinc-50 dark:bg-[#09090b] overflow-hidden">
+    <div className="h-dvh w-full flex pt-11 pb-9 bg-zinc-50 dark:bg-[#09090b] overflow-hidden">
       {/* Backdrop móvil del sidebar */}
       {sidebarOpen && (
         <div
@@ -107,7 +107,7 @@ export default function DashboardsShell() {
       <aside
         className={`${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 fixed md:relative z-30 h-[calc(100vh-44px-36px)] w-60 shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-r border-zinc-300/40 dark:border-zinc-800/50 p-3 transition-transform duration-300`}
+        } md:translate-x-0 fixed md:relative z-30 h-[calc(100dvh-44px-36px)] w-60 shrink-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-r border-zinc-300/40 dark:border-zinc-800/50 p-3 transition-transform duration-300`}
       >
         <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
           {t('dash.shell.titulo')}

@@ -8,9 +8,9 @@ import Drawer from '../components/Drawer';
 ---
 
 <MainLayout title="pladi · Inici">
-  <Navbar client:load />
+  <Navbar client:load path={Astro.url.pathname} />
 
-  <div class="h-screen w-screen relative overflow-hidden bg-white dark:bg-[#09090b] pt-11 pb-9">
+  <div class="h-dvh w-full relative overflow-hidden bg-white dark:bg-[#09090b] pt-11 pb-9">
     <MapView client:load />
 
     <div class="absolute top-14 left-3 z-10">

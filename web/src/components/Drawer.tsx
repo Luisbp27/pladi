@@ -242,7 +242,7 @@ export default function Drawer() {
       />
 
       <div
-        className={`fixed top-11 right-0 z-40 h-[calc(100vh-44px-36px)] w-[380px] max-w-[92vw] bg-white dark:bg-[#0f0f13] border-l border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-11 right-0 z-40 h-[calc(100dvh-44px-36px)] w-[380px] max-w-[92vw] bg-white dark:bg-[#0f0f13] border-l border-zinc-200/50 dark:border-zinc-800/50 shadow-2xl transform transition-transform duration-300 ease-in-out ${
           $drawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

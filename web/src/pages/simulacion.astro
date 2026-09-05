@@ -6,7 +6,7 @@ import SimulacionShell from '../components/simulacion/SimulacionShell.tsx';
 ---
 
 <MainLayout title="pladi · Simulació">
-  <Navbar client:load />
+  <Navbar client:load path={Astro.url.pathname} />
   <SimulacionShell client:load />
   <Footer client:load />
 </MainLayout>

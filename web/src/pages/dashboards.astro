@@ -6,7 +6,7 @@ import DashboardsShell from '../components/dashboards/DashboardsShell.tsx';
 ---
 
 <MainLayout title="pladi · Dashboards">
-  <Navbar client:load />
+  <Navbar client:load path={Astro.url.pathname} />
   <DashboardsShell client:load />
   <Footer client:load />
 </MainLayout>
