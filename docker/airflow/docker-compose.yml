@@ -21,6 +21,7 @@ services:
     build: .
     image: pladi-airflow:latest
     container_name: pladi-airflow-init
+    user: "0:0"
     depends_on:
       airflow-postgres:
         condition: service_healthy
@@ -40,12 +41,16 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-pladi}
     command: |
       bash -c "
+      set -e
       mkdir -p /opt/airflow/logs
       chown -R 50000:50000 /opt/airflow/logs
       airflow db migrate
       echo \"{\\\"${AIRFLOW_ADMIN_USER:-admin}\\\": \\\"${AIRFLOW_ADMIN_PASSWORD:-admin}\\\"}\" > /opt/airflow/simple_auth_manager_passwords.json.generated
+      airflow connections delete minio_default 2>/dev/null || true
       airflow connections add minio_default --conn-type aws --conn-login ${MINIO_ROOT_USER:-pladi} --conn-password ${MINIO_ROOT_PASSWORD:-pladi2024} --conn-extra \"{\\\"endpoint_url\\\": \\\"http://minio:9000\\\"}\"
+      airflow connections delete postgis_pladi 2>/dev/null || true
       airflow connections add postgis_pladi --conn-type postgres --conn-host postgis --conn-port 5432 --conn-schema ${POSTGRES_DB:-pladi} --conn-login ${POSTGRES_USER:-pladi} --conn-password ${POSTGRES_PASSWORD:-pladi}
+      chown 50000:50000 /opt/airflow/simple_auth_manager_passwords.json.generated 2>/dev/null || true
       echo '=== Init complete ==='
       "
     volumes:
