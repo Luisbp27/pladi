@@ -11,7 +11,7 @@
 | Airflow | 8080 | ✅ | LocalExecutor, conexiones a MinIO y PostGIS |
 | FastAPI | 8000 | ✅ | `/api/v1/health` + endpoints GeoJSON para mapa |
 | Astro | 4321 | ✅ | Frontend en desarrollo (FASE II) |
-| Jupyter | 8888 | ✅ | Notebooks FASE VII (acceso por SSH tunnel) |
+| Jupyter | 8888 | ✅ | Notebooks FASE VII (token en docker/.env) |
 | Spark | — | ❌ | Procesamiento distribuido (opcional) |
 
 ### Estructura de carpetas
@@ -344,7 +344,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 | FASE III — Ingestas + poblar BBDD | ✅ Completada (IBESTAT, DGRH, AEMET, Open-Meteo, gold lluvia — 2026-08-14) |
 | FASE IV — Dashboards + UI/UX | ✅ Completada (2026-08-15) — ver sección "Dashboards y analítica" |
 | FASE V — Frontend (Astro) | ✅ (unificado con FASE II) |
-| FASE VI — Despliegue real | ✅ Completada — VPS en producción |
+| FASE VI — Despliegue real | ✅ Completada — despliegue Docker en producción |
 | FASE VII — Modelos + data science | ✅ Completada (2026-09-02) — notebooks, UI `/simulacion` y productivización del modelo |
 
 ---
@@ -492,7 +492,7 @@ notebooks/
 ### Entorno Jupyter (Docker)
 
 - Servicio `jupyter` en `docker/jupyter/` (base `jupyter/base-notebook` + polars, sklearn, statsmodels, pmdarima, seaborn, shap, joblib). Puerto `127.0.0.1:8888`, volúmenes `../../notebooks:/home/jovyan/work` y `../../models:/home/jovyan/models`, `restart: unless-stopped`.
-- **Acceso** (mismo patrón que Airflow/MinIO): `ssh -L 8888:localhost:8888 root@169.58.169.55` → `http://localhost:8888?token=<JUPYTER_TOKEN de docker/.env>`.
+- **Acceso** (mismo patrón que Airflow/MinIO): `http://localhost:8888?token=<JUPYTER_TOKEN de docker/.env>` (en remoto, redirige el puerto con tu túnel SSH habitual).
 - `notebooks/data/`, `.venv` y `models/` gitignored; `results/` se commitea (métricas pequeñas).
 
 ### Modelos serializados (`models/` en raíz, gitignored)
@@ -574,7 +574,7 @@ notebooks/
 - **DAG `modelo_seed`** (`@once`): sube los `models/` actuales como **versión 0** a MinIO + fila active (bootstrap único; modelos montados ro en los 4 servicios de airflow).
 - **DAG `modelo_backtest`** (mismo `AssetAny`): walk-forward anual (ventanas 2021+) → `ml.backtests`; **falla si alguna ventana degrada** (MAPE > holdout × 1,5) → DAG rojo = alerta.
 
-### Despliegue de esta fase (VPS)
+### Despliegue de esta fase
 
 1. Rebuild de imágenes: `docker compose build fastapi` y `airflow-init` (o `--build` en el compose raíz).
 2. Trigger manual de `modelo_seed` (crea schema `ml` + versión 0).
@@ -607,10 +607,10 @@ notebooks/
 
 ### Entornos y despliegue
 
-- **Dominio**: `pladi.dadesbalears.es` (dondominio, registro A → `169.58.169.55`).
-- **Hosting**: VPS Ubuntu 24.04 (x86_64) — Docker + Docker Compose.
+- **Dominio**: `pladi.dadesbalears.es`.
+- **Hosting**: Ubuntu 24.04 (x86_64) — Docker + Docker Compose.
 - **Reverse proxy**: Caddy con SSL automático (Let's Encrypt). Único servicio expuesto (80/443); el resto de servicios bind a `127.0.0.1`.
-- **Acceso admin** (Airflow/MinIO): vía SSH tunnel (`ssh -L 8080:localhost:8080 -L 9001:localhost:9001 root@169.58.169.55`).
+- **Acceso admin** (Airflow/MinIO): los puertos bind a `127.0.0.1`; en remoto redirigirlos con el túnel SSH habitual (8080 y 9001).
 - **Carga de datos PostGIS**: `postgis/docker-compose.yml` monta `data/postgis_dgrh → /tmp/pladi_data` para que `load_data.sql` cargue los CSVs automáticamente en el primer init.
 - **Credenciales**: `docker/.env` (gitignored) con contraseñas aleatorias por entorno.
 - **Frontend en producción**: build con `npm run build` → `web/dist/` servido por Caddy.
@@ -636,7 +636,7 @@ notebooks/
 - **Estado**: Nanostores atoms (`theme`, `locale`, `activeLayers`, `geojsonData`, `drawerOpen`, etc.) compartidos entre islas.
 - **i18n**: ca (default) + es vía diccionarios propios en `web/src/lib/i18n/` (ver "Internacionalización ca/es"). TODO texto de UI pasa por `t()`/`useT()`; nada de strings es hardcodeadas en componentes.
 - **Mapa**: Leaflet 1.9.4 vía CDN (nunca como módulo npm). Sin zoom nativo ni control de capas (se gestionan vía UI propia).
-- **Tiles CARTO (2026-08-30)**: los basemaps de CARTO requieren API key desde 2026. URL: `https://{s}.basemaps.cartocdn.com/rastertiles/{light_all|dark_all}/{z}/{x}/{y}{r}.png?key=...`. La key se inyecta vía `PUBLIC_CARTO_API_KEY` (`.env` en dev, `.env.production` en build) y se lee con `import.meta.env.PUBLIC_CARTO_API_KEY` en `MapView.tsx`. Es visible en el navegador (inherente a tiles raster); opcionalmente restringirla por dominio en el panel de CARTO. Los ficheros `web/.env*` están **gitignored** — clonar `web/.env.production.example` y poner la key real (en el VPS: crear `web/.env.production` antes del build).
+- **Tiles CARTO (2026-08-30)**: los basemaps de CARTO requieren API key desde 2026. URL: `https://{s}.basemaps.cartocdn.com/rastertiles/{light_all|dark_all}/{z}/{x}/{y}{r}.png?key=...`. La key se inyecta vía `PUBLIC_CARTO_API_KEY` (`.env` en dev, `.env.production` en build) y se lee con `import.meta.env.PUBLIC_CARTO_API_KEY` en `MapView.tsx`. Es visible en el navegador (inherente a tiles raster); opcionalmente restringirla por dominio en el panel de CARTO. Los ficheros `web/.env*` están **gitignored** — clonar `web/.env.production.example` y poner la key real (en el servidor: crear `web/.env.production` antes del build).
 - **Capas**: orden en panel: Municipios → Pozos → Masas Subterráneas → Unidades de Demanda.
 - Build: `cd web && npm run build` → `web/dist/` (servido por Caddy en producción).
 
