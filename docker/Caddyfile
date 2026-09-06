@@ -1,0 +1,16 @@
+{$PLADI_SITE:localhost} {
+    root * /usr/share/caddy
+    file_server
+
+    handle /api/* {
+        reverse_proxy fastapi:8000
+    }
+
+    header {
+        X-Frame-Options DENY
+        X-Content-Type-Options nosniff
+        -Server
+    }
+
+    encode gzip zstd
+}

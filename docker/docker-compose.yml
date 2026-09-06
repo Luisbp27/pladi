@@ -1,0 +1,34 @@
+include:
+  - path: postgis/docker-compose.yml
+  - path: minio/docker-compose.yml
+  - path: airflow/docker-compose.yml
+  - path: fastapi/docker-compose.yml
+  - path: jupyter/docker-compose.yml
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: pladi-caddy
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../web/dist:/usr/share/caddy:ro
+      - caddy_data:/data
+    restart: unless-stopped
+    depends_on:
+      - fastapi
+
+volumes:
+  postgis_data:
+    driver: local
+  minio_data:
+    driver: local
+  airflow_postgres_data:
+    driver: local
+  airflow_home_data:
+    driver: local
+  caddy_data:
+    driver: local

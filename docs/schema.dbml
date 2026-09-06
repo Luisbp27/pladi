@@ -1,0 +1,235 @@
+// ============================================================
+// pladi — Modelo de datos normalizado (PostGIS, SRID 4326)
+// Renderizar en: https://dbdiagram.io
+// ============================================================
+
+Table provincia {
+  cod_provincia text [pk]
+  nombre_provincia text
+  cod_zona_geografica text
+}
+
+Table municipio {
+  cod_municipio text [pk]
+  cod_provincia text [not null, ref: > provincia.cod_provincia]
+  nombre_municipio varchar(255)
+  area_km2 double
+  geometry GEOMETRY(MULTIPOLYGON, 4326)
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    geometry [type: GIST, name: "idx_municipio_geom"]
+    cod_provincia [name: "idx_municipio_provincia"]
+  }
+}
+
+Table unidad_demanda {
+  id_unidad_demanda bigint [pk]
+  nombre text
+  cod_provincia text [ref: > provincia.cod_provincia]
+  area_km2 double
+  geometry GEOMETRY(MULTIPOLYGON, 4326)
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    geometry [type: GIST, name: "idx_ud_geom"]
+    cod_provincia [name: "idx_ud_provincia"]
+  }
+}
+
+Table masa_subterranea {
+  cod_masa text [pk]
+  id_unidad_demanda bigint [not null, ref: > unidad_demanda.id_unidad_demanda]
+  nombre_masa text
+  area_km2 double
+  geometry GEOMETRY(MULTIPOLYGON, 4326)
+  proporcion_area_masa_ud double
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    geometry [type: GIST, name: "idx_masa_sub_geom"]
+    id_unidad_demanda [name: "idx_masa_sub_ud"]
+  }
+}
+Table pozos {
+  cod_pozo text [pk]
+  cod_pozo_antiguo text
+  nombre text
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  cod_municipio text [ref: > municipio.cod_municipio]
+  tipo text
+  uso_principal text
+  cota_terreno_m double
+  geometry GEOMETRY(POINT, 4326)
+  red_cualitativa boolean
+  frecuencia_muestreo_cualitativa_iso8601 text
+  red_piezometrica boolean
+  frecuencia_medicion_piezometrica_iso8601 text
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    geometry [type: GIST, name: "idx_pozos_geom"]
+    cod_masa [name: "idx_pozos_masa"]
+    cod_municipio [name: "idx_pozos_municipio"]
+  }
+}
+
+Table balance_masas_subterraneas_porcentajes {
+  cod_masa text [pk, ref: > masa_subterranea.cod_masa]
+  infiltracion_lluvia double
+  transferencia_entre_masas double
+  infiltracion_torrentes double
+  retorno_riegos double
+  perdida_redes_abastecimiento double
+  perdida_redes_alcantarillado double
+  intrusion_salina double
+  abastecimiento_red double
+  agrojardineria double
+  industria double
+  regadio double
+  ganaderia double
+  torrentes double
+  manantiales double
+  humedales double
+  transferencia_a_masas double
+  salida_mar double
+  salida_zzhh double
+  recurso_potencial_hm3 double
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+}
+
+Table infiltracion_epoca_material {
+  id_infiltracion_epoca_material bigint [pk]
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  epoca text
+  material text
+  infiltracion_lluvia_porcentaje double
+  area_km2 double
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    cod_masa [name: "idx_infiltracion_masa"]
+    (cod_masa, epoca, material) [unique, name: "uq_infiltracion_masa_epoca_material"]
+  }
+}
+
+Table masa_subterranea_estacion_aemet {
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  cod_estacion text
+
+  indexes {
+    (cod_masa, cod_estacion) [pk, name: "pk_masa_estacion"]
+    cod_masa [name: "idx_estacion_masa"]
+  }
+}
+
+Table municipio_masa_subterranea {
+  cod_municipio text [ref: > municipio.cod_municipio]
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  abastecimiento_agua_media_ponderada_anual_hm3 double
+
+  indexes {
+    (cod_municipio, cod_masa) [pk, name: "pk_municipio_masa"]
+    cod_municipio [name: "idx_mun_masa_mun"]
+    cod_masa [name: "idx_mun_masa_masa"]
+  }
+}
+
+// ── GOLD ──────────────────────────────────────────────────────────────────
+
+Table gold.agua_infiltrada_masa_subterranea {
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  anio int
+  mes int
+  agua_infiltrada_m3 double
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_masa, anio, mes) [pk, name: "pk_agua_infiltrada"]
+    (anio, mes) [name: "idx_agua_infiltrada_anio_mes"]
+  }
+}
+
+Table gold.balance_hidrico_baleares {
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  anio int
+  infiltracion_lluvia_hm3 double
+  infiltracion_torrentes_hm3 double
+  retorno_riegos_hm3 double
+  perdida_redes_abastecimiento_hm3 double
+  perdida_redes_alcantarillado_hm3 double
+  intrusion_salina_hm3 double
+  suma_entradas_hm3 double
+  diferencia_vs_rp_hm3 double
+  abastecimiento_urbano_hm3 double
+  torrentes_hm3 double
+  manantiales_hm3 double
+  humedales_hm3 double
+  salida_mar_hm3 double
+  salida_zzhh_hm3 double
+  suma_salidas_hm3 double
+  disponibilidad_hm3 double
+  extraccion_hm3 double
+  explotacion_porcentaje double
+  estado_cuantitativo text
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_masa, anio) [pk, name: "pk_balance_hidrico"]
+    anio [name: "idx_balance_hidrico_anio"]
+    estado_cuantitativo [name: "idx_balance_hidrico_estado"]
+  }
+}
+
+// ── ML (registry + monitoreo del modelo de consumo urbano) ──────────────────
+
+Table ml.model_versions {
+  id text [pk, note: 'version UTC, p.ej. 20260902T183000Z']
+  artifact_uri text [not null, unique, note: 's3://pladi/ml/simulacion/v{id}/']
+  estado text [not null, default: `shadow`, note: 'active | shadow | archived — solo una active (indice parcial unico en SQL)']
+  mape_holdout_medio double [note: 'MAPE medio holdout 2022-2024']
+  mae_holdout_medio double
+  mape_por_municipio jsonb [note: '{cod_municipio: mape %}']
+  features jsonb
+  params jsonb
+  elasticidades jsonb [note: '{iph, ocupacion, lluvia}']
+  base_anio int [note: 'ultimo anio de entrenamiento']
+  train_desde int
+  test_start int
+  n_modelos int
+  checksum_sha256 text [note: 'sha256 del manifest del bundle']
+  nota text
+  creado_en timestamptz [not null, default: `now()`]
+  activado_en timestamptz
+
+  indexes {
+    estado [name: "idx_model_versions_estado"]
+    creado_en [name: "idx_model_versions_creado"]
+  }
+}
+
+Table ml.backtests {
+  id bigserial [pk]
+  version_id text [ref: > ml.model_versions.id]
+  run_en timestamptz [not null, default: `now()`]
+  ventana text [not null, note: 'anio evaluado, p.ej. 2025']
+  n_municipios int
+  mape_medio double
+  mae_medio double
+  umbral_mape double [note: 'umbral de degradacion aplicado']
+  degradado boolean [note: 'mape_medio > umbral_mape']
+  detalle jsonb
+
+  indexes {
+    ventana [name: "idx_backtests_ventana"]
+    run_en [name: "idx_backtests_run"]
+  }
+}

@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    @apply antialiased;
+    font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+}
+
+/* Leaflet popup */
+.pladi-popup .leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #18181b !important;
+  border-radius: 12px !important;
+  border: 1px solid #e4e4e7 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12) !important;
+  padding: 0 !important;
+}
+.pladi-popup .leaflet-popup-content {
+  margin: 10px 14px !important;
+  font-family: 'Inter', sans-serif !important;
+  line-height: 1.4 !important;
+}
+.pladi-popup .leaflet-popup-tip {
+  background: #ffffff !important;
+  border: 1px solid #e4e4e7 !important;
+}
+.pladi-popup .leaflet-popup-close-button {
+  color: #a1a1aa !important;
+  font-size: 18px !important;
+  padding: 6px 8px 0 0 !important;
+}
+
+html.dark .pladi-popup .leaflet-popup-content-wrapper {
+  background: #18181b !important;
+  color: #e4e4e7 !important;
+  border-color: #3f3f46 !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8) !important;
+}
+html.dark .pladi-popup .leaflet-popup-tip {
+  background: #18181b !important;
+  border-color: #3f3f46 !important;
+}
+html.dark .pladi-popup .leaflet-popup-close-button {
+  color: #71717a !important;
+}
+
+/* Leaflet control overrides */
+.leaflet-control-layers {
+  background: #ffffff !important;
+  border: 1px solid #e4e4e7 !important;
+  border-radius: 10px !important;
+  color: #18181b !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
+}
+.leaflet-control-layers-selector {
+  accent-color: #3b82f6 !important;
+}
+.leaflet-control-zoom a {
+  background: #ffffff !important;
+  color: #18181b !important;
+  border-color: #e4e4e7 !important;
+}
+
+html.dark .leaflet-control-layers {
+  background: #18181b !important;
+  border-color: #3f3f46 !important;
+  color: #e4e4e7 !important;
+}
+html.dark .leaflet-control-zoom a {
+  background: #18181b !important;
+  color: #e4e4e7 !important;
+  border-color: #3f3f46 !important;
+}
+
+/* Fullscreen map container */
+#pladi-map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+/* Tooltip discreto del mapa (solo nombre de entidad) */
+.pladi-tooltip {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(161, 161, 170, 0.4) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  color: #18181b !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 500;
+  padding: 4px 8px !important;
+}
+.pladi-tooltip::before {
+  display: none !important;
+}
+html.dark .pladi-tooltip {
+  background: rgba(24, 24, 27, 0.85) !important;
+  border-color: rgba(63, 63, 70, 0.6) !important;
+  color: #e4e4e7 !important;
+}
+
+/* Ocultar scrollbars en carruseles horizontales */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Focus visible accesible en controles interactivos */
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Leyendas de charts más compactas en móvil */
+@media (max-width: 639px) {
+  .recharts-legend-item-text {
+    font-size: 10px !important;
+  }
+  .recharts-default-legend {
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,503 @@
+const API_BASE = import.meta.env.PUBLIC_PLADI_API_URL || 'http://localhost:8000/api/v1';
+
+export interface CapaInfo {
+  id: string;
+  endpoint: string;
+  color: string;
+  icon: string;
+  count: number;
+}
+
+// Los labels de capa están en los diccionarios i18n (mapa.capa.*)
+export const CAPAS: CapaInfo[] = [
+  {
+    id: 'municipios',
+    endpoint: 'municipios',
+    color: '#a855f7',
+    icon: 'map-pin',
+    count: 67,
+  },
+  {
+    id: 'pozos',
+    endpoint: 'pozos',
+    color: '#22c55e',
+    icon: 'scan-line',
+    count: 1226,
+  },
+  {
+    id: 'masas',
+    endpoint: 'masas',
+    color: '#3b82f6',
+    icon: 'layers',
+    count: 87,
+  },
+  {
+    id: 'unidades_demanda',
+    endpoint: 'unidades-demanda',
+    color: '#f59e0b',
+    icon: 'pie-chart',
+    count: 10,
+  },
+];
+
+export const CAPA_INFO_MAP: Record<string, CapaInfo> = Object.fromEntries(
+  CAPAS.map((c) => [c.id, c])
+);
+
+export const LAYER_OPTIONS: Record<string, Record<string, unknown>> = {
+  masas: {
+    fillColor: '#3b82f6',
+    color: '#3b82f6',
+    weight: 1.5,
+    fillOpacity: 0.35,
+  },
+  pozos: {
+    fillColor: '#22c55e',
+    color: '#22c55e',
+    weight: 2,
+    radius: 6,
+    fillOpacity: 0.8,
+  },
+  municipios: {
+    fillColor: '#a855f7',
+    color: '#a855f7',
+    weight: 1,
+    fillOpacity: 0.15,
+  },
+  unidades_demanda: {
+    fillColor: '#f59e0b',
+    color: '#f59e0b',
+    weight: 2,
+    fillOpacity: 0.22,
+  },
+};
+
+export async function fetchLayer(endpoint: string): Promise<GeoJSON.FeatureCollection> {
+  const res = await fetch(`${API_BASE}/mapa/${endpoint}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${endpoint}: ${res.status}`);
+  return res.json();
+}
+
+// ── Analytics ──────────────────────────────────────────────────────────────
+
+export interface MesDato {
+  anio: number;
+  mes: number;
+}
+
+export interface ResumenKpis {
+  modo?: 'isla' | 'municipio';
+  municipio?: string;
+  isla?: string;
+  mes_cerrado: string;
+  ah_actual: number;
+  infiltracion_ah_hm3: number | null;
+  infiltracion_ah_media_hm3: number | null;
+  desviacion_pct: number | null;
+  masas_en_deficit: number | null;
+  masas_total: number | null;
+  iph_pico: { nombre_isla: string; anio: number; mes: number | null; iph: number } | null;
+  ocupacion_media_pct: number | null;
+  ocupacion_mes_cerrado?: string;
+  poblacion: number | null;
+  poblacion_anio: number | null;
+  poblacion_var_pct?: number | null;
+  consumo_hm3: number | null;
+  n_pozos?: number | null;
+  n_masas?: number | null;
+}
+
+export interface LluviaResp {
+  masa?: { cod_masa: string; nombre_masa: string; isla: string } | null;
+  isla?: string;
+  serie: (MesDato & { precipitacion_mm: number })[];
+  referencia: { mes: number; media_mm: number }[];
+}
+
+export interface RankingMasa {
+  cod_masa: string;
+  nombre_masa: string;
+  isla: string;
+  ah_actual_mm: number;
+  ah_media_mm: number;
+  desviacion_pct: number;
+}
+
+export interface EntidadKpis {
+  tipo: string;
+  [key: string]: unknown;
+}
+
+async function getJson<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}/analytics/${path}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  return res.json();
+}
+
+export const fetchResumen = (opts: { isla?: string; municipio?: string } = {}) => {
+  const q = new URLSearchParams();
+  if (opts.municipio) q.set('municipio', opts.municipio);
+  else if (opts.isla) q.set('isla', opts.isla);
+  const s = q.toString();
+  return getJson<ResumenKpis>(`resumen${s ? `?${s}` : ''}`);
+};
+
+export const fetchMunicipios = (isla?: string) =>
+  getJson<{ municipios: { cod_municipio: string; nombre_municipio: string; isla: string }[] }>(
+    `municipios${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`
+  );
+
+export const fetchMasas = (isla?: string) =>
+  getJson<{ masas: { cod_masa: string; nombre_masa: string; isla: string }[] }>(
+    `masas${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`
+  );
+
+export interface MapaKpiMunicipio {
+  cod_municipio: string;
+  nombre_municipio: string;
+  isla: string;
+  consumo_hm3: number | null;
+  ocupacion_media_pct: number | null;
+  poblacion: number | null;
+}
+
+export interface MapaKpisResp {
+  isla: string;
+  anio_consumo: number | null;
+  anio_poblacion: number | null;
+  municipios: MapaKpiMunicipio[];
+}
+
+export const fetchMapaKpis = (isla?: string) =>
+  getJson<MapaKpisResp>(`mapa/kpis${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`);
+
+export const fetchLluvia = (opts: { isla?: string; masa?: string } = {}) => {
+  const q = opts.masa
+    ? `masa=${encodeURIComponent(opts.masa)}`
+    : opts.isla
+      ? `isla=${encodeURIComponent(opts.isla)}`
+      : '';
+  return getJson<LluviaResp>(`lluvia${q ? `?${q}` : ''}`);
+};
+
+export const fetchLluviaRanking = (isla?: string) =>
+  getJson<{ ah_actual: number; masas: RankingMasa[] }>(
+    `lluvia/ranking${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`
+  );
+
+export const fetchAbastecimiento = (opts: { isla?: string; municipio?: string } = {}) => {
+  const q = new URLSearchParams();
+  if (opts.municipio) q.set('municipio', opts.municipio);
+  else if (opts.isla) q.set('isla', opts.isla);
+  const s = q.toString();
+  return getJson<{
+    isla: string;
+    municipio?: string;
+    serie: Record<string, number | string>[];
+    top_municipios: { cod_municipio: string; nombre_municipio: string; consumo_hm3: number }[];
+  }>(`abastecimiento${s ? `?${s}` : ''}`);
+};
+
+export const fetchPresion = (isla?: string) =>
+  getJson<{
+    isla: string;
+    serie: { nombre_isla?: string; anio: number; mes: number; iph: number }[];
+    referencia: { mes: number; media_iph: number }[];
+    poblacion: { anio: number; nombre_provincia: string; poblacion: number }[];
+  }>(`presion${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`);
+
+export const fetchOcupacionRanking = (opts: { isla?: string; anio?: number; tipo?: string } = {}) => {
+  const q = new URLSearchParams();
+  if (opts.isla) q.set('isla', opts.isla);
+  if (opts.anio) q.set('anio', String(opts.anio));
+  if (opts.tipo) q.set('tipo', opts.tipo);
+  return getJson<{
+    anio: number;
+    tipo: string;
+    municipios: {
+      cod_municipio_ine: string;
+      nombre_municipio: string;
+      isla: string;
+      ocupacion_media_pct: number | null;
+      meses_con_datos: number;
+    }[];
+  }>(`ocupacion/ranking?${q.toString()}`);
+};
+
+export const fetchOcupacion = (opts: { isla?: string; tipo?: string; municipio?: string } = {}) => {
+  const q = new URLSearchParams();
+  if (opts.municipio) q.set('municipio', opts.municipio);
+  else if (opts.isla) q.set('isla', opts.isla);
+  if (opts.tipo) q.set('tipo', opts.tipo);
+  const s = q.toString();
+  return getJson<{
+    isla: string;
+    municipio?: string;
+    serie: { isla?: string; tipo: string; anio: number; mes: number; ocupacion_pct: number }[];
+  }>(`ocupacion${s ? `?${s}` : ''}`);
+};
+
+export const fetchEntidad = (tipo: string, cod: string) =>
+  getJson<EntidadKpis>(`entidad/${tipo}/${encodeURIComponent(cod)}`);
+
+// ── Agua infiltrada ────────────────────────────────────────────────────────
+
+export interface InfiltradaSerie {
+  anio: number;
+  mes: number;
+  agua_infiltrada_hm3: number;
+}
+
+export interface InfiltradaResp {
+  masa?: { cod_masa: string; nombre_masa: string; isla: string } | null;
+  isla?: string;
+  serie: InfiltradaSerie[];
+  referencia: { mes: number; media_hm3: number }[];
+}
+
+export interface InfiltradaRanking {
+  cod_masa: string;
+  nombre_masa: string;
+  isla: string;
+  ah_actual_hm3: number;
+  ah_media_hm3: number;
+  desviacion_pct: number;
+}
+
+export const fetchInfiltrada = (opts: { isla?: string; masa?: string } = {}) => {
+  const q = opts.masa
+    ? `masa=${encodeURIComponent(opts.masa)}`
+    : opts.isla
+      ? `isla=${encodeURIComponent(opts.isla)}`
+      : '';
+  return getJson<InfiltradaResp>(`infiltrada${q ? `?${q}` : ''}`);
+};
+
+export const fetchInfiltradaRanking = (isla?: string) =>
+  getJson<{ ah_actual: number; masas: InfiltradaRanking[] }>(
+    `infiltrada/ranking${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`
+  );
+
+// ── Balance hídrico ────────────────────────────────────────────────────────
+
+export interface BalanceFila {
+  anio: number;
+  infiltracion_lluvia_hm3: number | null;
+  infiltracion_torrentes_hm3: number | null;
+  retorno_riegos_hm3: number | null;
+  perdida_redes_abastecimiento_hm3: number | null;
+  perdida_redes_alcantarillado_hm3: number | null;
+  intrusion_salina_hm3: number | null;
+  suma_entradas_hm3: number | null;
+  diferencia_vs_rp_hm3: number | null;
+  abastecimiento_urbano_hm3: number | null;
+  torrentes_hm3: number | null;
+  manantiales_hm3: number | null;
+  humedales_hm3: number | null;
+  salida_mar_hm3: number | null;
+  salida_zzhh_hm3: number | null;
+  suma_salidas_hm3: number | null;
+  disponibilidad_hm3: number | null;
+  extraccion_hm3: number | null;
+  explotacion_porcentaje: number | null;
+  estado_cuantitativo?: string | null;
+  n_buen_estado?: number;
+  n_en_riesgo?: number;
+  n_mal_estado?: number;
+}
+
+export interface BalanceResp {
+  nivel: 'masa' | 'ud';
+  masa?: { cod_masa: string; nombre_masa: string; isla: string } | null;
+  ud?: { id_unidad_demanda: number; nombre: string; isla: string } | null;
+  isla?: string;
+  serie: BalanceFila[];
+}
+
+export interface BalanceRankingMasa {
+  cod_masa: string;
+  nombre_masa: string;
+  isla: string;
+  explotacion_porcentaje: number | null;
+  disponibilidad_hm3: number | null;
+  extraccion_hm3: number | null;
+  estado_cuantitativo: string | null;
+}
+
+export interface BalanceRankingUd {
+  id_unidad_demanda: number;
+  nombre: string;
+  isla: string;
+  explotacion_porcentaje: number | null;
+  disponibilidad_hm3: number | null;
+  extraccion_hm3: number | null;
+  n_buen_estado: number;
+  n_en_riesgo: number;
+  n_mal_estado: number;
+}
+
+export const fetchUds = (isla?: string) =>
+  getJson<{ uds: { id_unidad_demanda: number; nombre: string; isla: string }[] }>(
+    `uds${isla ? `?isla=${encodeURIComponent(isla)}` : ''}`
+  );
+
+export const fetchBalance = (opts: { nivel: 'masa' | 'ud'; isla?: string; entidad?: string } = { nivel: 'masa' }) => {
+  const q = new URLSearchParams();
+  q.set('nivel', opts.nivel);
+  if (opts.entidad) q.set('entidad', opts.entidad);
+  else if (opts.isla) q.set('isla', opts.isla);
+  return getJson<BalanceResp>(`balance?${q.toString()}`);
+};
+
+export const fetchBalanceRanking = (nivel: 'masa' | 'ud', isla?: string, anio?: number) => {
+  const q = new URLSearchParams({ nivel });
+  if (isla) q.set('isla', isla);
+  if (anio) q.set('anio', String(anio));
+  return nivel === 'masa'
+    ? getJson<{ anio: number; nivel: string; masas: BalanceRankingMasa[] }>(`balance/ranking?${q.toString()}`)
+    : getJson<{ anio: number; nivel: string; uds: BalanceRankingUd[] }>(`balance/ranking?${q.toString()}`);
+};
+
+export const ESTADO_COLORS: Record<string, string> = {
+  buen_estado: '#22c55e',
+  en_riesgo: '#f59e0b',
+  mal_estado: '#f43f5e',
+};
+
+// ESTADO_LABELS y MESES viven en los diccionarios i18n (dma.* / meses())
+export const ISLAS = ['Mallorca', 'Menorca', 'Eivissa', 'Formentera'];
+
+// ── Simulación ─────────────────────────────────────────────────────────────
+
+export interface SimulacionEscenario {
+  id: string;
+  nombre: string;
+  iph_pct: number;
+  ocupacion_pct: number;
+  lluvia_pct: number;
+}
+
+export const MAX_ESCENARIOS = 5;
+export const RANGO_SLIDER_PCT = 50;
+
+export interface ProyeccionPunto {
+  anio: number;
+  consumo_hm3: number;
+  lo: number;
+  hi: number;
+}
+
+export interface EscenarioResultado {
+  id: string;
+  nombre: string;
+  color: string;
+  proyeccion: ProyeccionPunto[];
+  kpis: {
+    consumo_final_hm3: number;
+    delta_vs_base_pct: number;
+    variacion_media_anual_pct: number;
+    sensibilidad: { iph: number; ocupacion: number; lluvia: number };
+  };
+}
+
+export interface MunicipioSim {
+  cod_municipio: string;
+  nombre_municipio: string;
+  isla: string;
+  base_hm3: number;
+  proy_hm3: number;
+  delta_pct: number;
+}
+
+export interface SimulacionResp {
+  ambito: string;
+  municipio?: string;
+  base_anio: number;
+  hasta: number;
+  serie_historica: { anio: number; consumo_hm3: number }[];
+  escenarios: EscenarioResultado[];
+  municipios: Record<string, MunicipioSim[]>;
+}
+
+export interface SimulacionParams {
+  isla?: string;
+  municipio?: string;
+  hasta: number;
+  escenarios: SimulacionEscenario[];
+}
+
+export const SIMULACION_MOCK = import.meta.env.PUBLIC_SIMULACION_MOCK === 'true';
+
+export async function fetchSimulacion(p: SimulacionParams): Promise<SimulacionResp> {
+  if (SIMULACION_MOCK) {
+    const { getSimulacionMock } = await import('./simulacionMock');
+    return getSimulacionMock(p);
+  }
+  const q = new URLSearchParams();
+  if (p.municipio) q.set('municipio', p.municipio);
+  else if (p.isla) q.set('isla', p.isla);
+  q.set('hasta', String(p.hasta));
+  q.set('escenarios', JSON.stringify(p.escenarios));
+  const path = `simulacion/consumo?${q.toString()}`;
+  const res = await fetch(`${API_BASE}/${path}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  return res.json();
+}
+
+// ── Simulación × balance hídrico ───────────────────────────────────────────
+
+export interface BalanceSeriePunto {
+  anio: number;
+  n_buen_estado: number;
+  n_en_riesgo: number;
+  n_mal_estado: number;
+  extraccion_total_hm3: number;
+  disponibilidad_total_hm3: number;
+  explotacion_media_pct: number | null;
+}
+
+export interface MasaCambio {
+  cod_masa: string;
+  nombre_masa: string;
+  isla: string;
+  extraccion_base_hm3: number;
+  extraccion_proy_hm3: number;
+  explotacion_base: number | null;
+  explotacion_proy: number | null;
+  estado_base: string;
+  estado_proy: string;
+}
+
+export interface BalanceEscenario {
+  id: string;
+  nombre: string;
+  color: string;
+  serie: BalanceSeriePunto[];
+  masas_cambio: MasaCambio[];
+}
+
+export interface SimulacionBalanceResp {
+  ambito: string;
+  municipio?: string;
+  base_anio: number;
+  hasta: number;
+  n_masas: number;
+  nota: string | null;
+  escenarios: BalanceEscenario[];
+}
+
+export async function fetchSimulacionBalance(p: SimulacionParams): Promise<SimulacionBalanceResp> {
+  if (SIMULACION_MOCK) {
+    const { getSimulacionBalanceMock } = await import('./simulacionMock');
+    return getSimulacionBalanceMock(p);
+  }
+  const q = new URLSearchParams();
+  if (p.municipio) q.set('municipio', p.municipio);
+  else if (p.isla) q.set('isla', p.isla);
+  q.set('hasta', String(p.hasta));
+  q.set('escenarios', JSON.stringify(p.escenarios));
+  const path = `simulacion/balance?${q.toString()}`;
+  const res = await fetch(`${API_BASE}/${path}`);
+  if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  return res.json();
+}

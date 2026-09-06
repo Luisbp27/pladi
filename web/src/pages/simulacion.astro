@@ -1,0 +1,12 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import SimulacionShell from '../components/simulacion/SimulacionShell.tsx';
+---
+
+<MainLayout title="pladi · Simulació">
+  <Navbar client:load path={Astro.url.pathname} />
+  <SimulacionShell client:load />
+  <Footer client:load />
+</MainLayout>

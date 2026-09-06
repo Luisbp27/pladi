@@ -1,0 +1,9 @@
+polars>=1.0
+deltalake>=0.18
+boto3
+minio
+psycopg2-binary
+openpyxl>=3.1
+odfpy>=1.4
+scikit-learn>=1.5
+joblib>=1.4
