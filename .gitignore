@@ -36,3 +36,9 @@ Thumbs.db
 
 # === Logs ===
 *.log
+
+# === Memoria TFM (LaTeX) — ignorada temporalmente ===
+memoria/
+
+# === Vídeo TFM (material de producción, no versionado) ===
+video/
