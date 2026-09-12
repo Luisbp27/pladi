@@ -134,7 +134,7 @@ export const dict = {
   'dash.general.mapa.masas': 'Masas (DMA)',
   'dash.general.mapa.consumo_ref': 'Consumo urbano {a} (hm³)',
   'dash.general.mapa.ocupacion_ref': 'Ocupación media últimos 12 meses (%)',
-  'dash.general.mapa.poblacion_ref': 'Población censal {a}',
+  'dash.general.mapa.poblacion_ref': 'Población (padrón) {a}',
   'dash.general.mapa.click_muni': 'Clic en un municipio para ver su abastecimiento',
   'dash.general.mapa.click_masa': 'Clic en una masa para ver su balance',
 

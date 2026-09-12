@@ -136,7 +136,7 @@ export const dict: Record<ClaveI18n, string> = {
   'dash.general.mapa.masas': 'Masses (DMA)',
   'dash.general.mapa.consumo_ref': 'Consum urbà {a} (hm³)',
   'dash.general.mapa.ocupacion_ref': "Ocupació mitjana darrers 12 mesos (%)",
-  'dash.general.mapa.poblacion_ref': 'Població censal {a}',
+  'dash.general.mapa.poblacion_ref': 'Població (padró) {a}',
   'dash.general.mapa.click_muni': "Clic en un municipi per veure el seu abastament",
   'dash.general.mapa.click_masa': "Clic en una massa per veure el seu balanç",
 
