@@ -106,7 +106,7 @@ export default function ResultadosSimulacion({
         />
         <KpiCard
           label={t('simul.sensibilidad')}
-          value={`+${(kpisEsc.kpis.sensibilidad.iph * 10).toFixed(1).replace('.', ',')}`}
+          value={`+${(kpisEsc.kpis.sensibilidad.censo * 10).toFixed(1).replace('.', ',')}`}
           unit="%"
           sub={t('simul.sens_sub')}
         />

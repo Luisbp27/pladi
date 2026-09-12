@@ -149,16 +149,16 @@ export default function PanelEscenarios({
                   {t('simul.variacion_hint')}
                 </p>
                 <SliderInput
+                  label={t('simul.slider.censo')}
+                  hint={t('simul.slider.censo_hint')}
+                  value={e.censo_pct}
+                  onChange={(v) => onUpdate(e.id, { censo_pct: v })}
+                />
+                <SliderInput
                   label={t('simul.slider.iph')}
                   hint={t('simul.slider.iph_hint')}
                   value={e.iph_pct}
                   onChange={(v) => onUpdate(e.id, { iph_pct: v })}
-                />
-                <SliderInput
-                  label={t('simul.slider.ocup')}
-                  hint={t('simul.slider.ocup_hint')}
-                  value={e.ocupacion_pct}
-                  onChange={(v) => onUpdate(e.id, { ocupacion_pct: v })}
                 />
                 <SliderInput
                   label={t('simul.slider.lluvia')}

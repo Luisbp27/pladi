@@ -10,9 +10,10 @@ import {
 
 export const ESCENARIO_COLORS = ['#3b82f6', '#f59e0b', '#a855f7', '#22c55e', '#0ea5e9'];
 
-// Elasticidades reales medidas en 14_interpretabilidad (models/elasticidades.json)
-const ELASTICIDADES = { iph: 0.093, ocupacion: 0.008, lluvia: -0.017 };
-const MAPE = 0.087;
+// Elasticidades medidas en el DAG (modelos de produccion per capita, perturbacion ±10%)
+// + coeficiente censo documentado (OLS) de models/elasticidades.json
+const ELASTICIDADES = { iph: 0.275, ocupacion: 0.06, lluvia: -0.026, censo: 0.81 };
+const MAPE = 0.0795;
 
 const HISTORICO_SINTETICO = [
   { anio: 2015, consumo_hm3: 74.6 },
@@ -38,7 +39,7 @@ function growthEscenario(e: SimulacionEscenario): number {
   return (
     tendencia +
     (e.iph_pct / 100) * ELASTICIDADES.iph +
-    (e.ocupacion_pct / 100) * ELASTICIDADES.ocupacion +
+    (e.censo_pct / 100) * ELASTICIDADES.censo +
     (e.lluvia_pct / 100) * ELASTICIDADES.lluvia
   );
 }

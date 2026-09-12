@@ -373,7 +373,7 @@ export interface SimulacionEscenario {
   id: string;
   nombre: string;
   iph_pct: number;
-  ocupacion_pct: number;
+  censo_pct: number;
   lluvia_pct: number;
 }
 
@@ -396,7 +396,7 @@ export interface EscenarioResultado {
     consumo_final_hm3: number;
     delta_vs_base_pct: number;
     variacion_media_anual_pct: number;
-    sensibilidad: { iph: number; ocupacion: number; lluvia: number };
+    sensibilidad: { iph: number; ocupacion: number; lluvia: number; censo: number };
   };
 }
 

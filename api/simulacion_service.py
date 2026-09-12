@@ -39,7 +39,7 @@ def _load_state(root: Path) -> dict:
 
     mape = {str(k): float(v) for k, v in meta.get("mape_por_municipio", {}).items()}
 
-    elasticidades: dict[str, float] = {}
+    elasticidades: dict[str, Any] = {}
     el_path = root / "elasticidades.json"
     if el_path.exists():
         data = json.loads(el_path.read_text())
@@ -47,10 +47,16 @@ def _load_state(root: Path) -> dict:
             "iph": float(data.get("iph", 0.0)),
             "ocupacion": float(data.get("ocupacion", 0.0)),
             "lluvia": float(data.get("lluvia", 0.0)),
+            "censo": float(data.get("censo", 0.0)),
+            "nota": str(data.get("nota", "")),
+            "censo_origen": str(data.get("censo_origen", "")),
         }
 
     state = {
         "features": features,
+        "features_modelo": meta.get("features_modelo") or features,
+        "target_transform": meta.get("target_transform"),
+        "poblacion_base": {str(k): float(v) for k, v in meta.get("poblacion_base", {}).items()},
         "modelos": modelos,
         "mape": mape,
         "elasticidades": elasticidades,
@@ -145,6 +151,7 @@ def version_info() -> dict:
         "n_modelos": len(st["modelos"]),
         "mape_medio": round(sum(mape_vals) / len(mape_vals), 2) if mape_vals else None,
         "features": st["features"],
+        "target_transform": st.get("target_transform"),
         "params": st.get("params", {}),
         "base_anio": st.get("base_anio"),
         "train_desde": st.get("train_desde"),
@@ -163,7 +170,7 @@ def tiene_modelos() -> bool:
     return _state is not None and bool(_state["modelos"])
 
 
-def elasticidades() -> dict[str, float]:
+def elasticidades() -> dict[str, Any]:
     return dict(_get_state()["elasticidades"])
 
 
@@ -176,23 +183,34 @@ def predecir_recursivo(cod_municipio: str, base_row: dict, hasta: int, pct: dict
     """Proyecta el consumo anual desde base_anio+1 hasta `hasta` (inclusive).
 
     - base_row: features del ultimo anio observado (claves = features del modelo).
-    - pct: variaciones relativas {'iph': x, 'ocupacion': y, 'lluvia': z} (0.1 = +10%).
+    - pct: variaciones relativas {'iph': x, 'censo': y, 'lluvia': z} (0.1 = +10%).
 
-    Metodo (hibrido honesto):
-      1. Baseline: prediccion recursiva del modelo con features congeladas en el
-         ultimo anio y `anio` limitado al ultimo ano de entrenamiento (los arboles
-         no extrapolan fuera del rango: se congelan en la hoja limite).
-      2. Escenario: ajuste multiplicativo con las elasticidades medidas in-range
-         (14_interpretabilidad): delta = e_iph*pct_iph + e_ocup*pct_ocup + e_lluvia*pct_lluvia.
-         El lag recursivo usa el valor ya ajustado (compounding).
-      La banda lo/hi usa el MAPE del municipio y se ensancha con el horizonte.
+    Metodo (shift estatico sobre el nivel congelado):
+      1. Base: prediccion del modelo con features congeladas en el ultimo anio y `anio`
+         limitado al ultimo ano de entrenamiento. Los arboles GB no extrapolan: el nivel
+         resultante es practicamente constante en todo el horizonte (la unica variacion
+         es el lag recursivo alimentado con la prediccion anterior).
+      2. Si el bundle es `target_transform="per_capita"`, el modelo predice consumo/poblacion:
+         el lag se normaliza por la poblacion base y la prediccion se reescala x poblacion base
+         (poblacion congelada, igual que el resto de features).
+      3. Escenario: el nivel base se multiplica por (1 + delta), con
+         delta = e_iph*pct_iph + e_censo*pct_censo + e_lluvia*pct_lluvia. Las elasticidades
+         se miden en el DAG con perturbacion simetrica +-10% sobre la fila base (los modelos
+         que se sirven); `censo` es un coeficiente externo documentado (OLS). La ocupacion
+         NO entra en el delta: su efecto causal anual no esta identificado.
+      4. La banda lo/hi (+-MAPE del municipio, ensanchada 3 pp/ano) es el UNICO elemento
+         que evoluciona con el horizonte; la proyeccion central es un shift estatico.
     """
     st = _get_state()
     cod = _norm(cod_municipio)
     if cod not in st["modelos"]:
         raise ModelosError(f"sin modelo para el municipio {cod_municipio}")
     modelo = st["modelos"][cod]
-    features = st["features"]
+    features = st.get("features_modelo") or st["features"]
+    per_capita = st.get("target_transform") == "per_capita"
+    pob_base = float(st.get("poblacion_base", {}).get(cod, 0.0)) if per_capita else 0.0
+    if per_capita and pob_base <= 0:
+        raise ModelosError(f"sin poblacion base para el municipio {cod_municipio}")
     mape = st["mape"].get(cod, 10.0) / 100.0  # el metadata guarda el MAPE en %
     el = st["elasticidades"]
 
@@ -200,10 +218,12 @@ def predecir_recursivo(cod_municipio: str, base_row: dict, hasta: int, pct: dict
     cap_anio = float(base_anio)  # ultimo ano de entrenamiento de los modelos de produccion
     delta = (
         float(el.get("iph", 0.0)) * float(pct.get("iph", 0.0))
-        + float(el.get("ocupacion", 0.0)) * float(pct.get("ocupacion", 0.0))
+        + float(el.get("censo", 0.0)) * float(pct.get("censo", 0.0))
         + float(el.get("lluvia", 0.0)) * float(pct.get("lluvia", 0.0))
     )
     lag = float(base_row["lag1"])
+    if per_capita:
+        lag = lag / pob_base
 
     out: list[dict] = []
     for anio in range(base_anio + 1, hasta + 1):
@@ -211,12 +231,14 @@ def predecir_recursivo(cod_municipio: str, base_row: dict, hasta: int, pct: dict
         for f in features:
             if f == "anio":
                 x[f] = min(float(anio), cap_anio)
-            elif f == "lag1":
+            elif f in ("lag1", "lag1_pc"):
                 x[f] = lag
             else:
                 x[f] = float(base_row[f])
 
         p_modelo = max(float(modelo.predict([[x[f] for f in features]])[0]), 0.0)
+        if per_capita:
+            p_modelo *= pob_base
         p = max(p_modelo * (1.0 + delta), 0.0)
         banda = mape + 0.03 * (anio - base_anio - 1)
         out.append(
@@ -227,5 +249,5 @@ def predecir_recursivo(cod_municipio: str, base_row: dict, hasta: int, pct: dict
                 "hi": round(p * (1.0 + banda), 3),
             }
         )
-        lag = p
+        lag = (p / pob_base) if per_capita else p
     return out
