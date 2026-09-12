@@ -5,7 +5,9 @@
 
 -- ============================================================
 -- 1. gold.censo_municipal_baleares
--- Poblacion anual por municipio (fuente: IBESTAT censo)
+-- Poblacion anual por municipio. Fuente: IBESTAT padron municipal
+-- (dataset 000001A_000001, 1998-2025; la tabla conserva el nombre
+-- "censo" aunque la fuente es el padron desde 2026-09-12).
 -- ============================================================
 CREATE TABLE IF NOT EXISTS gold.censo_municipal_baleares (
     cod_provincia_ine    VARCHAR(3)   NOT NULL,

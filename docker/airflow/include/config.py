@@ -6,7 +6,9 @@ from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 BUCKET = "pladi"
 
 IBESTAT_URLS = {
-    "censo_baleares": "https://ibestat.es/edatos/apis/statistical-resources/v1.0/datasets/IBESTAT/000305A_000010/~latest.csv",
+    # Poblacion municipal empadronada (padron) 1998-2025. La tabla gold.censo_municipal_baleares
+    # conserva el nombre pero su fuente es el padron desde 2026-09-12 (antes censo continuo 2021-25).
+    "censo_baleares": "https://ibestat.es/edatos/apis/statistical-resources/v1.0/datasets/IBESTAT/000001A_000001/~latest.csv",
     "indice_presion_humana": "https://ibestat.es/edatos/apis/statistical-resources/v1.0/datasets/IBESTAT/000011A_000002/~latest.csv",
     "ocupacion_hotelera": "https://ibestat.es/edatos/apis/statistical-resources/v1.0/datasets/IBESTAT/000061A_000006/~latest.csv",
     "ocupacion_apartamentos_turisticos": "https://ibestat.es/edatos/apis/statistical-resources/v1.0/datasets/IBESTAT/000060A_000006/~latest.csv",

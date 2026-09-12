@@ -1,4 +1,4 @@
-"""Carga censo municipal desde silver IBESTAT → PostGIS gold.censo_municipal_baleares."""
+"""Carga poblacion municipal (padron IBESTAT 1998-2025) desde silver → PostGIS gold.censo_municipal_baleares."""
 from __future__ import annotations
 
 import os
