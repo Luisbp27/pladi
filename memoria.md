@@ -270,7 +270,7 @@ docker/airflow/
 
 | Dataset | URL (IBESTAT API) | Granularidad | Tiempo |
 |---|---|---|---|
-| `censo_baleares` | `.../000305A_000010/~latest.csv` | Municipal (INE) | Anual |
+| `censo_baleares` | `.../000001A_000001/~latest.csv` (padrón municipal, 1998-2025) | Municipal (INE) | Anual |
 | `indice_presion_humana` | `.../000011A_000002/~latest.csv` | Isla (NUTS) | Diario → agregado mensual |
 | `ocupacion_hotelera` | `.../000061A_000006/~latest.csv` | Municipal (INE) | Mensual |
 | `ocupacion_apartamentos_turisticos` | `.../000060A_000006/~latest.csv` | Municipal (INE) | Mensual |
@@ -285,7 +285,7 @@ excepto IPH que solo existe a nivel isla (NUTS).
 
 | Tabla | PK | Columnas |
 |---|---|---|
-| `gold.censo_municipal_baleares` | `(cod_municipio_ine, anio)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, poblacion |
+| `gold.censo_municipal_baleares` | `(cod_municipio_ine, anio)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, poblacion — **fuente padrón municipal 1998-2025 desde 2026-09-12** (la tabla conserva el nombre `censo`; antes censo continuo 2021-25) |
 | `gold.presion_humana` | `(nombre_isla, anio, mes)` | cod_provincia_ine, nombre_provincia, nombre_isla, anio, mes, iph |
 | `gold.ocupacion_turistica` | `(cod_municipio_ine, anio, mes, tipo_alojamiento)` | cod_provincia_ine, nombre_provincia, cod_municipio_ine, nombre_municipio, anio, mes, tipo_alojamiento, ocupacion_plazas_pct |
 | `gold.lluvia_masa_subterranea` | `(cod_masa, anio, mes)` | cod_masa, anio, mes, precipitacion_mm, fuente (`aemet`/`openmeteo`) |
@@ -472,14 +472,16 @@ notebooks/
 ├── 04_lluvia_masa_subterranea.ipynb  # EDA lluvia (feature: lluvia anual media de las masas del municipio)
 ├── 05_agua_infiltrada.ipynb    # EDA recarga (colineal con lluvia → no entra en v1)
 ├── 06_balance_hidrico.ipynb    # EDA balance DMA (contexto: masas en déficit)
-├── 07_censo.ipynb              # EDA censo 2021-2025 (NO entra como feature en v1)
+├── 07_censo.ipynb              # EDA población (padrón 1998-2025): NO es feature; denominador del target per cápita (2026-09-12)
 ├── 08_panel_features.ipynb     # TABLÓN ANALÍTICO: panel único + outliers (MAD) + correlaciones + preprocessing documentado
 ├── 10_baseline.ipynb           # 6 baselines TS: naive, media, ETS/Holt, GB temporal, auto-ARIMA, regla_negocio DGRH
 ├── 11_modelo_municipio.ipynb   # GB por municipio (67 modelos) → serializa models/municipio/*.joblib + metadata.json
 ├── 12_modelo_panel_gbm.ipynb   # GB global con one-hot de municipio
 ├── 13_modelo_panel_regularizado.ipynb  # Ridge/Lasso panel (alpha por CV)
 ├── 14_interpretabilidad.ipynb  # SHAP global+por municipio + elasticidades reales → results/elasticidades.csv + models/elasticidades.json
-└── 20_comparativa.ipynb        # une results/*.csv + walk-forward de estabilidad
+├── 20_comparativa.ipynb        # une results/*.csv + walk-forward de estabilidad
+├── 21_ablacion_features.ipynb  # ablación IPH/`iph_max`/ocupación + elasticidad censo (decisión de features 2026-09-12)
+└── 22_target_per_capita.ipynb  # población como feature vs target per cápita (decisión de target 2026-09-12)
 ```
 
 ### Tablón analítico (`08_panel_features`) — patrón "feature store" del protocolo
@@ -510,7 +512,7 @@ notebooks/
   - `gb_municipio` **8,7%** (ganador) > `regla_negocio` 10,2% > naive 11,6% ≈ ets 11,7% ≈ gb_temporal 11,7% > arima 12,2% > ridge 13,5% > media 17,8% > gb_panel 25,9% > lasso 29,8%.
   - **Regla de negocio** (heurística DGRH: Δconsumo = 0,3 × ΔIPH isla) queda **segunda** — muy cerca del modelo; justifica el ML solo con el delta de 1,5 pp + interpretabilidad.
   - **Walk-forward** (1 año, ventanas 2021-2024): gb_municipio estable (MAPE 6,2-7,5%) pero naive gana 2 de 4 ventanas — la ventaja del modelo es modesta y honesta.
-  - **Elasticidades reales** (14_interpretabilidad, perturbación ±10%): IPH **0,093**, ocupación **≈0**, lluvia **−0,017** — el consumo es muy inercial (lag1 domina el SHAP). Estas cifras están cableadas al mock de /simulacion.
+  - **Elasticidades reales** (14_interpretabilidad, perturbación ±10%): IPH **0,093**, ocupación **≈0**, lluvia **−0,017** — el consumo es muy inercial (lag1 domina el SHAP). Estas cifras estaban cableadas al mock de /simulacion (sustituidas el 2026-09-12, ver «Revisión del simulador urbano»).
   - **Ablación de configuración (2026-08-30)** — por qué el modelo usa `iph_max` y train desde 2016:
     | Config | MAPE |
     |---|---|
@@ -519,16 +521,17 @@ notebooks/
     | sin `iph_max`, train 2016+ | 8,9% |
     | sin `iph_max`, train 2015+ (v2) | 9,3% |
     → `iph_max` se conserva pese a |r|>0,85 con `iph_media` (la regla de correlación del protocolo es estética; aporta +0,2 pp) y 2015 se excluye del train (aporta ruido: +0,4 pp). Documentado también en `08_panel_features`.
+    ⚠️ **Superado el 2026-09-12** (notebook 21): con el protocolo del DAG, quitar `iph_max` cuesta +0,18 pp (dentro del umbral de 0,3 pp) y el IPH se fusiona en un único factor (`iph_media`); quitar ambos IPH cuesta +1,82 pp. Decisión vigente en «Revisión del simulador urbano».
 - **Interpretabilidad**: SHAP global + por municipio representativo (Palma 07040, Calvià 07011, Sineu 07060) en 14_interpretabilidad.
 
 ### UI `/simulacion` (rediseñada 2026-08-31 — escenarios libres)
 
 - **Layout 2 paneles**: izquierda "PanelEscenarios" (340px), derecha resultados. Header con punto violeta (`#a855f7`) y pills de isla (patrón dashboards). Responsive: panel encima en móvil.
 - **Persistencia y nombres (2026-09-04)**: los escenarios viven en **`sessionStorage`** (antes `localStorage`): sobreviven a recargas y navegación dentro de la web, se resetean al cerrar la pestaña/navegador. Se persiste solo el **número** del escenario (`n`); el nombre se genera al render con `t('simul.escenario_n', {n})` → siempre en el idioma activo (las respuestas de la API se re-etiquetan por id sin refetch). **Selector de horizonte**: el `<select>` nativo se sustituye por `DropdownSelect` (`ui.tsx`, dropdown custom estilo SearchSelect).
-- **Escenarios libres (rediseño 2026-08-31)**: la página arranca **sin escenarios**. Un escenario = combinación de variaciones de IPH / ocupación turística / lluvia; el usuario añade hasta **5** (`MAX_ESCENARIOS`, límite del backend) con «+ Añadir escenario» y los compara en el gráfico. Nombres **auto-generados** (`Escenario 1, 2…`, contador sin reutilizar números) y no editables. Cada tarjeta: punto de color, nombre, ojo (ocultar del gráfico), ✕ borrar (se puede borrar todo) y sliders % (−30..+30) con presets de lluvia (Año seco −30 / Normal / Año húmedo +30). Sin escenarios → no se llama a la API y los resultados muestran un EmptyState. `escenarioActivo` vive en el shell (al añadir se selecciona el nuevo; al borrar el activo pasa al primero restante).
-- Los sliders muestran el efecto medido del modelo (IPH 0,093 · ocupación ≈0 · lluvia ≈−0,017) — por eso la lluvia apenas mueve el consumo urbano (su dominio es el balance hídrico). Chip ámbar si |Δ| > 25 (fuera del rango de entrenamiento). Tooltips: IPH NUTS (Eivissa+Formentera juntas), ocupación sin efecto en municipios sin turismo.
+- **Escenarios libres (rediseño 2026-08-31; palancas actualizadas 2026-09-12)**: la página arranca **sin escenarios**. Un escenario = combinación de variaciones de población (censo) / IPH / lluvia; el usuario añade hasta **5** (`MAX_ESCENARIOS`, límite del backend) con «+ Añadir escenario» y los compara en el gráfico. Nombres **auto-generados** (`Escenario 1, 2…`, contador sin reutilizar números) y no editables. Cada tarjeta: punto de color, nombre, ojo (ocultar del gráfico), ✕ borrar (se puede borrar todo) y sliders % (−30..+30) con presets de lluvia (Año seco −30 / Normal / Año húmedo +30). Sin escenarios → no se llama a la API y los resultados muestran un EmptyState. `escenarioActivo` vive en el shell (al añadir se selecciona el nuevo; al borrar el activo pasa al primero restante).
+- Los sliders muestran el efecto medido (población +8,1 % · IPH +2,7 % · lluvia ≈−0,3 % por +10 %) — por eso la lluvia apenas mueve el consumo urbano (su dominio es el balance hídrico). Chip ámbar si |Δ| > 25 (fuera del rango de entrenamiento). Tooltips: población (padrón municipal; OLS 2024/2025), IPH NUTS (Eivissa+Formentera juntas). **El slider de ocupación se eliminó (2026-09-12)**: efecto causal anual no identificado.
 - **Ámbito**: isla (incluida **Baleares** = las 4 islas, soportado por la API 2026-08-31) + SearchSelect de municipio (con Baleares lista los 67) + horizonte (2026-2035).
-- **Resultados** (`ResultadosSimulacion.tsx`): pills «Escenario para los indicadores» sobre 4 KpiCards (consumo proyectado + Δ% vs base, consumo base, variación media anual, sensibilidad IPH), ComposedChart Recharts (histórico sólido + proyecciones dashed por escenario + tooltip con banda lo/hi deduplicado — Area y Line comparten dataKey), tabla municipal completa con pills de escenario y columna Isla cuando el ámbito es Baleares. ~~Ranking top/bottom 5~~ eliminado (2026-09, redundante): la tabla de detalle es **ordenable por columnas** (click en header, ▲/▼, default Δ% desc).
+- **Resultados** (`ResultadosSimulacion.tsx`): pills «Escenario para los indicadores» sobre 4 KpiCards (consumo proyectado + Δ% vs base, consumo base, variación media anual, sensibilidad población), ComposedChart Recharts (histórico sólido + proyecciones dashed por escenario + tooltip con banda lo/hi deduplicado — Area y Line comparten dataKey), tabla municipal completa con pills de escenario y columna Isla cuando el ámbito es Baleares. ~~Ranking top/bottom 5~~ eliminado (2026-09, redundante): la tabla de detalle es **ordenable por columnas** (click en header, ▲/▼, default Δ% desc).
 - **Mock**: `PUBLIC_SIMULACION_MOCK=true` → `web/src/lib/simulacionMock.ts` (opt-in para desarrollo sin API; el historico es real vía `fetchAbastecimiento`; soporta Baleares). Elasticidades reales cableadas. `ESCENARIO_COLORS` 5 colores (igual que el backend).
 - **API real (implementada 2026-08-30, Baleares 2026-08-31)**: `GET /api/v1/simulacion/consumo?isla=&municipio=&hasta=&escenarios=<json>` en `api/routers/simulacion.py` + `api/simulacion_service.py`. `isla=Baleares` = 67 municipios y serie suma anual. Colores por índice (5).
   - Carga en startup (lifespan, `asyncio.to_thread`) los 67 modelos joblib de `models/municipio/` + `metadata.json` + `elasticidades.json` (volumen `../../models:/opt/models:ro` en fastapi). Sin modelos → 503 claro.
@@ -543,6 +546,74 @@ notebooks/
 - **Fórmula** (fiel al DAG `balance_hidrico_baleares`): `extracción(t) = extracción_base + Σ_mun (consumo_proy − consumo_base) × peso`, con los **pesos normalizados** de `municipio_masa_subterranea` (> 0, misma normalización que el DAG). El **slider de lluvia escala la infiltración** y las salidas climáticas (torrentes/manantiales × 1+lluvia_pct); el resto de componentes se mantienen en el valor de la última fila del balance ≤ base_anio. `disponibilidad = max((suma_entradas − intrusión) − (salida_mar + salida_zzhh), 0)`; explotación y estado DMA con los mismos umbrales (0.8/1.0). Año base = observado sin escalar.
 - **Respuesta**: por escenario, serie anual de conteos DMA + extracción/disponibilidad totales (con el año base como referencia) y `masas_cambio` (solo las que cambian de estado en `hasta`, empeoran primero). `n_masas` del ámbito (74 con balance, última fila ≤ base) + `nota` (Formentera sin mapping municipio→masa; municipio sin masas).
 - **UI** (`ResultadosSimulacion.tsx`, sección "Impacto en el balance hídrico" **antes de "Detalle por municipio"** (2026-09), escenario activo): 4 KPIs (masas en mal estado Δ vs base, masas con cambio de estado, extracción total Δ%, disponibilidad total Δ%), BarChart apilado bueno/riesgo/malo por año, tabla de masas con cambio (chips DMA + explotación/extracción base→proy). EmptyState si el ámbito no tiene masas con balance. El shell pide `/consumo` y `/balance` en `Promise.all` con el mismo debounce (un solo loading). Mock con bloque balance sintético.
+
+### Revisión del simulador urbano (2026-09-12)
+
+**Hallazgos experimentales** (contra la API de producción + análisis reproducidos en `notebooks/21_ablacion_features.ipynb`):
+
+1. **Los sliders apenas movían**: ocupación +50 % → +0,40 % del consumo final; IPH +50 % → +4,59 %; lluvia +50 % → −0,84 % (elasticidades antiguas 0,093 / 0,008 / −0,017, medidas con los modelos de evaluación y perturbación a una cola).
+2. **La proyección es una línea plana**: la recursión no propaga nada (ratio escenario/tendencial constante ≈ 1,0183 todos los años). Los GB son piecewise-constant y con 6 filas de train por municipio no aportan dinámica: el "método híbrido" equivale a **nivel congelado × (1+δ)**.
+3. **Censo (palanca nueva)**: OLS en niveles `consumo_hm3 ~ población` (67 municipios, censo 2024/2025, 134 obs) → pendiente 0,0710 hm³/1000 hab, R² = 0,93, per cápita mediana ≈ 177 L/hab/día, elasticidad en la media `b·x̄/ȳ` = 0,79 (0,81 en el análisis original). El slider de censo queda respaldado con datos reales; alternativa de planificación ~1,0 documentada en `censo_origen`.
+4. **Ocupación**: regresión pooled con efectos fijos municipio+año (26 municipios, 2008-2024, 442 obs) → β = −0,005 ± 0,005 hm³/punto (**NO significativo**). La correlación temporal intra-municipio (+0,57) era tendencia común, no efecto causal: la ocupación hotelera anual no mueve el consumo anual de forma identificable.
+
+**Ablación de features** (notebook 21, protocolo exacto de `include/ml/entrenar.py`; la réplica del panel reproduce el MAPE de producción 8,685 %):
+
+| Config | MAPE | Δ vs prod | Decisión |
+|---|---|---|---|
+| full (prod, `iph_media`+`iph_max`) | 8,685 | — | — |
+| sin `iph_max` | 8,863 | +0,18 pp | ✅ se elimina (redundante, \|r\|>0,85) |
+| sin IPH (ambos) | 10,503 | +1,82 pp | ❌ el IPH se conserva |
+| sin IPH y sin ocupación | 12,255 | +3,57 pp | ❌ la ocupación se conserva como feature |
+
+**Features finales**: `anio, iph_media, ocupacion_media, lluvia_anual_mm, lag1` (IPH fusionado en un único factor).
+
+**Diseño final del simulador**:
+- **Palancas**: **población (censo, e = 0,81)**, IPH (e ≈ 0,43) y lluvia (e ≈ −0,017; su efecto real es el balance hídrico). **Ocupación fuera de la UI y del delta** (no se inventa sensibilidad); la feature se conserva porque el modelo la usa para predecir (quitarla cuesta +3,57 pp).
+- **Elasticidades con higiene**: perturbación **simétrica ±10 %** (diferencia central), medidas con los **modelos de producción** (los que se sirven) en la **fila base**, punto de aplicación del escenario, y con flag de turismo real. Se calculan en el DAG (`include/ml/entrenar.py`) y viajan en el bundle (`elasticidades.json` con `nota` + `censo_origen`).
+- **Método híbrido saneado**: la proyección central es un **shift estático** sobre el nivel congelado; la **banda lo/hi** (±MAPE por municipio, +3 pp/año de horizonte) es el único elemento dinámico. Docstrings y textos de UI alineados con esto.
+- **API**: `escenarios` acepta `iph_pct`, `censo_pct` y `lluvia_pct`; `ocupacion_pct` se tolera por compatibilidad pero se ignora. KPI de sensibilidad del frontend pasa a población.
+- **Producción**: versión **`20260912T201830Z`** (MAPE 8,863; 5 features; e_iph 0,427; e_censo 0,81) publicada por el DAG `modelo_consumo_urbano` (guardrail MAPE OK). Rollback = reactivar la versión anterior en `ml.model_versions` + reiniciar FastAPI.
+- ⚠️ Ese mismo día se adoptó el **target per cápita** (siguiente apartado): la versión vigente es `20260912T210828Z` (MAPE 7,95; e_iph 0,275).
+
+### Target per cápita y población (2026-09-12, tarde)
+
+**Hipótesis**: añadir la población municipal como feature mejora el modelo. **Resultado** (notebook 22,
+protocolo exacto de `entrenar.py`): como **feature de entrada empeora** (8,863 → 9,865; +1,00 pp:
+colisiona con `anio`/`lag1` en un modelo de 6 filas por municipio). Como **target per cápita**
+(predecir `consumo/población` y reconstruir × población) **mejora de forma significativa**.
+
+| Variante (holdout recursivo 2022-2024) | MAPE | Δ |
+|---|---|---|
+| base (target hm³) | 8,863 | — |
+| **per cápita, población congelada en año base** (réplica de producción) | **7,948** | **−0,92 pp** |
+| per cápita con población real de test (cota optimista) | 7,587 | −1,28 pp |
+
+- Mejora en **43/67 municipios**; mediana −0,84 pp; **Wilcoxon p = 0,002**. Walk-forward 2021-24:
+  −0,21 / −1,06 / −0,24 / **+0,16** (gana 3 de 4 años). El backtest de producción reproduce exactamente
+  esas ventanas (6,1 / 5,4 / 6,1 / 6,4) sin degradación.
+- Empeora en municipios pequeños/turísticos (Formentera +5,2, Banyalbufar +4,5, Valldemossa +3,8,
+  Deià +3,7) y mejora en los grandes (>3000 hab: −1,01 pp de media). Desglose completo en el notebook 22.
+- Bajo per cápita se mantienen las features (IPH +2,4 pp si se quita; ocupación +1,6 pp; `anio` aporta poco).
+  Elasticidades vigentes (prod, fila base, simétrico ±10 %): **iph 0,275**, ocupación 0,060 (solo
+  municipios con turismo; informativa, sin palanca en la UI), lluvia −0,026.
+
+**Datos**: el censo continuo solo cubría 2021-2025 (insuficiente para el train 2016+), así que se
+**repuntó la ingesta existente** al **padrón municipal IBESTAT** (`000001A_000001`, 1998-2025, 67
+municipios) manteniendo tabla, DAG y upsert (`gold.censo_municipal_baleares` conserva el nombre).
+Padrón vs censo difieren ~0,65 % de mediana (máx 3,2 %); los endpoints de analytics siguen OK.
+
+**Cambios de producción**:
+- `include/ml/panel.py`: `poblacion` (padrón) como columna **no-feature**; `FEATURES` intacto.
+- `include/ml/entrenar.py`: target `consumo/población`; lag `lag1_pc`; evaluación recursiva con población
+  congelada; metadata `target_transform: per_capita` + `features_modelo` + `poblacion_base` por municipio;
+  elasticidades sobre el modelo per cápita. `backtest.py` con el mismo protocolo.
+- `api/simulacion_service.py`: ramifica por `target_transform` (compatible con bundles antiguos: sin el
+  campo se mantiene el camino hm³); normaliza el lag por población base y reescala la predicción.
+  `/version` expone `target_transform`.
+- **La palanca de censo no cambia**: sigue siendo el coeficiente externo **0,81** (OLS), no el escalado
+  estructural; el target per cápita mejora el baseline, no la semántica del slider.
+- DAG `modelo_consumo_urbano`: +Asset `pladi://gold/censo_municipal_baleares` en el `AssetAny`; el DAG del
+  censo ya devuelve Asset. **Versión vigente `20260912T210828Z`** (MAPE 7,95). Frontend: hint IPH a +2,7 %.
 
 ---
 
@@ -569,8 +640,8 @@ notebooks/
 ### Retrain en producción (Airflow)
 
 - `docker/airflow/requirements.txt`: + `scikit-learn`, `joblib` (rebuild de la imagen `pladi-airflow`).
-- **`include/ml/`**: `panel.py` (tablón desde golds, réplica exacta del notebook 08), `entrenar.py` (67 GBM + holdout 2022+ + reentrenado producción + elasticidades ±10% del notebook 14), `publicar.py` (bundle + manifest + registry), `backtest.py` (walk-forward del notebook 20), `registry.py` (DDL idempotente).
-- **DAG `modelo_consumo_urbano`**: `schedule=AssetAny(abastecimiento_urbano_baleares, presion_humana, ocupacion_turistica, lluvia_masa_subterranea)` + trigger manual. **Guardrail**: no publica si `mape_holdout > mape_activa + 2pp` (aborta antes de subir nada; el fallo del DAG es la alerta). Para esto, los golds DGRH/IPH/ocupación ahora **devuelven `Asset`** desde su último task (patrón de `lluvia_masa_subterranea`; URIs `pladi://gold/...`).
+- **`include/ml/`**: `panel.py` (tablón desde golds, réplica exacta del notebook 08, con `poblacion` como columna no-feature), `entrenar.py` (67 GBM con **target per cápita** + holdout 2022+ + reentrenado producción + elasticidades simétricas ±10% medidas con los modelos de producción en la fila base — revisiones 2026-09-12), `publicar.py` (bundle + manifest + registry), `backtest.py` (walk-forward del notebook 20, mismo protocolo per cápita), `registry.py` (DDL idempotente).
+- **DAG `modelo_consumo_urbano`**: `schedule=AssetAny(abastecimiento_urbano_baleares, presion_humana, ocupacion_turistica, lluvia_masa_subterranea, censo_municipal_baleares)` + trigger manual. **Guardrail**: no publica si `mape_holdout > mape_activa + 2pp` (aborta antes de subir nada; el fallo del DAG es la alerta). Para esto, los golds DGRH/IPH/ocupación/población ahora **devuelven `Asset`** desde su último task (patrón de `lluvia_masa_subterranea`; URIs `pladi://gold/...`).
 - **DAG `modelo_seed`** (`@once`): sube los `models/` actuales como **versión 0** a MinIO + fila active (bootstrap único; modelos montados ro en los 4 servicios de airflow).
 - **DAG `modelo_backtest`** (mismo `AssetAny`): walk-forward anual (ventanas 2021+) → `ml.backtests`; **falla si alguna ventana degrada** (MAPE > holdout × 1,5) → DAG rojo = alerta.
 
