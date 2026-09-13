@@ -381,7 +381,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 - **Charts**: Recharts 3 — theming dark/light vía nanostores.
 - **RangoTemporal** (presets Todo/Últimos 5/Últimos 10 + desde/hasta, client-side): en Infiltrada (el toggle AH anula el rango), Balance (solo sección evolución), Abastecimiento, Presión y Ocupación (con modo **comparativa interanual**).
 - **DashboardBalance** en 2 secciones: "Situación actual" (último año disponible: disponibilidad con tooltip ℹ️ de la fórmula, explotación % coloreada DMA, diferencia vs RP, estado + **desglose entradas/salidas** con barras apiladas y tabla de componentes) y "Evolución temporal" (rango + charts con umbrales 0.8/1.0 + ranking del año `hasta`).
-- **Contexto desde el mapa** ("Más detalle"): `/dashboards?vista=balance&nivel=masa&masa=X` (masa), `/dashboards?vista=abastecimiento&municipio=X` (municipio). Los presets se aplican **solo a la vista destino** y no persisten al navegar manualmente.
+- **Contexto desde el mapa** ("Más detalle"): `/dashboards?vista=balance&nivel=masa&masa=X&isla=Y` (masa), `/dashboards?vista=balance&nivel=ud&ud=X&isla=Y` (UD) y `/dashboards?vista=general&municipio=X&isla=Y` (municipio, filtrado en Visión general). El `isla` se aplica al shell antes de montar los hijos (`presetsReady`). Los presets se aplican **solo a la vista destino** y no persisten al navegar manualmente.
 - Componentes: `web/src/components/dashboards/` (DashboardsShell, DashboardGeneral, DashboardInfiltrada, DashboardBalance, DashboardAbastecimiento, DashboardPresion, DashboardOcupacion, ui.tsx).
 - Visión general: infiltración AH **total del ámbito** (suma), masas en déficit sin chip duplicado, ocupación Baleares = media de islas.
 
@@ -392,7 +392,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
   - Municipio: población + variación (chip gris), consumo, ocupación del mes consolidado, infiltración AH de sus masas, pozos; sparkline ocupación 12 meses
   - Pozo: ficha + "Ver masa"
   - U.D.: KPIs de sus masas + **bloque balance** (chips DMA) + listado de masas clicable
-- CTA "Más detalle": masa → vista balance; municipio → vista abastecimiento.
+- CTA "Más detalle": masa → vista balance; UD → vista balance (nivel=ud); municipio → vista general. Siempre con `&isla=` del ámbito de la entidad.
 - **Capas masas/UDs coloreadas siempre por estado DMA** (bueno verde, riesgo ámbar, malo rojo, sin dato neutro) + **leyenda** en el panel de capas.
 - **Tooltips** con el nombre en hover; **clustering de pozos** (Leaflet.markercluster CDN, `disableClusteringAtZoom: 10`, spiderfy); zoom inicial 9.
 - **Masas sin balance en gris (2026-09-04)**: `dmaStyleFor` devuelve gris `#71717a` cuando no hay `estado_cuantitativo` (masas) o `explotacion_porcentaje` (UDs) — antes caían al azul por defecto y contradecían la leyenda.
@@ -438,6 +438,14 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 - **Leyendas de charts**: componente `ChartLegend` (`ui.tsx`, pills con punto de color/línea/discontinua + nombre) sustituye al `<Legend>` de Recharts en Infiltrada, Abastecimiento, Presión (agrupando IPH sólido + población discontinua por isla), Ocupación, Balance (con umbrales 0.8/1.0) y ResultadosSimulacion (histórico + escenarios; barras de estado).
 - **Fix filtros cruzados**: al cambiar de isla se resetea el filtro de municipio/masa/UD en los 5 dashboards (patrón `useRef` de isla previa, sin pisar los presets del "Más detalle").
 - **Navbar**: el estado activo se pinta en el SSR con `path={Astro.url.pathname}` desde cada página (antes el HTML inicial marcaba siempre "Inici" hasta hidratar React). Normalización de `/index.html` y barra final en `Navbar.tsx`. Estilo activo azul más marcado.
+
+### Navegación con isla, foco Leaflet y ocupación turística (2026-09-13)
+
+- **"Más detalle" con contexto de isla**: el drawer añade `&isla=` (de `kpis.isla`) y `DashboardsShell` la aplica con `dashIsla.set` y monta los hijos solo cuando los presets están listos (`presetsReady`) — antes el guard de isla borraba el filtro recién aplicado y se lanzaban peticiones espurias (p. ej. `/resumen` de la vista general antes de saltar a balance). Nuevo CTA de **UD** (`nivel=ud`, infraestructura ya existente). En `KpiMap`, clic en municipio **filtra en sitio** (callback `onMunicipioClick`) y clic en masa navega a balance conservando la isla.
+- **Cuadrado negro al clicar entidades (Leaflet)**: Chrome enfoca el `<path>` clicado y pinta el anillo de foco del navegador como rectángulo alrededor de la entidad; anulado con `.leaflet-interactive:focus { outline: none }`. ⚠️ Hallazgo: `web/src/styles/global.css` **no se importaba en ninguna página** — todo su CSS era código muerto (tooltips Leaflet, popups, `:focus-visible`, `no-scrollbar`, leyendas móviles). Ahora se importa en `MainLayout.astro` (sin directivas `@tailwind`, que las inyecta `@astrojs/tailwind` vía `base.css`).
+- **Ocupación del `resumen` con ventana propia**: el modo municipio usaba el último mes **global** de `gold.ocupacion_turistica` (2026-07), y Maó/Sant Lluís no lo tienen (IBESTAT lo marca `U` = baja fiabilidad, sin valor) → KPI «—» en Visión general. Ahora municipio e isla usan su **último mes con datos** (Maó 66,5 % · 2026-06; Sant Lluís 72,0 % · 2026-06; Ciutadella 79,2 % · 2026-07). Baleares mantiene el mes global consolidado (media de islas).
+- **Bugs de la vista Ocupación turística**: `GET /analytics/ocupacion/ranking` devolvía **500** con `tipo` y sin `isla` (placeholders `$2`/`$3` fijos con parámetros no ligados; Baleares + Hotelera/Apartamentos ocultaba el ranking) → placeholders dinámicos. `DashboardOcupacion` mostraba **spinner infinito** a 0 filas (sin estado `loading`) → Spinner solo al cargar y `EmptyState` compartido en `ui.tsx` con claves i18n `dash.ocup.empty(_sub)`.
+- **Nota de fuente**: IBESTAT (`000060A_000006`, «municipios turísticos») **no publica apartamentos de Maó** (0 filas) y Sant Lluís deja de publicarlos desde 2025-10 (`U`, valor vacío); 15 municipios tienen apartamentos y 26 hoteles. La fuente publica los municipios turísticos con actividad, no los 67.
 
 ---
 

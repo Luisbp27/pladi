@@ -217,10 +217,13 @@ export default function Drawer() {
   }, [$drawerOpen, tipo, cod]);
 
   const irADetalle = (t: string, c: string, n: string) => {
+    const islaQS = kpis?.isla ? `&isla=${encodeURIComponent(String(kpis.isla))}` : '';
     if (t === 'masa') {
-      window.location.href = `/dashboards?vista=balance&nivel=masa&masa=${encodeURIComponent(c)}&nombre=${encodeURIComponent(n)}`;
+      window.location.href = `/dashboards?vista=balance&nivel=masa&masa=${encodeURIComponent(c)}&nombre=${encodeURIComponent(n)}${islaQS}`;
     } else if (t === 'municipio') {
-      window.location.href = `/dashboards?vista=abastecimiento&municipio=${encodeURIComponent(c)}&nombre=${encodeURIComponent(n)}`;
+      window.location.href = `/dashboards?vista=general&municipio=${encodeURIComponent(c)}&nombre=${encodeURIComponent(n)}${islaQS}`;
+    } else if (t === 'ud') {
+      window.location.href = `/dashboards?vista=balance&nivel=ud&ud=${encodeURIComponent(c)}&nombre=${encodeURIComponent(n)}${islaQS}`;
     }
   };
 
@@ -525,7 +528,7 @@ export default function Drawer() {
           </div>
 
           {/* CTA */}
-          {!loading && kpis && (kpis.tipo === 'masa' || kpis.tipo === 'municipio') && (
+          {!loading && kpis && (kpis.tipo === 'masa' || kpis.tipo === 'municipio' || kpis.tipo === 'ud') && (
             <button
               onClick={() => irADetalle(tipo, cod, nombre)}
               className="w-full py-2.5 px-3 text-[12px] font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-xl transition-colors cursor-pointer"

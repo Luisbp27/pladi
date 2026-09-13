@@ -234,6 +234,8 @@ export const dict = {
   'dash.ocup.ranking_sub': 'Año {a} · ocupación media',
   'dash.ocup.solo_munis': 'Solo se muestran municipios con datos de ocupación turística.',
   'dash.ocup.n_meses': '{n} meses',
+  'dash.ocup.empty': 'Sin datos de ocupación para este filtro.',
+  'dash.ocup.empty_sub': 'IBESTAT solo publica ocupación de los municipios turísticos, y no todos tienen datos de apartamentos.',
 
   'simul.titulo': 'Simulación',
   'simul.escenario_n': 'Escenario {n}',

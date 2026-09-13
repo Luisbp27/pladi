@@ -236,6 +236,8 @@ export const dict: Record<ClaveI18n, string> = {
   'dash.ocup.ranking_sub': 'Any {a} · ocupació mitjana',
   'dash.ocup.solo_munis': "Només es mostren municipis amb dades d'ocupació turística.",
   'dash.ocup.n_meses': '{n} mesos',
+  'dash.ocup.empty': "Sense dades d'ocupació per a aquest filtre.",
+  'dash.ocup.empty_sub': "IBESTAT només publica ocupació dels municipis turístics, i no tots tenen dades d'apartaments.",
 
   'simul.titulo': 'Simulació',
   'simul.escenario_n': 'Escenari {n}',

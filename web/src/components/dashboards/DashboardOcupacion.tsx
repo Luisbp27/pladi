@@ -6,7 +6,7 @@ import {
 import { fetchOcupacion, fetchMunicipios, fetchOcupacionRanking } from '../../lib/api';
 import { meses, useT } from '../../lib/i18n';
 import { dashIsla } from '../../lib/store';
-import { Card, ChartLegend, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
+import { Card, ChartLegend, EmptyState, ErrorBox, RangoTemporal, SearchSelect, Spinner, useIsDark, type Rango, type SelectOption } from './ui';
 
 interface OcupRow {
   anio: number;
@@ -28,6 +28,7 @@ export default function DashboardOcupacion() {
   const [comparativa, setComparativa] = useState<boolean>(false);
   const [municipios, setMunicipios] = useState<SelectOption[]>([]);
   const [rows, setRows] = useState<OcupRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [ranking, setRanking] = useState<
     { nombre_municipio: string; isla: string; ocupacion_media_pct: number | null; meses_con_datos: number }[]
   >([]);
@@ -58,6 +59,7 @@ export default function DashboardOcupacion() {
   useEffect(() => {
     let alive = true;
     setErr('');
+    setLoading(true);
     fetchOcupacion({
       isla: islaParam,
       municipio: municipio || undefined,
@@ -83,7 +85,10 @@ export default function DashboardOcupacion() {
         const all = [...byKey.values()].sort((a, b) => (a.anio - b.anio) * 12 + (a.mes - b.mes));
         setRows(all);
       })
-      .catch((e) => alive && setErr(String(e)));
+      .catch((e) => alive && setErr(String(e)))
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
     return () => {
       alive = false;
     };
@@ -192,8 +197,10 @@ export default function DashboardOcupacion() {
           </div>
         }
       >
-        {rows.length === 0 ? (
+        {loading ? (
           <Spinner />
+        ) : rowsFiltrados.length === 0 ? (
+          <EmptyState text={t('dash.ocup.empty')} sub={t('dash.ocup.empty_sub')} />
         ) : comparativa ? (
           <>
             <ResponsiveContainer width="100%" height={320}>

@@ -159,6 +159,20 @@ export function Spinner() {
   );
 }
 
+export function EmptyState({ text, sub }: { text: string; sub?: string }) {
+  return (
+    <div className="rounded-xl border border-dashed border-zinc-300/70 dark:border-zinc-700/70 bg-zinc-50/50 dark:bg-zinc-900/30 p-6 flex flex-col items-center justify-center gap-1.5 text-center min-h-[140px]">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" opacity="0.4" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <p className="text-[12px] font-medium text-zinc-500 dark:text-zinc-400">{text}</p>
+      {sub && <p className="text-[11px] text-zinc-400 dark:text-zinc-600 max-w-md leading-snug">{sub}</p>}
+    </div>
+  );
+}
+
 export function ErrorBox({ msg }: { msg: string }) {
   return (
     <div className="py-8 text-center text-xs text-rose-500 bg-rose-500/5 rounded-xl">
