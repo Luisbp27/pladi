@@ -447,6 +447,11 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 - **Bugs de la vista Ocupación turística**: `GET /analytics/ocupacion/ranking` devolvía **500** con `tipo` y sin `isla` (placeholders `$2`/`$3` fijos con parámetros no ligados; Baleares + Hotelera/Apartamentos ocultaba el ranking) → placeholders dinámicos. `DashboardOcupacion` mostraba **spinner infinito** a 0 filas (sin estado `loading`) → Spinner solo al cargar y `EmptyState` compartido en `ui.tsx` con claves i18n `dash.ocup.empty(_sub)`.
 - **Nota de fuente**: IBESTAT (`000060A_000006`, «municipios turísticos») **no publica apartamentos de Maó** (0 filas) y Sant Lluís deja de publicarlos desde 2025-10 (`U`, valor vacío); 15 municipios tienen apartamentos y 26 hoteles. La fuente publica los municipios turísticos con actividad, no los 67.
 
+### Fixes del dashboard de balance (2026-09-15)
+
+- **Barras del desglose cortas**: Recharts 3.10 activa `niceTicks: 'auto'` por defecto y `combineAxisDomainWithNiceTicks` **extiende el dominio del eje hasta el último tick redondo** (`max(domainMax, maxFromTicks)`). En el eje X oculto del desglose (`GrupoDesglose`, `DashboardBalance.tsx`) el dominio superaba el total del stack: Son Real entradas 13,72 → ticks 0/4/8/12/**16** (barra al 85,8 %); Baleares entradas 405,94 → ticks hasta **600** (barra al 67,7 %). FIX: `domain={[0, 'dataMax']}` + `niceTicks="none"` en el `XAxis` (el dominio del stack ya es `[0, total]`; con dominio fijo los ticks se generan dentro — verificado: `getTickValuesFixedDomain` no lo extiende). Verificación runtime (Chromium headless contra el build): barras al **100 %** del ancho en Baleares, Son Real y Port d'Andratx.
+- **Eje Y del índice de explotación**: dominio automático variable (p. ej. `[0, 0.8]` con datos 0,45–0,61) dejaba la `ReferenceLine` de 1.0 fuera del eje. FIX: `domain={[0, (dataMax) => Math.max(1, dataMax)]}` en el `YAxis` → mínimo **0–1 siempre** y crece con masas sobreexplotadas (Son Real 108,9 · 2015; Port d'Andratx 14,4 · 2024). Ticks redondos intactos (0 / 0,25 / 0,5 / 0,75 / 1).
+
 ---
 
 ## Balance hídrico simplificado (DMA) — ✅ 2026-08-15
