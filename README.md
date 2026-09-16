@@ -200,6 +200,8 @@ memoria.md      Memoria técnica del proyecto (arquitectura, decisiones, bugs)
 
 Datos de la Direcció General de Recursos Hídrics del Govern de les Illes Balears (DGRH), AEMET, IBESTAT, IDEIB y Open-Meteo — datos públicos de sus respectivos organismos. Tiles base de CARTO y librería Leaflet.
 
+El proyecto tiene una finalidad exclusivamente **académica y educativa**: no constituye un servicio oficial ni una herramienta de decisión.
+
 ## Licencia
 
 MIT — ver [LICENSE](LICENSE).
