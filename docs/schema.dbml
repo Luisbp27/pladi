@@ -143,6 +143,94 @@ Table municipio_masa_subterranea {
 
 // ── GOLD ──────────────────────────────────────────────────────────────────
 
+Table gold.abastecimiento_urbano_baleares {
+  cod_municipio varchar(5) [ref: > municipio.cod_municipio]
+  nombre_municipio text
+  cod_provincia varchar(3) [ref: > provincia.cod_provincia]
+  nombre_provincia text
+  anio int
+  subterranea_hm3 double
+  desalinizada_hm3 double
+  indiferenciada_hm3 double
+  superficial_hm3 double
+  potabilizada_hm3 double
+  rechazo_hm3 double
+  otros_destinos_hm3 double
+  total_suministrado_hm3 double
+  consumo_hm3 double
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_municipio, anio) [pk, name: "pk_abastecimiento_urbano"]
+  }
+}
+
+Table gold.censo_municipal_baleares {
+  cod_provincia_ine varchar(3) [ref: > provincia.cod_provincia]
+  nombre_provincia text
+  cod_municipio_ine varchar(5) [ref: > municipio.cod_municipio]
+  nombre_municipio text
+  anio int
+  poblacion bigint
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_municipio_ine, anio) [pk, name: "pk_censo_municipal_baleares"]
+    anio [name: "idx_censo_baleares_anio"]
+  }
+}
+
+Table gold.presion_humana {
+  cod_provincia_ine varchar(3)
+  nombre_provincia text
+  nombre_isla text
+  anio int
+  mes int
+  iph bigint
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (nombre_isla, anio, mes) [pk, name: "pk_presion_humana"]
+    (anio, mes) [name: "idx_iph_anio_mes"]
+  }
+}
+
+Table gold.ocupacion_turistica {
+  cod_provincia_ine varchar(3) [ref: > provincia.cod_provincia]
+  nombre_provincia text
+  cod_municipio_ine varchar(5) [ref: > municipio.cod_municipio]
+  nombre_municipio text
+  anio int
+  mes int
+  tipo_alojamiento text [note: 'hotelera | apartamentos']
+  ocupacion_plazas_pct double
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_municipio_ine, anio, mes, tipo_alojamiento) [pk, name: "pk_ocupacion_turistica"]
+    (anio, mes) [name: "idx_ocupacion_anio"]
+  }
+}
+
+Table gold.lluvia_masa_subterranea {
+  cod_masa text [ref: > masa_subterranea.cod_masa]
+  anio int
+  mes int
+  precipitacion_mm double
+  fuente text [note: 'aemet | openmeteo']
+  created_at timestamptz [default: `now()`]
+  updated_at timestamptz [default: `now()`]
+
+  indexes {
+    (cod_masa, anio, mes) [pk, name: "pk_lluvia_masa"]
+    (anio, mes) [name: "idx_lluvia_anio_mes"]
+  }
+}
+
 Table gold.agua_infiltrada_masa_subterranea {
   cod_masa text [ref: > masa_subterranea.cod_masa]
   anio int
@@ -200,7 +288,7 @@ Table ml.model_versions {
   mape_por_municipio jsonb [note: '{cod_municipio: mape %}']
   features jsonb
   params jsonb
-  elasticidades jsonb [note: '{iph, ocupacion, lluvia}']
+  elasticidades jsonb [note: '{iph, ocupacion, lluvia, censo}']
   base_anio int [note: 'ultimo anio de entrenamiento']
   train_desde int
   test_start int

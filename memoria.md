@@ -21,48 +21,69 @@ pladi/
 │   ├── main.py                   # App + lifespan + CORS + routers
 │   ├── config.py                 # Settings via pydantic-settings
 │   ├── database.py               # Pool asyncpg + fetch_geojson_feature_collection()
-│   ├── routers/
-│   │   └── mapa.py               # GET /api/v1/mapa/{capas,masas,pozos,municipios,unidades-demanda}
-│   └── schemas/                  # Pydantic models (futuro)
-├── web/                          # App Astro 5 (FASE II — en desarrollo)
+│   ├── model_store.py            # Resolución/descarga de bundles ML (registry + MinIO)
+│   ├── simulacion_service.py     # Carga de modelos joblib + proyección de escenarios
+│   ├── balance_service.py        # Matemática del balance hídrico para /simulacion/balance
+│   └── routers/
+│       ├── mapa.py               # GET /api/v1/mapa/{capas,masas,pozos,municipios,unidades-demanda}
+│       ├── analytics.py          # GET /api/v1/analytics/* (dashboards)
+│       └── simulacion.py         # GET /api/v1/simulacion/{consumo,balance,version}
+├── web/                          # App Astro 5 (FASE II)
 │   ├── astro.config.mjs          # Astro config: react + tailwind
 │   ├── tailwind.config.mjs       # Tailwind 3 + Inter font
+│   ├── public/assets/            # Logo, favicon, OG (servido en /assets/*)
 │   ├── src/
 │   │   ├── layouts/
-│   │   │   └── MainLayout.astro  # Base HTML: Inter, dark theme
+│   │   │   └── MainLayout.astro  # Base HTML: Inter, dark theme, i18n inline, global.css
 │   │   ├── components/
-│   │   │   ├── Navbar.astro      # Glass navbar + ThemeSwitcher (light/dark)
-│   │   │   ├── Footer.astro      # Fuentes de datos clickeables + © 2026
+│   │   │   ├── Navbar.tsx        # 🏝️ Island: glass navbar + theme + locale (ca/es)
+│   │   │   ├── Footer.tsx        # 🏝️ Island: fuentes de datos clickeables + © 2026
 │   │   │   ├── MapView.tsx       # 🏝️ React island: Leaflet + tile switching
 │   │   │   ├── LayerPanel.tsx    # 🏝️ React island: panel capas flotante
-│   │   │   ├── Drawer.tsx        # 🏝️ React island: drawer detalle funcional
-│   │   │   └── ThemeSwitcher.tsx # 🏝️ React island: toggle ☀️/🌙
+│   │   │   ├── Drawer.tsx        # 🏝️ React island: drawer detalle + KPIs
+│   │   │   ├── ThemeSwitcher.tsx # 🏝️ React island: toggle ☀️/🌙
+│   │   │   ├── LocaleSwitcher.tsx# 🏝️ React island: pills CA|ES
+│   │   │   ├── dashboards/       # DashboardsShell + 6 vistas + KpiMap + ui.tsx
+│   │   │   └── simulacion/       # SimulacionShell + PanelEscenarios + ResultadosSimulacion
 │   │   ├── pages/
 │   │   │   ├── index.astro       # Mapa fullscreen + panel + drawer
-│   │   │   ├── dashboards.astro  # Placeholder
-│   │   │   └── simulacion.astro  # Placeholder
+│   │   │   ├── dashboards.astro  # Analítica (6 vistas)
+│   │   │   └── simulacion.astro  # Escenarios de consumo + balance
 │   │   ├── lib/
 │   │   │   ├── api.ts            # Cliente FastAPI + metadatos capas
-│   │   │   └── store.ts          # Estado global (nanostores)
+│   │   │   ├── store.ts          # Estado global (nanostores)
+│   │   │   ├── i18n.ts           # t()/useT() + helpers (ca/es)
+│   │   │   ├── i18n/{ca,es}.ts   # Diccionarios (~290 claves, paridad TS)
+│   │   │   └── simulacionMock.ts # Mock opt-in (PUBLIC_SIMULACION_MOCK)
 │   │   └── styles/
-│   │       └── global.css        # Tailwind + Leaflet dark popup
+│   │       └── global.css        # Leaflet, focus, scrollbars (importado en MainLayout)
 ├── data/
 │   ├── postgis_dgrh/             # CSVs de dimensiones (9 tablas)
-│   └── abastecimiento_urbano/
+│   └── abastecimiento_urbano/    # Excel/ODS DGRH por isla
 ├── docker/
 │   ├── .env                      # Variables de entorno globales
-│   ├── docker-compose.yml        # Orquestador raíz (include)
+│   ├── docker-compose.yml        # Orquestador raíz (include) + Caddy
+│   ├── Caddyfile                 # Reverse proxy (SSL + web/dist + /api/*)
 │   ├── postgis/                  # docker-compose + init SQL
 │   ├── minio/                    # docker-compose
-│   ├── airflow/                  # Dockerfile, dags/, plugins/, init
-│   └── fastapi/                  # Dockerfile, requirements.txt
+│   ├── airflow/                  # Dockerfile, dags/, include/, init
+│   ├── fastapi/                  # Dockerfile, requirements.txt
+│   └── jupyter/                  # Dockerfile + requirements (notebooks)
 ├── docs/
 │   └── schema.dbml               # Modelo de datos normalizado (DBML)
+├── notebooks/                    # FASE VII: EDA, baselines, modelos, ablaciones
+├── models/                       # Bundles joblib (gitignored; Release v0.1.0 / registry)
+├── scripts/
+│   └── fetch_models.sh           # Descarga el bundle de modelos de la Release
 ├── sql/
-│   ├── dgrh_bbdd_postgis.sql     # DDL (9 tablas)
-│   └── load_data.sql             # Carga de CSVs con geometrías
+│   ├── dgrh_bbdd_postgis.sql     # DDL dimensiones + gold.abastecimiento
+│   ├── load_data.sql             # Carga de CSVs con geometrías
+│   ├── gold_ibestat.sql          # DDL gold IBESTAT (censo, IPH, ocupación)
+│   ├── gold_lluvia.sql           # DDL gold.lluvia_masa_subterranea
+│   ├── gold_balance.sql          # DDL gold.agua_infiltrada + balance_hidrico
+│   └── ml_registry.sql           # DDL schema ml (model_versions, backtests)
 ├── memoria.md
-└── plan.md
+└── README.md
 ```
 
 ### Base de datos — PostGIS (SRID 4326)
@@ -172,7 +193,7 @@ cd web && npm run build
 
 ---
 
-## Ingestas (FASE III — 🚧 en desarrollo)
+## Ingestas (FASE III — ✅ completada)
 
 ### Arquitectura de datos
 
@@ -189,15 +210,20 @@ MinIO
 
 ```
 docker/airflow/
-├── dags/                                    # 15 DAGs (todos con max_active_runs=1)
-│   ├── setup_buckets.py                     # one-time: estructura de buckets MinIO
+├── dags/                                    # 19 DAGs (todos con max_active_runs=1)
+│   ├── setup_buckets.py                     # one-time: crea el bucket MinIO + prefijos
 │   ├── abastecimiento_urbano_baleares.py    # gold DGRH (4 islas → PostGIS)
 │   ├── aemet_estaciones.py                  # AEMET: estaciones (44 Baleares)
 │   ├── aemet_historico_meteo.py             # AEMET: histórico diario 2015→mes cerrado
 │   ├── dgrh_abastecimiento_urbano_*.py      # ×4 (mallorca/menorca/ibiza/formentera)
 │   ├── ibestat_*.py                         # ×4 (censo/iph/hotelera/apartamentos)
 │   ├── openmeteo_lluvia_masa_subterranea.py # Open-Meteo: lluvia diaria × masa sin estación
-│   └── lluvia_masa_subterranea.py           # gold: fusión AEMET+Open-Meteo mensual × masa
+│   ├── lluvia_masa_subterranea.py           # gold: fusión AEMET+Open-Meteo mensual × masa
+│   ├── agua_infiltrada_masa_subterranea.py  # gold: lluvia × coef. infiltración → m³
+│   ├── balance_hidrico_baleares.py          # gold: modelo DMA anual por masa
+│   ├── modelo_consumo_urbano.py             # retrain 67 GBM + bundle + registry (guardrail)
+│   ├── modelo_backtest.py                   # walk-forward anual → ml.backtests
+│   └── modelo_seed.py                       # @once: bootstrap versión 0 desde models/
 │
 ├── include/                                 # módulos reutilizables
 │   ├── config.py                            # IBESTAT_URLS + paths MinIO + BUCKET
@@ -206,20 +232,26 @@ docker/airflow/
 │   │   └── ibestat.py                       # lector CSV bilingüe IBESTAT
 │   ├── bronze/
 │   │   ├── ibestat.py                       # core: extract() HTTP→MinIO (boto3)
-│   │   └── ibestat_*.py                     # ×4 thin wrappers por dataset
+│   │   ├── ibestat_*.py                     # ×4 thin wrappers por dataset
+│   │   ├── aemet_*.py                       # estaciones + histórico (rate limit 429)
+│   │   └── openmeteo_lluvia_masa_subterranea.py  # archive API (masas sin estación)
 │   ├── silver/
 │   │   ├── ibestat.py                       # helpers: parse_time_period, filter_municipal, enrich_geo, DELTA_STORAGE_OPTIONS
 │   │   ├── dgrh.py                          # helpers: enrich_geo (nombre→cod_municipio + aliases)
 │   │   ├── aemet_estaciones.py              # DMS→decimal + spatial join municipio
 │   │   └── ibestat_*.py / dgrh_*.py         # limpieza específica (Polars → Delta)
-│   └── gold/
-│       ├── abastecimiento_urbano_baleares.py  # DGRH → gold.abastecimiento_urbano_baleares
-│       ├── censo_municipal_baleares.py       # → gold.censo_municipal_baleares
-│       ├── presion_humana.py                # → gold.presion_humana
-│       └── ocupacion_turistica.py           # → gold.ocupacion_turistica
+│   ├── gold/
+│   │   ├── abastecimiento_urbano_baleares.py  # DGRH → gold.abastecimiento_urbano_baleares
+│   │   ├── censo_municipal_baleares.py       # → gold.censo_municipal_baleares
+│   │   ├── presion_humana.py                # → gold.presion_humana
+│   │   ├── ocupacion_turistica.py           # → gold.ocupacion_turistica
+│   │   ├── lluvia_masa_subterranea.py       # fusión AEMET+Open-Meteo → gold.lluvia
+│   │   ├── agua_infiltrada_masa_subterranea.py  # → gold.agua_infiltrada
+│   │   └── balance_hidrico_baleares.py      # modelo DMA → gold.balance_hidrico
+│   └── ml/                                  # panel.py, entrenar.py, publicar.py, backtest.py, registry.py
 │
-├── Dockerfile                               # apache/airflow:3.3.0 + polars + deltalake + boto3
-├── requirements.txt                         # polars, deltalake, boto3, minio, psycopg2-binary
+├── Dockerfile                               # apache/airflow:3.3.0 + polars + deltalake + boto3 + sklearn
+├── requirements.txt                         # polars, deltalake, boto3, minio, psycopg2-binary, sklearn
 └── docker-compose.yml                       # Airflow + postgres + init + dag-processor
 ```
 
