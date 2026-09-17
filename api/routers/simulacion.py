@@ -58,7 +58,9 @@ def _parse_escenarios(raw: str) -> list[dict]:
     for e in escenarios:
         if not isinstance(e, dict) or "id" not in e:
             raise HTTPException(400, "cada escenario necesita id")
-        for k in ("iph_pct", "ocupacion_pct", "lluvia_pct"):
+        # las claves antiguas con ocupacion_pct se aceptan pero se ignoran (no hay
+        # efecto causal identificado de la ocupacion anual sobre el consumo)
+        for k in ("iph_pct", "censo_pct", "lluvia_pct"):
             v = float(e.get(k, 0.0))
             if not -50.0 <= v <= 50.0:
                 raise HTTPException(400, f"{k} fuera de rango [-50%, +50%]")
@@ -125,7 +127,11 @@ async def _serie_historica(isla: str | None, municipio: str | None) -> tuple[lis
 
 
 async def _features_base(base_anio: int) -> dict:
-    """Features congeladas en el ultimo anio observado + consumo base por municipio."""
+    """Features congeladas en el ultimo anio observado + consumo base por municipio.
+
+    `iph_max` se mantiene solo por compatibilidad con bundles antiguos (rollback);
+    el modelo activo (features 2026-09-12) usa unicamente `iph_media` como factor IPH.
+    """
     iph = {
         r["nombre_isla"]: r
         for r in await _q(
@@ -197,7 +203,7 @@ def _proyectar(
     """Prediccion recursiva por municipio y escenario: {esc_id: {cod_municipio: [puntos]}}."""
     out: dict[str, dict[str, list[dict]]] = {}
     for e in escs:
-        pct = {"iph": e["iph_pct"], "ocupacion": e["ocupacion_pct"], "lluvia": e["lluvia_pct"]}
+        pct = {"iph": e["iph_pct"], "censo": e["censo_pct"], "lluvia": e["lluvia_pct"]}
         proy_por_mun: dict[str, list[dict]] = {}
         for m in municipios:
             cod = str(m["cod_municipio"])
@@ -223,7 +229,7 @@ async def consumo(
     municipio: str | None = Query(default=None),
     hasta: int = Query(default=2030),
     escenarios: str = Query(
-        default='[{"id":"tendencial","nombre":"Tendencial","iph_pct":0,"ocupacion_pct":0,"lluvia_pct":0}]'
+        default='[{"id":"tendencial","nombre":"Tendencial","iph_pct":0,"censo_pct":0,"lluvia_pct":0}]'
     ),
 ):
     if not tiene_modelos():
@@ -320,7 +326,7 @@ async def balance(
     municipio: str | None = Query(default=None),
     hasta: int = Query(default=2030),
     escenarios: str = Query(
-        default='[{"id":"tendencial","nombre":"Tendencial","iph_pct":0,"ocupacion_pct":0,"lluvia_pct":0}]'
+        default='[{"id":"tendencial","nombre":"Tendencial","iph_pct":0,"censo_pct":0,"lluvia_pct":0}]'
     ),
 ):
     """Cruce de la simulacion de consumo con el balance hidrico (modelo DMA del gold)."""

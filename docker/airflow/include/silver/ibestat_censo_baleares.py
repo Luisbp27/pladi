@@ -1,4 +1,4 @@
-"""Limpia datos de censo baleares -> MinIO silver/ibestat/."""
+"""Limpia poblacion municipal (padron IBESTAT) -> MinIO silver/ibestat/."""
 from __future__ import annotations
 
 import tempfile
@@ -17,10 +17,11 @@ def clean(source_path: str, **context) -> str:
         client.download_file(BUCKET, source_path, tmp.name)
         df = read_ibestat_csv(tmp.name)
 
+    # Poblacion municipal empadronada (padron IBESTAT 000001A_000001, 1998-2025).
+    # El CSV trae 3 medidas cuantitativas por sexo (poblacion + variaciones anuales):
+    # nos quedamos con la poblacion total (SEXO=_T, MEDIDA=POBLACION_PADRON).
     df = df.filter(pl.col("cod_sexo") == "_T")
-    # Solo la fila total de edad (_T): el CSV trae edades individuales (Y0..Y_GE100)
-    # que sumadas a la fila total duplicarian la poblacion
-    df = df.filter(pl.col("cod_edad") == "_T")
+    df = df.filter(pl.col("cod_medida") == "POBLACION_PADRON")
     df = filter_valid(df)
     df = filter_municipal(df)
 

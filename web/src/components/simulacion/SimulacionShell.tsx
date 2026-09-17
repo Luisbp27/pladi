@@ -25,7 +25,7 @@ interface EscenarioGuardado {
   id: string;
   n: number;
   iph_pct: number;
-  ocupacion_pct: number;
+  censo_pct: number;
   lluvia_pct: number;
 }
 
@@ -54,7 +54,7 @@ function cargar(): Persistido {
             id: e.id,
             n: typeof e.n === 'number' && e.n > 0 ? Math.floor(e.n) : 1,
             iph_pct: clampPct(e.iph_pct),
-            ocupacion_pct: clampPct(e.ocupacion_pct),
+            censo_pct: clampPct(e.censo_pct),
             lluvia_pct: clampPct(e.lluvia_pct),
           }))
       : [];
@@ -175,7 +175,7 @@ export default function SimulacionShell() {
     if (escenarios.length >= MAX_ESCENARIOS) return;
     const id = crypto.randomUUID();
     setEst((s) => ({
-      escenarios: [...s.escenarios, { id, n: counter, iph_pct: 0, ocupacion_pct: 0, lluvia_pct: 0 }],
+      escenarios: [...s.escenarios, { id, n: counter, iph_pct: 0, censo_pct: 0, lluvia_pct: 0 }],
       counter: s.counter + 1,
       visible: { ...s.visible, [id]: true },
     }));

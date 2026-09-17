@@ -15,11 +15,13 @@ Baleares**: datos de DGRH, AEMET, IBESTAT y Open-Meteo, balance hídrico por mas
 de agua, mapa interactivo y simulación del consumo urbano con modelos
 entrenados por municipio.
 
+**Demo en vivo:** [pladi.dadesbalears.es](https://pladi.dadesbalears.es)
+
 ## Funcionalidades
 
 - **Mapa interactivo** de masas de agua subterránea, pozos, municipios y unidades de demanda, coloreadas por estado cuantitativo (DMA) con fichas de detalle por entidad.
 - **Dashboards analíticos** (agua infiltrada, balance hídrico, abastecimiento, presión humana, ocupación turística) con filtros por isla/municipio/masa, comparativas interanuales y mapa de KPIs por municipio.
-- **Simulación** de escenarios (variaciones de IPH, ocupación turística y lluvia) sobre el consumo urbano y el balance hídrico proyectados, con modelos Gradient Boosting entrenados por municipio (MAPE medio 8,7%).
+- **Simulación** de escenarios (variaciones de población empadronada, IPH y lluvia) sobre el consumo urbano y el balance hídrico proyectados, con modelos Gradient Boosting entrenados por municipio (MAPE medio 7,95% en el holdout 2022-2024).
 - **Pipeline de datos medallón** (bronze → silver → gold) orquestado con Airflow: DGRH, AEMET, IBESTAT y Open-Meteo, con encadenamiento event-driven por *assets*.
 - **ML productivizado**: registry de versiones de modelos (PostGIS + MinIO), retrain automatizado con guardrail de calidad y rollback atómico.
 - **i18n** catalán/español y tema claro/oscuro en toda la interfaz.
@@ -58,8 +60,10 @@ entrenados por municipio.
 
 - **Docker** con **Compose ≥ 2.20** (el compose raíz usa `include`)
 - **Node.js ≥ 20** (solo para construir el frontend)
+- **curl** y **unzip** (los usa `scripts/fetch_models.sh`)
 - ~8 GB de RAM y ~10 GB de disco (imágenes Docker + datos)
 - Conexión a internet para las ingestas IBESTAT/AEMET/Open-Meteo (los datos DGRH base ya están en el repo)
+- Una **API key gratuita de AEMET** ([alta de usuario](https://opendata.aemet.es/centrodedescargas/altaUsuario)): sin ella no se puede ejecutar la cadena precipitación → agua infiltrada → balance hídrico (los dashboards de DGRH, IBESTAT y el mapa funcionan igualmente)
 
 ## Puesta en marcha (≈10 minutos)
 
@@ -96,7 +100,7 @@ PostGIS se inicializa solo en el primer arranque: DDL + 9 tablas de dimensiones 
 
 ## Poblar los datos (dashboards con contenido)
 
-Los dashboards leen las tablas `gold.*`, que se rellenan con los DAGs de Airflow. El DAG `setup_buckets` (estructura MinIO) corre solo con `@once`. Para el resto:
+Los dashboards leen las tablas `gold.*`, que se rellenan con los DAGs de Airflow. Empieza siempre por `setup_buckets` (crea el bucket `pladi` de MinIO y los prefijos bronze/silver/gold). Después:
 
 ```bash
 cd docker
@@ -108,12 +112,16 @@ TOKEN=$(curl -s -X POST http://localhost:8080/auth/token \
   -d "{\"username\":\"$AIRFLOW_ADMIN_USER\",\"password\":\"$AIRFLOW_ADMIN_PASSWORD\"}" \
   | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
 
-# Función auxiliar para lanzar un DAG
+# Función auxiliar para lanzar un DAG (Airflow 3 exige logical_date)
 run_dag() {
   curl -s -X POST "http://localhost:8080/api/v2/dags/$1/dagRuns" \
     -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
-    -d "{\"dag_run_id\":\"manual-$(date +%s)\"}" | python3 -c 'import json,sys; print(sys.stdin.read())'
+    -d "{\"dag_run_id\":\"manual-$(date +%s)\",\"logical_date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("dag_run_id") or d, d.get("state", ""))'
 }
+
+# 0. Estructura de MinIO (bucket `pladi` + prefijos) — @once
+run_dag setup_buckets
 
 # 1. Abastecimiento urbano (DGRH) — datos locales del repo, sin internet
 for isla in mallorca menorca ibiza formentera; do
@@ -127,24 +135,24 @@ for dag in ibestat_censo_baleares ibestat_indice_presion_humana \
   run_dag $dag
 done
 
-# 3. Lluvia por masa — sin key: Open-Meteo; con key AEMET: añade también la serie oficial
-run_dag openmeteo_lluvia_masa_subterranea
-#    → dispara la cadena: lluvia_masa_subterranea → agua_infiltrada_masa_subterranea
-#      → balance_hidrico_baleares
-
-# (opcional) AEMET: variable de Airflow con la API key gratuita de aemet.es
+# 3. AEMET — key gratuita obligatoria para la cadena hídrica
 docker compose exec airflow-webserver airflow variables set AEMET_API_KEY <tu_key>
 run_dag aemet_estaciones
 run_dag aemet_historico_meteo
+
+# 4. Lluvia por masa (Open-Meteo, sin key) — requiere el catálogo AEMET del paso 3
+run_dag openmeteo_lluvia_masa_subterranea
+#    → dispara la cadena: lluvia_masa_subterranea → agua_infiltrada_masa_subterranea
+#      → balance_hidrico_baleares
 ```
 
 Progreso en la UI de Airflow: http://localhost:8080 (usuario/clave de `docker/.env`). Las cadenas event-driven corren solas: cada gold se dispara cuando sus fuentes publican su *asset*.
 
-> Nota: si un DAG aparece pausado, despáusalo: `docker compose exec airflow-webserver airflow dags unpause <dag_id>`.
+> Nota: en instalaciones nuevas los DAGs se crean despausados. Si alguno aparece pausado, despáusalo con `docker compose exec airflow-webserver airflow dags unpause <dag_id>` o vía API (`PATCH /api/v2/dags/<dag_id>?update_mask=is_paused` con `{"is_paused": false}`).
 
 ## Modelos de machine learning (para `/simulacion`)
 
-Los 67 modelos (17 MB, gitignored) se distribuyen como **Release de GitHub** y se descargan con un script:
+Los 67 modelos (~1,2 MB comprimidos, gitignored) se distribuyen como **Release de GitHub** y se descargan con un script:
 
 ```bash
 ./scripts/fetch_models.sh            # descarga el bundle de la release v0.1.0
@@ -171,7 +179,8 @@ Todos los servicios bind a `127.0.0.1` salvo Caddy. En un servidor remoto, redir
 
 1. En `docker/.env`: `PLADI_SITE=tu-dominio.com` (Caddy obtiene el certificado Let's Encrypt automáticamente; asegúrate de que el dominio apunte al servidor y de abrir 80/443).
 2. Crea `web/.env.production` con `PUBLIC_PLADI_API_URL=/api/v1` y tu `PUBLIC_CARTO_API_KEY`.
-3. `docker compose up -d --build` desde `docker/`.
+3. Construye el frontend: `cd web && npm ci && npm run build:prod` (genera `web/dist/`, que Caddy monta y sirve).
+4. `docker compose up -d --build` desde `docker/`.
 
 ## Estructura del repositorio
 
@@ -192,13 +201,18 @@ memoria.md      Memoria técnica del proyecto (arquitectura, decisiones, bugs)
 - **El mapa no muestra tiles base**: falta `PUBLIC_CARTO_API_KEY` en `web/.env.production`; añádela y reconstruye con `npm run build:prod`.
 - **`npm run build` sin `build:prod`**: carga `.env.production`, pero si contiene una URL local deja la web apuntando a `localhost:8000` del navegador. Regla: en producción usar **siempre** `npm run build:prod` y comprobar que `grep -r "localhost:8000" web/dist/` no devuelve nada.
 - **PostGIS sin datos**: el init solo corre con el volumen vacío; para reinicializar, borra el volumen (`docker compose down -v postgis`) y vuelve a levantar.
+- **`NoSuchBucket` al ejecutar un DAG**: falta el bucket `pladi` en MinIO → lanza el DAG `setup_buckets` (lo crea si no existe) y reintenta.
+- **Un DAG queda en cola**: está pausado → despáusalos (ver «Poblar los datos»).
 - **Airflow no arranca**: `docker compose logs airflow-init` — debe terminar con `=== Init complete ===` antes de que suban scheduler/webserver.
 - **`/simulacion` devuelve 503**: no hay modelos cargados → `./scripts/fetch_models.sh` + restart de FastAPI.
 - **Certificado en local**: Caddy usa un certificado interno para `localhost`; acepta el aviso del navegador o usa `npm run dev` (4321).
+- **Reproducibilidad a largo plazo**: las imágenes (`minio/minio:latest`, `jupyter/base-notebook:latest`, `caddy:2-alpine`, `postgres:17`) y las dependencias Python (`>=`) no están fijadas; si necesitas congelar el entorno, fija tags y versiones exactas.
 
 ## Datos y atribución
 
 Datos de la Direcció General de Recursos Hídrics del Govern de les Illes Balears (DGRH), AEMET, IBESTAT, IDEIB y Open-Meteo — datos públicos de sus respectivos organismos. Tiles base de CARTO y librería Leaflet.
+
+El proyecto tiene una finalidad exclusivamente **académica y educativa**: no constituye un servicio oficial ni una herramienta de decisión.
 
 ## Licencia
 

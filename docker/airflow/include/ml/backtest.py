@@ -1,8 +1,9 @@
 """Backtest walk-forward del modelo activo (drift monitoring, metodologia del notebook 20).
 
-Entrena con datos < T y evalua el anio T, para T >= 2021 (1 anio hacia adelante,
-lag actualizado recursivamente). Los resultados se escriben en ml.backtests con el
-umbral de degradacion (MAPE del holdout de la version activa x 1.5).
+Entrena con datos < T (target per capita, poblacion congelada en T-1) y evalua el anio T,
+para T >= 2021 (1 anio hacia adelante, lag actualizado recursivamente). Los resultados se
+escriben en ml.backtests con el umbral de degradacion (MAPE del holdout de la version
+activa x 1.5).
 """
 from __future__ import annotations
 
@@ -10,8 +11,8 @@ import numpy as np
 import polars as pl
 from sklearn.ensemble import GradientBoostingRegressor
 
-from include.ml.entrenar import PARAMS, _metricas, _predict_recursivo
-from include.ml.panel import FEATURES, TRAIN_DESDE
+from include.ml.entrenar import FEATURES_MODELO, PARAMS, _con_target_pc, _metricas, _predict_recursivo
+from include.ml.panel import TRAIN_DESDE
 
 UMBRAL_FACTOR = 1.5
 
@@ -31,8 +32,9 @@ def correr(panel: pl.DataFrame) -> list[dict]:
             test = g.filter(pl.col("anio") == t)
             if train.height < 4 or test.height == 0:
                 continue
+            tr = _con_target_pc(train)
             m = GradientBoostingRegressor(**PARAMS)
-            m.fit(train.select(FEATURES).to_numpy(), train["consumo_hm3"].to_numpy())
+            m.fit(tr.select(FEATURES_MODELO).to_numpy(), tr["y_pc"].to_numpy())
             pred = _predict_recursivo(m, train, test)
             filas.append(
                 {

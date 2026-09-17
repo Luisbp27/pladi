@@ -60,26 +60,33 @@ export default function DashboardsShell() {
   const [presetNivel, setPresetNivel] = useState<'masa' | 'ud' | undefined>(undefined);
   const [presetUd, setPresetUd] = useState<string | undefined>(undefined);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ rh: true, turismo: true });
+  // Los hijos solo montan cuando los presets del URL ya están aplicados:
+  // así arrancan con la isla/filtros definitivos (sin carreras con los guards)
+  const [presetsReady, setPresetsReady] = useState(false);
 
   // Presets desde el mapa ("Más detalle"): se leen una sola vez y se limpia la URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const vistaParam = params.get('vista');
+    const islaParam = params.get('isla');
     const masa = params.get('masa');
     const municipio = params.get('municipio');
     const ud = params.get('ud');
     const nivel = params.get('nivel');
-    if (!vistaParam && !masa && !municipio && !ud) return;
 
     if (vistaParam) {
       dashVista.set(vistaParam);
       setPresetTarget(vistaParam);
     }
+    if (islaParam && ['Baleares', ...ISLAS].includes(islaParam)) dashIsla.set(islaParam);
     if (masa) setPresetMasa(masa);
     if (municipio) setPresetMunicipio(municipio);
     if (ud) setPresetUd(ud);
     if (nivel === 'masa' || nivel === 'ud') setPresetNivel(nivel);
-    window.history.replaceState({}, '', window.location.pathname);
+    if (vistaParam || islaParam || masa || municipio || ud) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    setPresetsReady(true);
   }, []);
 
   const goVista = (id: string) => {
@@ -205,22 +212,28 @@ export default function DashboardsShell() {
         </header>
 
         <main className="p-5 max-w-[1400px] mx-auto">
-          {vista === 'general' && <DashboardGeneral />}
-          {vista === 'infiltrada' && (
-            <DashboardInfiltrada masaInicial={vista === presetTarget ? presetMasa : undefined} />
+          {presetsReady && (
+            <>
+              {vista === 'general' && (
+                <DashboardGeneral municipioInicial={vista === presetTarget ? presetMunicipio : undefined} />
+              )}
+              {vista === 'infiltrada' && (
+                <DashboardInfiltrada masaInicial={vista === presetTarget ? presetMasa : undefined} />
+              )}
+              {vista === 'balance' && (
+                <DashboardBalance
+                  nivelInicial={vista === presetTarget ? presetNivel : undefined}
+                  masaInicial={vista === presetTarget ? presetMasa : undefined}
+                  udInicial={vista === presetTarget ? presetUd : undefined}
+                />
+              )}
+              {vista === 'abastecimiento' && (
+                <DashboardAbastecimiento municipioInicial={vista === presetTarget ? presetMunicipio : undefined} />
+              )}
+              {vista === 'presion' && <DashboardPresion />}
+              {vista === 'ocupacion' && <DashboardOcupacion />}
+            </>
           )}
-          {vista === 'balance' && (
-            <DashboardBalance
-              nivelInicial={vista === presetTarget ? presetNivel : undefined}
-              masaInicial={vista === presetTarget ? presetMasa : undefined}
-              udInicial={vista === presetTarget ? presetUd : undefined}
-            />
-          )}
-          {vista === 'abastecimiento' && (
-            <DashboardAbastecimiento municipioInicial={vista === presetTarget ? presetMunicipio : undefined} />
-          )}
-          {vista === 'presion' && <DashboardPresion />}
-          {vista === 'ocupacion' && <DashboardOcupacion />}
         </main>
       </div>
     </div>

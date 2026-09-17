@@ -1,17 +1,23 @@
-"""Entrenamiento del modelo de consumo urbano (replica de los notebooks 11 y 14).
+"""Entrenamiento del modelo de consumo urbano (target per capita).
 
-- 67 GradientBoostingRegressor por municipio (params fijos, random_state=42).
-- Evaluacion: holdout 2022..base_anio con prediccion recursiva (lag actualizado).
-- Modelos de PRODUCCION: reentrenados con el historico completo (train < base_anio+1)
-  para que la proyeccion no extrapole la feature `anio` fuera del rango (los arboles
-  se congelan en la hoja limite). El MAPE documentado es el del holdout.
-- Elasticidades: perturbacion +-10% sobre la mediana de features (notebook 14);
-  ocupacion solo en municipios con turismo.
+- 67 GradientBoostingRegressor por municipio (params fijos, random_state=42) sobre
+  `consumo_hm3 / poblacion` (target per capita, decision 2026-09-12: mejora el MAPE del
+  holdout de 8,863 a 7,948 sin quitar features; poblacion como feature empeoraba +1,0 pp).
+- Evaluacion: holdout 2022..base_anio con prediccion recursiva (lag per capita actualizado)
+  y poblacion CONGELADA en el ultimo anio de train (replica de la proyeccion de produccion).
+- Modelos de PRODUCCION: reentrenados con el historico completo (train < base_anio+1) para
+  que la proyeccion no extrapole la feature `anio` fuera del rango (los arboles se congelan
+  en la hoja limite).
+- Elasticidades (2026-09-12): perturbacion SIMETRICA +-10% (diferencia central) medida con
+  los modelos de PRODUCCION en la fila base (punto de aplicacion del escenario); ocupacion
+  solo en municipios con turismo real. La elasticidad `censo` es un coeficiente externo
+  documentado (OLS, no la estima el arbol).
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import joblib
 import numpy as np
@@ -22,7 +28,22 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from include.ml.panel import FEATURES, TRAIN_DESDE, TEST_START
 
 PARAMS = {"n_estimators": 100, "learning_rate": 0.05, "max_depth": 2, "random_state": 42}
+TARGET_TRANSFORM = "per_capita"
+# El modelo consume el lag en terminos per capita (el target tambien lo es).
+FEATURES_MODELO = [f for f in FEATURES if f != "lag1"] + ["lag1_pc"]
 FEAT_ELAST = [f for f in FEATURES if f not in ("anio", "lag1")]
+
+# Elasticidad censo: coeficiente externo documentado (no la estima el arbol).
+# OLS en niveles consumo_hm3 ~ poblacion con el padron municipal 2024+2025
+# (67 municipios, 134 obs): pendiente 0,071 hm3/1000 hab, R2=0,93, elasticidad en la
+# media b*x/y = 0,79 (0,81 en el analisis original), per capita mediana ~177-184
+# L/hab/dia. Alternativa de planificacion: ~1,0.
+CENSO_ELASTICIDAD = 0.81
+CENSO_ORIGEN = (
+    "OLS niveles consumo_hm3 ~ poblacion (padron municipal 2024+2025, 67 municipios, 134 obs): "
+    "b=0,071 hm3/1000 hab, R2=0,93, elasticidad en la media=0,79 (0,81 en el analisis original); "
+    "alternativa de planificacion ~1,0. Reproducido en notebooks/21 y 22"
+)
 
 
 def _metricas(test: np.ndarray, pred: np.ndarray) -> dict[str, float]:
@@ -35,44 +56,72 @@ def _metricas(test: np.ndarray, pred: np.ndarray) -> dict[str, float]:
     )
 
 
+def _con_target_pc(df: pl.DataFrame) -> pl.DataFrame:
+    """Anade target y lag en terminos per capita (consumo / poblacion)."""
+    return df.with_columns(
+        (pl.col("consumo_hm3") / pl.col("poblacion")).alias("y_pc"),
+        (pl.col("lag1") / pl.col("poblacion")).alias("lag1_pc"),
+    )
+
+
 def _predict_recursivo(model, hist: pl.DataFrame, test: pl.DataFrame) -> list[float]:
+    """Prediccion recursiva per capita con la poblacion congelada en el ultimo anio de `hist`.
+
+    Devuelve hm3 (prediccion per capita x poblacion base) para poder comparar con el target real.
+    """
     if hist.height < 2:
         return [float(hist["consumo_hm3"].mean())] * test.height
-    last = float(hist["consumo_hm3"].to_list()[-1])
+    pob_base = float(hist["poblacion"].to_list()[-1])
+    last_pc = float(hist["consumo_hm3"].to_list()[-1]) / pob_base
     preds: list[float] = []
     for row in test.sort("anio").iter_rows(named=True):
-        x = [float(row[f]) for f in FEATURES]
-        x[FEATURES.index("lag1")] = last
-        p = max(float(model.predict([x])[0]), 0.0)
-        preds.append(p)
-        last = p
+        x = [last_pc if f == "lag1_pc" else float(row[f]) for f in FEATURES_MODELO]
+        p_pc = max(float(model.predict([x])[0]), 0.0)
+        preds.append(p_pc * pob_base)
+        last_pc = p_pc
     return preds
 
 
 def _elasticidad(model, base_row: dict[str, float], f: str, delta: float = 0.10) -> float:
+    """Elasticidad por diferencia central (perturbacion simetrica +-delta) en la fila base."""
     y0 = float(model.predict([list(base_row.values())])[0])
     if y0 == 0.0:
         return 0.0
-    x1 = base_row.copy()
-    x1[f] = x1[f] * (1 + delta)
-    y1 = float(model.predict([list(x1.values())])[0])
-    return ((y1 - y0) / y0) / delta
+    xp = base_row.copy()
+    xp[f] = xp[f] * (1 + delta)
+    xm = base_row.copy()
+    xm[f] = xm[f] * (1 - delta)
+    yp = float(model.predict([list(xp.values())])[0])
+    ym = float(model.predict([list(xm.values())])[0])
+    return ((yp - ym) / y0) / (2 * delta)
 
 
-def _elasticidades(panel: pl.DataFrame, modelos: dict[int, object]) -> dict[str, float]:
+def _elasticidades(panel: pl.DataFrame, modelos: dict[int, object]) -> dict[str, Any]:
+    """Elasticidades con los modelos de PRODUCCION en la fila base (punto de aplicacion).
+
+    - base_row = features del ultimo anio observado (`base_anio`) del municipio, con el lag
+      en terminos per capita (igual que el modelo).
+    - flag de turismo real: municipios con alguna ocupacion > 0 en la ventana de train
+      (el resto tiene la feature imputada a 0).
+    - `censo` no se mide con el arbol: es un coeficiente externo documentado.
+    """
+    base_anio = int(panel["anio"].max())
     elast: dict[str, list[float]] = {f: [] for f in FEAT_ELAST}
     ocup_elast: list[float] = []
     for cod, m in modelos.items():
-        g = panel.filter(
-            (pl.col("cod_municipio") == cod)
-            & (pl.col("anio") >= TRAIN_DESDE)
-            & (pl.col("anio") < TEST_START)
-            & pl.col("lag1").is_not_null()
-        )
-        if g.height == 0:
+        g = panel.filter((pl.col("cod_municipio") == cod) & (pl.col("anio") >= TRAIN_DESDE))
+        base = g.filter(pl.col("anio") == base_anio)
+        if g.height == 0 or base.height == 0:
             continue
-        base_row = {f: float(g.select(pl.col(f).median()).item()) for f in FEATURES}
-        tiene_turismo = float(g.select(pl.col("ocupacion_media").max()).item()) > 0
+        row = base.row(0, named=True)
+        base_row = {
+            "anio": float(row["anio"]),
+            "iph_media": float(row["iph_media"]),
+            "ocupacion_media": float(row["ocupacion_media"]),
+            "lluvia_anual_mm": float(row["lluvia_anual_mm"]),
+            "lag1_pc": float(row["lag1"]) / float(row["poblacion"]),
+        }
+        tiene_turismo = float(g.select(pl.col("ocupacion_media").max()).item()) > 0.0
         for f in FEAT_ELAST:
             e = _elasticidad(m, base_row, f)
             elast[f].append(e)
@@ -82,10 +131,14 @@ def _elasticidades(panel: pl.DataFrame, modelos: dict[int, object]) -> dict[str,
         "iph": float(np.mean(elast["iph_media"])) if elast["iph_media"] else 0.0,
         "ocupacion": float(np.mean(ocup_elast)) if ocup_elast else 0.0,
         "lluvia": float(np.mean(elast["lluvia_anual_mm"])) if elast["lluvia_anual_mm"] else 0.0,
+        "censo": CENSO_ELASTICIDAD,
         "nota": (
-            "elasticidades medias del modelo (perturbacion +-10% sobre la mediana de "
-            "features); ocupacion solo municipios con turismo"
+            "elasticidades medias de los modelos de PRODUCCION (target per capita), perturbacion "
+            "simetrica +-10% (diferencia central) sobre la fila base (ultimo anio observado); "
+            "ocupacion solo municipios con turismo real; censo = coeficiente externo (no lo "
+            "estima el arbol)"
         ),
+        "censo_origen": CENSO_ORIGEN,
     }
 
 
@@ -98,8 +151,8 @@ def entrenar(panel: pl.DataFrame, out_dir: Path) -> dict:
     prod_test_start = base_anio + 1
 
     filas: list[dict] = []
-    eval_modelos: dict[int, object] = {}
     prod_modelos: dict[int, object] = {}
+    poblacion_base: dict[str, float] = {}
     skipped: list[int] = []
     for cod_t, g in panel.partition_by("cod_municipio", as_dict=True).items():
         cod = int(cod_t[0])
@@ -113,9 +166,9 @@ def entrenar(panel: pl.DataFrame, out_dir: Path) -> dict:
             skipped.append(cod)
             pred = [float(train["consumo_hm3"].mean())] * test.height
         else:
+            tr = _con_target_pc(train)
             m = GradientBoostingRegressor(**PARAMS)
-            m.fit(train.select(FEATURES).to_numpy(), train["consumo_hm3"].to_numpy())
-            eval_modelos[cod] = m
+            m.fit(tr.select(FEATURES_MODELO).to_numpy(), tr["y_pc"].to_numpy())
             pred = _predict_recursivo(m, train, test)
         filas.append(
             {
@@ -131,32 +184,38 @@ def entrenar(panel: pl.DataFrame, out_dir: Path) -> dict:
             & pl.col("lag1").is_not_null()
         )
         if train_prod.height >= 4:
+            trp = _con_target_pc(train_prod)
             m = GradientBoostingRegressor(**PARAMS)
-            m.fit(train_prod.select(FEATURES).to_numpy(), train_prod["consumo_hm3"].to_numpy())
+            m.fit(trp.select(FEATURES_MODELO).to_numpy(), trp["y_pc"].to_numpy())
             prod_modelos[cod] = m
+            poblacion_base[str(cod)] = float(train_prod["poblacion"].to_list()[-1])
             joblib.dump(m, out_dir / "municipio" / f"{cod}.joblib")
 
     mape_por_mun = {str(r["cod_municipio"]): round(float(r["mape"]), 2) for r in filas}
     mape_medio = float(np.mean([r["mape"] for r in filas])) if filas else float("nan")
     mae_medio = float(np.mean([r["mae"] for r in filas])) if filas else float("nan")
 
-    # elasticidades medidas con los modelos de EVALUACION (ventana 2016-2021),
-    # como en el notebook 14 (no con los de produccion reentrenados)
-    elasticidades = _elasticidades(panel, eval_modelos)
+    # elasticidades medidas con los modelos de PRODUCCION (los que se sirven),
+    # en la fila base (punto de aplicacion del escenario) y perturbacion simetrica ±10%
+    elasticidades = _elasticidades(panel, prod_modelos)
 
     metadata = {
         "modelo": "GradientBoostingRegressor",
         "params": PARAMS,
         "features": FEATURES,
+        "features_modelo": FEATURES_MODELO,
         "target": "consumo_hm3",
+        "target_transform": TARGET_TRANSFORM,
+        "poblacion_base": poblacion_base,
         "base_anio": base_anio,
         "train_desde": TRAIN_DESDE,
         "test_start": TEST_START,
         "n_modelos": len(prod_modelos),
         "mape_por_municipio": mape_por_mun,
         "nota": (
-            f"modelos de produccion reentrenados con datos {TRAIN_DESDE}-{base_anio}; "
-            f"el MAPE por municipio proviene del holdout {TEST_START}-{base_anio}"
+            f"modelos de produccion con target per capita (consumo/poblacion) reentrenados con "
+            f"datos {TRAIN_DESDE}-{base_anio}; el MAPE por municipio proviene del holdout "
+            f"{TEST_START}-{base_anio} con poblacion congelada en el anio base"
         ),
     }
     (out_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2))

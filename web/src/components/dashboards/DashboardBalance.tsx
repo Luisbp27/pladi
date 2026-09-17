@@ -149,7 +149,7 @@ function GrupoDesglose({
       </div>
       <ResponsiveContainer width="100%" height={46}>
         <BarChart data={data} layout="vertical" margin={{ left: 0, right: 0 }}>
-          <XAxis type="number" hide />
+          <XAxis type="number" hide domain={[0, 'dataMax']} niceTicks="none" />
           <YAxis type="category" dataKey="name" hide />
           <Tooltip
             contentStyle={{
@@ -467,7 +467,11 @@ export default function DashboardBalance({
                   <LineChart data={serieFiltrada}>
                     <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
                     <XAxis dataKey="anio" tick={tick} />
-                    <YAxis tick={tick} width={34} />
+                    <YAxis
+                      tick={tick}
+                      width={34}
+                      domain={[0, (dataMax: number) => Math.max(1, Number.isFinite(dataMax) ? dataMax : 0)]}
+                    />
                     <Tooltip
                       contentStyle={{
                         background: dark ? '#18181b' : '#fff',

@@ -1,7 +1,7 @@
 """ML: retrain del modelo de consumo urbano (67 GBM por municipio) -> MinIO + registry.
 
-- Trigger: AssetAny de los golds que alimentan el panel (consumo, IPH, ocupacion, lluvia)
-  + trigger manual como fallback.
+- Trigger: AssetAny de los golds que alimentan el panel (consumo, IPH, ocupacion, lluvia,
+  poblacion) + trigger manual como fallback.
 - Guardrail: no publica si el MAPE del holdout supera el de la version activa + 2pp.
 - El bundle queda en s3://pladi/ml/simulacion/v{version}/ y la version se activa en
   ml.model_versions (la FastAPI la descarga al arrancar).
@@ -22,13 +22,14 @@ ABAST_ASSET = Asset("pladi://gold/abastecimiento_urbano_baleares")
 PRESION_ASSET = Asset("pladi://gold/presion_humana")
 OCUP_ASSET = Asset("pladi://gold/ocupacion_turistica")
 LLUVIA_ASSET = Asset("pladi://gold/lluvia_masa_subterranea")
+POBLACION_ASSET = Asset("pladi://gold/censo_municipal_baleares")
 
 PANEL_PATH = "/tmp/pladi_ml_panel.parquet"
 
 
 @dag(
     dag_id="modelo_consumo_urbano",
-    schedule=AssetAny(ABAST_ASSET, PRESION_ASSET, OCUP_ASSET, LLUVIA_ASSET),
+    schedule=AssetAny(ABAST_ASSET, PRESION_ASSET, OCUP_ASSET, LLUVIA_ASSET, POBLACION_ASSET),
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,

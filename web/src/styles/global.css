@@ -1,12 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind (preflight + utilidades) lo inyecta @astrojs/tailwind vía base.css.
+   Este fichero solo añade overrides propios; se importa en MainLayout.astro. */
 
-@layer base {
-  html, body {
-    @apply antialiased;
-    font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
+html, body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Leaflet popup */
@@ -119,6 +117,14 @@ html.dark .pladi-tooltip {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Leaflet: al clicar una capa vectorial el navegador enfoca el <path> y pinta
+   su anillo de foco como un rectángulo alrededor de la entidad → se anula.
+   El resaltado al pasar el ratón (weight) se mantiene. */
+.leaflet-interactive:focus,
+.leaflet-interactive:focus-visible {
+  outline: none;
 }
 
 /* Leyendas de charts más compactas en móvil */

@@ -59,6 +59,11 @@
       "source": "local",
       "sourceType": "local",
       "skillPath": ".agents/skills/astro/SKILL.md"
+    },
+    "latex": {
+      "source": "local",
+      "sourceType": "local",
+      "skillPath": ".agents/skills/latex/SKILL.md"
     }
   }
 }

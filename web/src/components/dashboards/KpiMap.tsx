@@ -23,7 +23,13 @@ const MODOS_MUNI: Modo[] = ['consumo', 'ocupacion', 'poblacion'];
 
 const nf = new Intl.NumberFormat('es-ES');
 
-export default function KpiMap({ isla }: { isla: string }) {
+export default function KpiMap({
+  isla,
+  onMunicipioClick,
+}: {
+  isla: string;
+  onMunicipioClick?: (cod: string) => void;
+}) {
   const t = useT();
   const $theme = useStore(theme);
 
@@ -236,9 +242,9 @@ export default function KpiMap({ isla }: { isla: string }) {
         }
         layer.on('click', () => {
           if (modoRef.current === 'masas') {
-            window.location.href = `/dashboards?vista=balance&nivel=masa&masa=${encodeURIComponent(String(props.cod_masa ?? ''))}`;
-          } else {
-            window.location.href = `/dashboards?vista=abastecimiento&municipio=${encodeURIComponent(String(props.cod_municipio ?? ''))}`;
+            window.location.href = `/dashboards?vista=balance&nivel=masa&masa=${encodeURIComponent(String(props.cod_masa ?? ''))}&isla=${encodeURIComponent(isla)}`;
+          } else if (onMunicipioClick) {
+            onMunicipioClick(String(props.cod_municipio ?? ''));
           }
         });
       },
@@ -248,7 +254,7 @@ export default function KpiMap({ isla }: { isla: string }) {
       const bounds = L.geoJSON(fc as any).getBounds();
       mapRef.current.fitBounds(bounds, { padding: [24, 24] });
     }
-  }, [kpis, masasIsla]);
+  }, [kpis, masasIsla, isla, onMunicipioClick]);
 
   useEffect(() => {
     if (loading || !mapListo || !geoListo) return;

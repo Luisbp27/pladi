@@ -1,18 +1,24 @@
 """Construccion del tablon analitico (replica del notebook 08) desde las tablas gold.
 
-Features finales: anio, iph_media, iph_max, ocupacion_media, lluvia_anual_mm, lag1.
-- IPH agregado por isla NUTS (Eivissa+Formentera comparten serie).
+Features finales: anio, iph_media, ocupacion_media, lluvia_anual_mm, lag1.
+- IPH agregado por isla NUTS (Eivissa+Formentera comparten serie) en UN UNICO factor
+  (`iph_media`): la ablacion 2026-09-12 (notebook 21) descarta quitar el IPH
+  (sin ambos IPH el MAPE sube +1,82 pp > +0,3 pp) y descarta `iph_max`
+  (redundante con |r|>0.85; +0,18 pp, dentro del umbral).
 - Ocupacion: media anual por municipio, imputada a 0 (municipios sin turismo).
+  Se conserva como feature (quitarla cuesta +3,57 pp) aunque no sea palanca de UI:
+  su efecto causal sobre el consumo anual no esta identificado.
 - Lluvia: suma anual por masa -> media de las masas del municipio; nulos = media global.
 - lag1 = consumo del anio anterior (recursivo en prediccion).
-- iph_max se conserva pese a |r|>0.85 con iph_media (ablacion 2026-08-30: +0.2 pp).
+- `poblacion` = padron municipal (gold.censo_municipal_baleares, 1998-2025). NO es feature:
+  es el denominador del target per capita (decision 2026-09-12, notebook 22).
 """
 from __future__ import annotations
 
 import polars as pl
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 
-FEATURES = ["anio", "iph_media", "iph_max", "ocupacion_media", "lluvia_anual_mm", "lag1"]
+FEATURES = ["anio", "iph_media", "ocupacion_media", "lluvia_anual_mm", "lag1"]
 TRAIN_DESDE = 2016
 TEST_START = 2022
 ANIO_MIN = 2015
@@ -49,12 +55,17 @@ def construir_panel() -> pl.DataFrame:
     ).select(["cod_municipio", "cod_provincia", "nombre_municipio"]).with_columns(
         pl.col("cod_provincia").cast(pl.Int64)
     )
+    poblacion = _read_sql(
+        "SELECT cod_municipio_ine AS cod_municipio, anio, poblacion "
+        "FROM gold.censo_municipal_baleares"
+    ).with_columns(
+        pl.col("anio").cast(pl.Int64),
+        pl.col("poblacion").cast(pl.Float64),
+    )
 
     isla_map = pl.DataFrame({"cod_provincia": list(ISLA_MAP), "isla": list(ISLA_MAP.values())})
 
-    iph = presion.group_by(["nombre_isla", "anio"]).agg(
-        iph_media=pl.col("iph").mean(), iph_max=pl.col("iph").max()
-    )
+    iph = presion.group_by(["nombre_isla", "anio"]).agg(iph_media=pl.col("iph").mean())
     ocup_m = ocup.group_by(["cod_municipio_ine", "anio"]).agg(
         ocupacion_media=pl.col("ocupacion_plazas_pct").mean()
     )
@@ -77,6 +88,7 @@ def construir_panel() -> pl.DataFrame:
             how="left",
         )
         .join(ll_m, on=["cod_municipio", "anio"], how="left")
+        .join(poblacion, on=["cod_municipio", "anio"], how="left")
         .select(
             [
                 "cod_municipio",
@@ -85,9 +97,9 @@ def construir_panel() -> pl.DataFrame:
                 "anio",
                 "consumo_hm3",
                 "iph_media",
-                "iph_max",
                 "ocupacion_media",
                 "lluvia_anual_mm",
+                "poblacion",
             ]
         )
         .with_columns(
@@ -98,4 +110,9 @@ def construir_panel() -> pl.DataFrame:
         .sort(["cod_municipio", "anio"])
     )
     panel = panel.with_columns(lag1=pl.col("consumo_hm3").shift(1).over("cod_municipio"))
-    return panel.filter(pl.col("anio") >= ANIO_MIN)
+    panel = panel.filter(pl.col("anio") >= ANIO_MIN)
+    faltantes = panel.filter(pl.col("poblacion").is_null())
+    if faltantes.height:
+        municipios = sorted(faltantes["cod_municipio"].unique().to_list())
+        raise ValueError(f"sin poblacion (padron) para {faltantes.height} filas: {municipios}")
+    return panel

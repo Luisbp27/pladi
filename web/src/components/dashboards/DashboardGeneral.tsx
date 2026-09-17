@@ -188,7 +188,7 @@ export default function DashboardGeneral({ municipioInicial }: { municipioInicia
       </div>
 
       <Card title={t('dash.general.mapa_titulo')} subtitle={t('dash.general.mapa_sub')}>
-        <KpiMap isla={isla} />
+        <KpiMap isla={isla} onMunicipioClick={setMunicipio} />
       </Card>
     </div>
   );

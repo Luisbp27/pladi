@@ -141,13 +141,22 @@ async def resumen(
             """,
             municipio,
         )
+        # Ultimo mes CON DATOS del propio municipio (el mes global puede no
+        # existir para el si IBESTAT lo marca como baja fiabilidad -> vacio)
         ocupa = await _qrow(
             """
-            SELECT ROUND((AVG(ocupacion_plazas_pct) * 100)::numeric, 1) AS ocupacion_media_pct
-            FROM gold.ocupacion_turistica
-            WHERE cod_municipio_ine = $1 AND anio = $2 AND mes = $3
+            SELECT anio, mes,
+                   ROUND((AVG(ocupacion_plazas_pct) * 100)::numeric, 1) AS ocupacion_media_pct
+            FROM gold.ocupacion_turistica g
+            WHERE cod_municipio_ine = $1
+              AND (anio, mes) = (
+                  SELECT anio, mes FROM gold.ocupacion_turistica
+                  WHERE cod_municipio_ine = $1
+                  ORDER BY anio * 12 + mes DESC LIMIT 1
+              )
+            GROUP BY anio, mes
             """,
-            municipio, oc_anio, oc_mes,
+            municipio,
         )
         lluvia = await _qrow(
             """
@@ -196,7 +205,7 @@ async def resumen(
             "poblacion_var_pct": var_pct,
             "consumo_hm3": (consumo or {}).get("consumo_hm3"),
             "ocupacion_media_pct": (ocupa or {}).get("ocupacion_media_pct"),
-            "ocupacion_mes_cerrado": f"{oc_anio}-{oc_mes:02d}",
+            "ocupacion_mes_cerrado": f"{ocupa['anio']}-{ocupa['mes']:02d}" if ocupa else None,
             "infiltracion_ah_media_hm3": (lluvia or {}).get("infiltracion_ah_media_hm3"),
             "n_pozos": (n_pozos or {}).get("n"),
             "n_masas": (n_masas or {}).get("n"),
@@ -260,15 +269,23 @@ async def resumen(
     )
     resumen_dict = lluvia[0] if lluvia else {}
 
-    # Ocupacion media del ultimo mes consolidado (por isla si filtro;
-    # en Baleares: media de las medias por isla para no sesgar por Mallorca)
+    # Ocupacion media del ultimo mes consolidado (por isla: ultimo mes CON
+    # DATOS de esa isla; en Baleares: media de las medias por isla en el mes
+    # global para no sesgar por Mallorca)
     if isla:
         ocupa_sql = """
-            SELECT ROUND((AVG(ocupacion_plazas_pct) * 100)::numeric, 1) AS ocupacion_media_pct
-            FROM gold.ocupacion_turistica
-            WHERE anio = $1 AND mes = $2 AND nombre_provincia = $3
+            SELECT anio, mes,
+                   ROUND((AVG(ocupacion_plazas_pct) * 100)::numeric, 1) AS ocupacion_media_pct
+            FROM gold.ocupacion_turistica g
+            WHERE nombre_provincia = $1
+              AND (anio, mes) = (
+                  SELECT anio, mes FROM gold.ocupacion_turistica
+                  WHERE nombre_provincia = $1
+                  ORDER BY anio * 12 + mes DESC LIMIT 1
+              )
+            GROUP BY anio, mes
         """
-        ocupa_params: list = [oc_anio, oc_mes, isla]
+        ocupa_params: list = [isla]
     else:
         ocupa_sql = """
             SELECT ROUND((AVG(media_isla))::numeric, 1) AS ocupacion_media_pct
@@ -316,7 +333,11 @@ async def resumen(
         "masas_total": resumen_dict.get("masas_total"),
         "iph_pico": iph,
         "ocupacion_media_pct": (ocupacion or {}).get("ocupacion_media_pct"),
-        "ocupacion_mes_cerrado": f"{oc_anio}-{oc_mes:02d}",
+        "ocupacion_mes_cerrado": (
+            f"{ocupacion['anio']}-{ocupacion['mes']:02d}"
+            if ocupacion and "anio" in ocupacion
+            else f"{oc_anio}-{oc_mes:02d}"
+        ),
         "poblacion": (pob or {}).get("poblacion"),
         "poblacion_anio": (pob or {}).get("anio"),
         "consumo_hm3": (consumo or {}).get("consumo_hm3"),
@@ -746,13 +767,15 @@ async def ocupacion_ranking(
         )
         anio = anio_max["anio"]
 
-    isla_sql = "AND o.nombre_provincia = $2" if isla else ""
-    tipo_sql = "AND o.tipo_alojamiento = $3" if tipo else ""
     params: list = [anio]
+    filtros = []
     if isla:
         params.append(isla)
+        filtros.append(f"AND o.nombre_provincia = ${len(params)}")
     if tipo:
         params.append(tipo)
+        filtros.append(f"AND o.tipo_alojamiento = ${len(params)}")
+    filtros_sql = " ".join(filtros)
 
     rows = await _q(
         f"""
@@ -760,7 +783,7 @@ async def ocupacion_ranking(
                ROUND((AVG(o.ocupacion_plazas_pct) * 100)::numeric, 1) AS ocupacion_media_pct,
                COUNT(*) AS meses_con_datos
         FROM gold.ocupacion_turistica o
-        WHERE o.anio = $1 {isla_sql} {tipo_sql}
+        WHERE o.anio = $1 {filtros_sql}
         GROUP BY o.cod_municipio_ine, o.nombre_municipio, o.nombre_provincia
         ORDER BY ocupacion_media_pct DESC NULLS LAST
         """,
