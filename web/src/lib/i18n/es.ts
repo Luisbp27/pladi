@@ -212,8 +212,6 @@ export const dict = {
   'dash.presion.titulo': 'Índice de Presión Humana',
   'dash.presion.sub_baleares': 'Series mensuales por isla + población censal anual (líneas discontinuas)',
   'dash.presion.sub_isla': 'Línea: media del mes 2015-25 · población censal anual (discontinua)',
-  'dash.presion.ratio': 'IPH pico vs población',
-  'dash.presion.ratio_sub': 'IPH {iph} · población {pob}',
   'dash.presion.series.iph': 'IPH',
   'dash.presion.series.media': 'Media',
   'dash.presion.series.pob_censal': 'Población censal',

@@ -456,7 +456,7 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 
 ### Turismo — IPH vs población y ranking de ocupación (2026-08-15)
 
-- **DashboardPresion**: KPI "IPH pico vs población" (ratio `×2,1` + desglose IPH/población) y líneas discontinuas de **población censal anual** bajo el IPH (modo isla y Baleares). El IPH es a nivel NUTS: **Eivissa i Formentera van juntas** (sin estimaciones).
+- **DashboardPresion**: líneas discontinuas de **población censal anual** bajo el IPH (modo isla y Baleares). El IPH es a nivel NUTS: **Eivissa i Formentera van juntas** (sin estimaciones). El KPI "IPH pico vs población" se eliminó el 2026-09-24 (ver "Fixes del gráfico de presión humana").
 - **DashboardOcupacion**: ranking top 5 / bottom 5 de municipios (media anual del año `hasta` del rango, respeta el toggle de tipo, nota "solo municipios con datos" — 26 de 67 tienen turismo).
 - **Drawer municipio**: sin card de infiltración; ocupación = media 12 meses + pico mensual + sparkline con **ventana propia del municipio** (fix: Alaior acaba en 2025-09 y Sant Joan de Labritja en 2024-10, el corte global los dejaba vacíos).
 - **EmptyState** (borde discontinuo + icono + texto contextual) para entidades sin datos: municipios sin turismo, masas/UDs sin balance, vista Ocupación sin datos; leyenda del mapa con "Sin dato" (gris); KpiBlocks con sub explicativo en vez de `—`.
@@ -483,6 +483,12 @@ Los municipios/provincias SIEMPRE se conforman con `public.municipio`/`public.pr
 
 - **Barras del desglose cortas**: Recharts 3.10 activa `niceTicks: 'auto'` por defecto y `combineAxisDomainWithNiceTicks` **extiende el dominio del eje hasta el último tick redondo** (`max(domainMax, maxFromTicks)`). En el eje X oculto del desglose (`GrupoDesglose`, `DashboardBalance.tsx`) el dominio superaba el total del stack: Son Real entradas 13,72 → ticks 0/4/8/12/**16** (barra al 85,8 %); Baleares entradas 405,94 → ticks hasta **600** (barra al 67,7 %). FIX: `domain={[0, 'dataMax']}` + `niceTicks="none"` en el `XAxis` (el dominio del stack ya es `[0, total]`; con dominio fijo los ticks se generan dentro — verificado: `getTickValuesFixedDomain` no lo extiende). Verificación runtime (Chromium headless contra el build): barras al **100 %** del ancho en Baleares, Son Real y Port d'Andratx.
 - **Eje Y del índice de explotación**: dominio automático variable (p. ej. `[0, 0.8]` con datos 0,45–0,61) dejaba la `ReferenceLine` de 1.0 fuera del eje. FIX: `domain={[0, (dataMax) => Math.max(1, dataMax)]}` en el `YAxis` → mínimo **0–1 siempre** y crece con masas sobreexplotadas (Son Real 108,9 · 2015; Port d'Andratx 14,4 · 2024). Ticks redondos intactos (0 / 0,25 / 0,5 / 0,75 / 1).
+
+### Fixes del gráfico de presión humana (2026-09-24)
+
+- **Tooltip/eje fuera de orden (solo Baleares)**: la agrupación año-mes del modo Baleares ordenaba por `label` (`"abr 25"`, `"ag 22"`…) con `Intl.Collator` → orden **alfabético por nombre de mes**, no cronológico (el tooltip saltaba `abr 26 → ag 22` y las líneas dibujaban zigzag). FIX: orden numérico `(anioA - anioB) * 12 + (mesA - mesB)` en ambas ramas (`DashboardPresion.tsx`); el modo isla ya venía ordenado del `ORDER BY anio, mes` del API.
+- **Etiquetas de mes congeladas al cambiar CA↔ES**: el `label` se construía dentro del `useEffect` con el `meses()` del idioma activo en ese momento; ahora las filas guardan `anio`/`mes` numéricos y el label se deriva en render (se actualiza al cambiar de idioma). Mismo patrón corregido en `DashboardOcupacion` y `DashboardInfiltrada` (esta también guarda `mes` y aplica `ahLabel()` en año hidrológico).
+- **KPI "IPH pico vs població" eliminado** (a petición, 2026-09-24): se quitaron la tarjeta, el cálculo del ratio y las claves i18n `dash.presion.ratio`/`dash.presion.ratio_sub`; la vista queda solo con el gráfico. Motivos: el ratio no se reseteaba al cambiar de isla y, con el IPH de 2026 parcial (ene-may) y el padrón solo hasta 2025, la tarjeta dejó de renderizarse.
 
 ---
 

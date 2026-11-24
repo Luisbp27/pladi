@@ -11,7 +11,6 @@ import { Card, ChartLegend, EmptyState, ErrorBox, RangoTemporal, SearchSelect, S
 interface OcupRow {
   anio: number;
   mes: number;
-  label: string;
   hotelera: number | null;
   apartamentos: number | null;
 }
@@ -67,14 +66,12 @@ export default function DashboardOcupacion() {
     })
       .then((r) => {
         if (!alive) return;
-        const m = meses();
         const byKey = new Map<string, OcupRow>();
         for (const x of r.serie) {
           const key = `${x.anio}-${x.mes}`;
           const entry = byKey.get(key) ?? {
             anio: x.anio,
             mes: x.mes,
-            label: `${m[x.mes - 1]} ${String(x.anio).slice(2)}`,
             hotelera: null,
             apartamentos: null,
           };
@@ -101,6 +98,11 @@ export default function DashboardOcupacion() {
   const maxAnio = rows.length > 0 ? rows[rows.length - 1].anio : 2026;
   const rangoEf: Rango = rango ?? { desde: Math.max(minAnio, maxAnio - 4), hasta: maxAnio };
   const rowsFiltrados = rows.filter((r) => r.anio >= rangoEf.desde && r.anio <= rangoEf.hasta);
+  const ms = meses();
+  const rowsChart = rowsFiltrados.map((r) => ({
+    ...r,
+    label: `${ms[r.mes - 1]} ${String(r.anio).slice(2)}`,
+  }));
 
   // Ranking de municipios del año "hasta" del rango (respetando el toggle de tipo)
   useEffect(() => {
@@ -131,7 +133,6 @@ export default function DashboardOcupacion() {
   const aniosComparativa = [...new Set(rowsFiltrados.map((r) => r.anio))]
     .sort((a, b) => a - b)
     .slice(-5);
-  const ms = meses();
   const datosComparativa: Array<Record<string, string | number | null>> = ms.map((m, i) => {
     const row: Record<string, string | number | null> = { mes: m };
     for (const anio of aniosComparativa) {
@@ -240,7 +241,7 @@ export default function DashboardOcupacion() {
         ) : (
           <>
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={rowsFiltrados}>
+            <BarChart data={rowsChart}>
               <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
               <XAxis dataKey="label" tick={tick} interval={3} />
               <YAxis tick={tick} width={34} unit="%" domain={[0, 100]} />

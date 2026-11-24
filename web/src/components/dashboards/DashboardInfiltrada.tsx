@@ -65,25 +65,24 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
       .then(([l, r]) => {
         if (!alive) return;
         const ref = l.referencia;
-        const m = meses();
         if (ah && l.serie.length > 0) {
           const last = l.serie[l.serie.length - 1];
           const ahActual = last.mes >= 9 ? last.anio + 1 : last.anio;
           const rows = l.serie
             .filter((x) => (x.mes >= 9 ? x.anio + 1 : x.anio) === ahActual)
             .map((x) => ({
-              label: ahLabel(m, x.anio, x.mes),
+              anio: x.anio,
+              mes: x.mes,
               hm3: x.agua_infiltrada_hm3,
               media: ref.find((mm) => mm.mes === x.mes)?.media_hm3 ?? 0,
-              anio: x.anio,
             }));
           setSerie(rows);
         } else {
           const rows = l.serie.map((x) => ({
-            label: `${m[x.mes - 1]} ${String(x.anio).slice(2)}`,
+            anio: x.anio,
+            mes: x.mes,
             hm3: x.agua_infiltrada_hm3,
             media: ref.find((mm) => mm.mes === x.mes)?.media_hm3 ?? 0,
-            anio: x.anio,
           }));
           setSerie(rows);
         }
@@ -114,6 +113,13 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
   const serieFiltrada = ah
     ? serie
     : serie.filter((x) => Number(x.anio) >= rangoEf.desde && Number(x.anio) <= rangoEf.hasta);
+  const ms = meses();
+  const chartData = serieFiltrada.map((x) => ({
+    ...x,
+    label: ah
+      ? ahLabel(ms, Number(x.anio), Number(x.mes))
+      : `${ms[Number(x.mes) - 1]} ${String(x.anio).slice(2)}`,
+  }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -161,7 +167,7 @@ export default function DashboardInfiltrada({ masaInicial }: { masaInicial?: str
           <Spinner />
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={serieFiltrada}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
               <XAxis dataKey="label" tick={tick} interval={2} />
               <YAxis tick={tick} width={40} unit=" hm³" />

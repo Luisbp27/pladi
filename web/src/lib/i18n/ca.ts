@@ -214,8 +214,6 @@ export const dict: Record<ClaveI18n, string> = {
   'dash.presion.titulo': 'Índex de Pressió Humana',
   'dash.presion.sub_baleares': 'Sèries mensuals per illa + població censal anual (línies discontínues)',
   'dash.presion.sub_isla': 'Línia: mitjana del mes 2015-25 · població censal anual (discontínua)',
-  'dash.presion.ratio': 'IPH pic vs població',
-  'dash.presion.ratio_sub': 'IPH {iph} · població {pob}',
   'dash.presion.series.iph': 'IPH',
   'dash.presion.series.media': 'Mitjana',
   'dash.presion.series.pob_censal': 'Població censal',
